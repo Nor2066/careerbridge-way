@@ -90,6 +90,7 @@ export default function Home() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [submittedAnswers, setSubmittedAnswers] = useState<any>(null);
   const [answers, setAnswers] = useState<Answers>({
     subjects: [],
     activities: [],
@@ -136,6 +137,10 @@ export default function Home() {
       studyHours: answers.studyHours === 'YES',
       academicLevel: Number(answers.academicLevel),
     };
+
+    // Save a copy of the payload for later (this is the key addition)
+    setSubmittedAnswers(payload);
+
     const res = await fetch('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -146,41 +151,151 @@ export default function Home() {
     setLoading(false);
   };
 
-  if (result) {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h1 className="text-3xl font-bold">CareerBridge Way</h1>
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold">Your Top 3 Career Clusters</h2>
-          <ul className="mt-2 space-y-3">
-            {result.top3.map((item: any, idx: number) => (
-              <li key={idx} className="p-4 border rounded-lg shadow-sm">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">{item.cluster}</span>
-                  <span className="text-blue-600 font-bold">{item.percentage}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {result.warningMessage && (
-            <div className="mt-4 p-3 bg-yellow-100 text-yellow-800 rounded">
-              ⚠️ {result.warningMessage}
-            </div>
-          )}
+if (result) {
+  // We'll define the feedback component inside, but it's actually safe because it's a functional component
+  const FeedbackForm = () => {
+    const [email, setEmail] = useState('');
+    const [feedbackRating, setFeedbackRating] = useState(0);
+    const [feedbackComment, setFeedbackComment] = useState('');
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const saveToSupabase = async () => {
+      if (!email) {
+        alert('Please enter your email');
+        return;
+      }
+      if (feedbackRating === 0) {
+        alert('Please rate your experience');
+        return;
+      }
+      setSaving(true);
+      try {
+        const res = await fetch('/api/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            feedbackRating,
+            feedbackComment,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,  // 👈 This is the key – we use submittedAnswers
+          }),
+        });
+        if (res.ok) {
+          setSaved(true);
+        } else {
+          alert('Something went wrong. Please try again.');
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    if (saved) {
+      return (
+        <div className="text-center">
+          <p className="text-green-600">Thank you for your feedback!</p>
           <button
             onClick={() => setResult(null)}
-            className="mt-6 px-4 py-2 bg-gray-200 text-gray-800 rounded"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
           >
             Take Assessment Again
           </button>
         </div>
+      );
+    }
+
+    return (
+      <div className="mt-8 border-t pt-6">
+        <h3 className="text-lg font-semibold">Help us improve</h3>
+        <p className="text-sm text-gray-600 mb-4">Leave your email and feedback (it helps us make CareerBridge Way better).</p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email *</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full p-2 border rounded"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">How accurate were your results? *</label>
+            <div className="flex gap-2 mt-1">
+              {[1,2,3,4,5].map(r => (
+                <button
+                  key={r}
+                  onClick={() => setFeedbackRating(r)}
+                  className={`w-10 h-10 rounded-full ${
+                    feedbackRating === r ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Comments (optional)</label>
+            <textarea
+              value={feedbackComment}
+              onChange={(e) => setFeedbackComment(e.target.value)}
+              rows={3}
+              className="mt-1 w-full p-2 border rounded"
+              placeholder="What did you think? Any suggestions?"
+            />
+          </div>
+
+          <button
+            onClick={saveToSupabase}
+            disabled={saving}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Submit Feedback & Get Results'}
+          </button>
+        </div>
       </div>
     );
-  }
+  };
 
+  // Main results view (without hooks inside)
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-3xl font-bold">CareerBridge Way</h1>
+      <div className="mt-6">
+        <h2 className="text-xl font-semibold">Your Top 3 Career Clusters</h2>
+        <ul className="mt-2 space-y-3">
+          {result.top3.map((item: any, idx: number) => (
+            <li key={idx} className="p-4 border rounded-lg shadow-sm">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{item.cluster}</span>
+                <span className="text-blue-600 font-bold">{item.percentage}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {result.warningMessage && (
+          <div className="mt-4 p-3 bg-yellow-100 text-yellow-800 rounded">
+            ⚠️ {result.warningMessage}
+          </div>
+        )}
+      </div>
+      <FeedbackForm />
+    </div>
+  );
+}
   // ----- Step 0: Subjects -----
   if (step === 0) {
     return (
