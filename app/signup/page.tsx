@@ -28,6 +28,8 @@ export default function SignupPage() {
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <input
           type="email"
+          id="email"
+          name="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -36,6 +38,8 @@ export default function SignupPage() {
         />
         <input
           type="password"
+          id="password"
+          name="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

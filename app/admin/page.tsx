@@ -1,22 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, 1-5
+  const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
 
   const handleLogin = () => {
-    // Simple password check (in production, use env var on server side)
+      console.log('Entered password:', password);
+      console.log('Env password:', process.env.NEXT_PUBLIC_ADMIN_PASSWORD);
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setAuthenticated(true);
-      fetchAssessments();
     } else {
       alert('Wrong password');
     }
@@ -24,23 +23,26 @@ export default function AdminPage() {
 
   const fetchAssessments = async () => {
     setLoading(true);
-    let query = supabase
-      .from('assessments')
-      .select('*')
-      .order(sortBy, { ascending: sortOrder === 'asc' });
-
-    if (filter !== 'all') {
-      query = query.eq('feedback_rating', parseInt(filter));
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error(error);
+    try {
+      const params = new URLSearchParams({
+        rating: filter,
+        sortBy,
+        sortOrder,
+      });
+      const res = await fetch(`/api/admin/assessments?${params}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_SECRET}`,
+        },
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      setAssessments(data);
+    } catch (err) {
+      console.error(err);
       alert('Error fetching data');
-    } else {
-      setAssessments(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -53,12 +55,14 @@ export default function AdminPage() {
     return (
       <div className="max-w-md mx-auto p-6 mt-20">
         <h1 className="text-2xl font-bold">Admin Login</h1>
-        <input
-          type="password"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-4 w-full p-2 border rounded"
+         <input
+           type="password"
+           id="admin-password"
+           name="admin-password"
+           placeholder="Enter password"
+           value={password}
+           onChange={(e) => setPassword(e.target.value)}
+           className="mt-4 w-full p-2 border rounded"
         />
         <button
           onClick={handleLogin}
@@ -70,9 +74,7 @@ export default function AdminPage() {
     );
   }
 
-  if (loading) {
-    return <div className="p-6">Loading...</div>;
-  }
+  if (loading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="p-6">
@@ -131,12 +133,12 @@ export default function AdminPage() {
               <th className="border p-2">Comment</th>
               <th className="border p-2">Top Clusters</th>
               <th className="border p-2">Raw Scores (top 3)</th>
-            </tr>
+             </tr>
           </thead>
           <tbody>
             {assessments.map((item) => (
               <tr key={item.id} className="border-b">
-                <td className="border p-2">{new Date(item.created_at).toLocaleString()}</td>
+                <td className="border p-2">{new Date(item.created_at).toLocaleString()} </td>
                 <td className="border p-2">{item.email}</td>
                 <td className="border p-2 text-center">{item.feedback_rating}</td>
                 <td className="border p-2 max-w-xs truncate">{item.feedback_comment || '-'}</td>
@@ -146,10 +148,10 @@ export default function AdminPage() {
                 <td className="border p-2">
                   {item.raw_scores ? Object.entries(item.raw_scores).slice(0,3).map(([k,v]) => `${k}:${v}`).join(', ') : '-'}
                 </td>
-              </tr>
+               </tr>
             ))}
           </tbody>
-        </table>
+         </table>
       </div>
     </div>
   );
