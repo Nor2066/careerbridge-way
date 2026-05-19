@@ -3,12 +3,12 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
-    const { email, feedbackRating, feedbackComment, topClusters, rawScores, answers } = await request.json();
+    const { email, userId, feedbackRating, feedbackComment, topClusters, rawScores, answers } = await request.json();
 
-    // Insert into Supabase
     const { error } = await supabase.from('assessments').insert([
       {
         email,
+        user_id: userId || null,
         feedback_rating: feedbackRating,
         feedback_comment: feedbackComment,
         top_clusters: topClusters,

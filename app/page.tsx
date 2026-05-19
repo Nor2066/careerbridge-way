@@ -1,5 +1,7 @@
 'use client';
 
+import { useAuth } from '@/lib/AuthContext';
+
 import { useState } from 'react';
 
 type Answers = {
@@ -87,6 +89,7 @@ const JOB_TYPES = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -159,41 +162,51 @@ if (result) {
     const [feedbackComment, setFeedbackComment] = useState('');
     const [saved, setSaved] = useState(false);
     const [saving, setSaving] = useState(false);
-
-    const saveToSupabase = async () => {
-      if (!email) {
-        alert('Please enter your email');
-        return;
-      }
-      if (feedbackRating === 0) {
-        alert('Please rate your experience');
-        return;
-      }
-      setSaving(true);
-      try {
-        const res = await fetch('/api/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            feedbackRating,
-            feedbackComment,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
-            answers: submittedAnswers,  // 👈 This is the key – we use submittedAnswers
-          }),
-        });
-        if (res.ok) {
-          setSaved(true);
-        } else {
-          alert('Something went wrong. Please try again.');
-        }
-      } catch (err) {
-        alert('Network error. Please try again.');
-      } finally {
-        setSaving(false);
-      }
+const saveToSupabase = async () => {
+  const finalEmail = user ? user.email : email;
+  if (!finalEmail) {
+    alert('Please enter your email');
+    return;
+  }
+  if (feedbackRating === 0) {
+    alert('Please rate your experience');
+    return;
+  }
+  setSaving(true);
+  try {
+    const payload = {
+      email: finalEmail,
+      userId: user?.id || null,
+      feedbackRating,
+      feedbackComment,
+      topClusters: result.top3,
+      rawScores: result.rawScores,
+      answers: submittedAnswers,
     };
+    console.log('Sending payload:', payload);
+    
+    const res = await fetch('/api/save-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    console.log('Response status:', res.status);
+    const responseData = await res.json();
+    console.log('Response data:', responseData);
+    
+    if (res.ok) {
+      setSaved(true);
+    } else {
+      alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    console.error('Fetch error:', err);
+    alert('Network error. Please try again.');
+  } finally {
+    setSaving(false);
+  }
+};
 
     if (saved) {
       return (
@@ -215,17 +228,22 @@ if (result) {
         <p className="text-sm text-gray-600 mb-4">Leave your email and feedback (it helps us make CareerBridge Way better).</p>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email *</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full p-2 border rounded"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
+     {!user ? (
+  <div>
+    <label className="block text-sm font-medium text-gray-700">Email *</label>
+    <input
+      type="email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      className="mt-1 w-full p-2 border rounded"
+      placeholder="you@example.com"
+      required
+    />
+  </div>
+) : (
+  // Logged in – no email field, but we'll use user.email
+  <input type="hidden" value={user.email} />
+)}
 
           <div>
             <label className="block text-sm font-medium text-gray-700">How accurate were your results? *</label>
