@@ -1,14 +1,11 @@
 'use client';
 
 import { useAuth } from '@/lib/AuthContext';
-
 import { useState } from 'react';
 
 type Answers = {
-  // Section 1
   subjects: string[];
   activities: string[];
-  // Section 2 – Skills (16 items)
   skills: {
     logicalReasoning: number;
     creativity: number;
@@ -32,7 +29,7 @@ type Answers = {
   learningStyle: string;
   motivations: string[];
   whatMattersMore: string;
-  studyHours: string;      // "YES" or "NO"
+  studyHours: string;
   academicLevel: number;
   socialPreference: string;
   workEnvironment: string[];
@@ -40,7 +37,6 @@ type Answers = {
   dealbreakerJobs: string[];
 };
 
-// All options – copy exactly from your Google Form
 const SUBJECTS = [
   'Mathematics', 'Sciences', 'Technology / Computing', 'Business / Economics',
   'Social Sciences', 'Arts / Humanities', 'Creative Fields', 'Languages'
@@ -127,21 +123,17 @@ export default function Home() {
     }));
   };
 
-  const totalSteps = 12; // we'll break into logical sections
-
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
 
   const handleSubmit = async () => {
     setLoading(true);
-    // Convert studyHours to boolean
     const payload = {
       ...answers,
       studyHours: answers.studyHours === 'YES',
       academicLevel: Number(answers.academicLevel),
     };
 
-    // Save a copy of the payload for later (this is the key addition)
     setSubmittedAnswers(payload);
 
     const res = await fetch('/api/assess', {
@@ -154,540 +146,471 @@ export default function Home() {
     setLoading(false);
   };
 
-if (result) {
-  // We'll define the feedback component inside, but it's actually safe because it's a functional component
-  const FeedbackForm = () => {
-    const [email, setEmail] = useState('');
-    const [feedbackRating, setFeedbackRating] = useState(0);
-    const [feedbackComment, setFeedbackComment] = useState('');
-    const [saved, setSaved] = useState(false);
-    const [saving, setSaving] = useState(false);
-const saveToSupabase = async () => {
-  const finalEmail = user ? user.email : email;
-  if (!finalEmail) {
-    alert('Please enter your email');
-    return;
-  }
-  if (feedbackRating === 0) {
-    alert('Please rate your experience');
-    return;
-  }
-  setSaving(true);
-  try {
-    const payload = {
-      email: finalEmail,
-      userId: user?.id || null,
-      feedbackRating,
-      feedbackComment,
-      topClusters: result.top3,
-      rawScores: result.rawScores,
-      answers: submittedAnswers,
-    };
-    console.log('Sending payload:', payload);
-    
-    const res = await fetch('/api/save-result', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    
-    console.log('Response status:', res.status);
-    const responseData = await res.json();
-    console.log('Response data:', responseData);
-    
-    if (res.ok) {
-      setSaved(true);
-    } else {
-      alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
-    }
-  } catch (err) {
-    console.error('Fetch error:', err);
-    alert('Network error. Please try again.');
-  } finally {
-    setSaving(false);
-  }
-};
+  const containerClasses = "min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800";
+  const cardClasses = "bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700";
+  const buttonPrimaryClasses = "px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed";
+  const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
 
-    if (saved) {
+  if (result) {
+    const FeedbackForm = () => {
+      const [email, setEmail] = useState('');
+      const [feedbackRating, setFeedbackRating] = useState(0);
+      const [feedbackComment, setFeedbackComment] = useState('');
+      const [saved, setSaved] = useState(false);
+      const [saving, setSaving] = useState(false);
+
+      const saveToSupabase = async () => {
+        const finalEmail = user ? user.email : email;
+        if (!finalEmail) {
+          alert('Please enter your email');
+          return;
+        }
+        if (feedbackRating === 0) {
+          alert('Please rate your experience');
+          return;
+        }
+        setSaving(true);
+        try {
+          const payload = {
+            email: finalEmail,
+            userId: user?.id || null,
+            feedbackRating,
+            feedbackComment,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          };
+          const res = await fetch('/api/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            setSaved(true);
+          } else {
+            const responseData = await res.json();
+            alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
+          }
+        } catch (err) {
+          alert('Network error. Please try again.');
+        } finally {
+          setSaving(false);
+        }
+      };
+
+      if (saved) {
+        return (
+          <div className="text-center py-8">
+            <div className="inline-block p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
+            <button
+              onClick={() => setResult(null)}
+              className={buttonPrimaryClasses}
+            >
+              Take Assessment Again
+            </button>
+          </div>
+        );
+      }
+
       return (
-        <div className="text-center">
-          <p className="text-green-600">Thank you for your feedback!</p>
-          <button
-            onClick={() => setResult(null)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Take Assessment Again
-          </button>
+        <div className={`mt-8 pt-8 border-t border-gray-200 dark:border-gray-700`}>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Help us improve</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">Leave your feedback to help us improve CareerBridge Way.</p>
+
+          <div className="space-y-6">
+            {!user ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            ) : null}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">How accurate were your results? *</label>
+              <div className="flex gap-3">
+                {[1, 2, 3, 4, 5].map(r => (
+                  <button
+                    key={r}
+                    onClick={() => setFeedbackRating(r)}
+                    className={`w-12 h-12 rounded-full font-bold transition-all ${
+                      feedbackRating === r 
+                        ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
+              <textarea
+                value={feedbackComment}
+                onChange={(e) => setFeedbackComment(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="What did you think? Any suggestions?"
+              />
+            </div>
+
+            <button
+              onClick={saveToSupabase}
+              disabled={saving}
+              className={buttonPrimaryClasses}
+            >
+              {saving ? 'Saving...' : 'Submit Feedback & Get Results'}
+            </button>
+          </div>
         </div>
       );
-    }
+    };
 
     return (
-      <div className="mt-8 border-t pt-6">
-        <h3 className="text-lg font-semibold">Help us improve</h3>
-        <p className="text-sm text-gray-600 mb-4">Leave your email and feedback (it helps us make CareerBridge Way better).</p>
+      <div className={containerClasses}>
+        <div className="max-w-2xl mx-auto p-6">
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              CareerBridge Way
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
+          </div>
 
-        <div className="space-y-4">
-     {!user ? (
-  <div>
-    <label className="block text-sm font-medium text-gray-700">Email *</label>
-    <input
-      type="email"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-      className="mt-1 w-full p-2 border rounded"
-      placeholder="you@example.com"
-      required
-    />
-  </div>
-) : (
-  // Logged in – no email field, but we'll use user.email
-  <input type="hidden" value={user.email} />
-)}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">How accurate were your results? *</label>
-            <div className="flex gap-2 mt-1">
-              {[1,2,3,4,5].map(r => (
-                <button
-                  key={r}
-                  onClick={() => setFeedbackRating(r)}
-                  className={`w-10 h-10 rounded-full ${
-                    feedbackRating === r ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'
-                  }`}
-                >
-                  {r}
-                </button>
+          <div className={`${cardClasses} p-8 mb-8`}>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Top 3 Career Clusters</h2>
+            <ul className="space-y-4">
+              {result.top3.map((item: any, idx: number) => (
+                <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-gray-900 dark:text-white text-lg">{item.cluster}</span>
+                    <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
+            {result.warningMessage && (
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">
+                ⚠️ {result.warningMessage}
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Comments (optional)</label>
-            <textarea
-              value={feedbackComment}
-              onChange={(e) => setFeedbackComment(e.target.value)}
-              rows={3}
-              className="mt-1 w-full p-2 border rounded"
-              placeholder="What did you think? Any suggestions?"
-            />
+          <div className={`${cardClasses} p-8`}>
+            <FeedbackForm />
           </div>
-
-          <button
-            onClick={saveToSupabase}
-            disabled={saving}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : 'Submit Feedback & Get Results'}
-          </button>
         </div>
       </div>
     );
-  };
+  }
 
-  // Main results view (without hooks inside)
-  return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-3xl font-bold">CareerBridge Way</h1>
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold">Your Top 3 Career Clusters</h2>
-        <ul className="mt-2 space-y-3">
-          {result.top3.map((item: any, idx: number) => (
-            <li key={idx} className="p-4 border rounded-lg shadow-sm">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{item.cluster}</span>
-                <span className="text-blue-600 font-bold">{item.percentage}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${item.percentage}%` }}></div>
-              </div>
-            </li>
-          ))}
-        </ul>
-        {result.warningMessage && (
-          <div className="mt-4 p-3 bg-yellow-100 text-yellow-800 rounded">
-            ⚠️ {result.warningMessage}
+  const StepContainer = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className={containerClasses}>
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Step {step + 1} of {2 + SKILL_NAMES.length + 10}
+            </span>
           </div>
-        )}
+          <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / (2 + SKILL_NAMES.length + 10)) * 100}%` }}></div>
+          </div>
+        </div>
+
+        <div className={`${cardClasses} p-8`}>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{title}</h2>
+          {children}
+
+          <div className="mt-8 flex justify-between gap-4">
+            {step > 0 && (
+              <button onClick={prevStep} className={buttonSecondaryClasses}>
+                ← Back
+              </button>
+            )}
+            <div className="flex-1"></div>
+            <button onClick={nextStep} className={buttonPrimaryClasses}>
+              Next →
+            </button>
+          </div>
+        </div>
       </div>
-      <FeedbackForm />
     </div>
   );
-}
-  // ----- Step 0: Subjects -----
+
+  const CheckboxGroup = ({ options, selected, onChange, maxSelections }: any) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {options.map((option: string) => (
+        <label key={option} className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors bg-gray-50 dark:bg-slate-700">
+          <input
+            type="checkbox"
+            checked={selected.includes(option)}
+            onChange={(e) => {
+              if (e.target.checked && selected.length < maxSelections) {
+                onChange([...selected, option]);
+              } else if (!e.target.checked) {
+                onChange(selected.filter((x: string) => x !== option));
+              }
+            }}
+            className="w-5 h-5 text-indigo-600 rounded cursor-pointer"
+          />
+          <span className="ml-3 text-gray-900 dark:text-white font-medium">{option}</span>
+        </label>
+      ))}
+    </div>
+  );
+
+  const RadioGroup = ({ options, selected, onChange }: any) => (
+    <div className="space-y-3">
+      {options.map((option: string) => (
+        <label key={option} className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors bg-gray-50 dark:bg-slate-700">
+          <input
+            type="radio"
+            checked={selected === option}
+            onChange={() => onChange(option)}
+            className="w-5 h-5 text-indigo-600 cursor-pointer"
+          />
+          <span className="ml-3 text-gray-900 dark:text-white font-medium">{option}</span>
+        </label>
+      ))}
+    </div>
+  );
+
+  const RatingButtons = ({ ratings, selected, onChange }: any) => (
+    <div className="flex gap-4 justify-center">
+      {ratings.map((r: number) => (
+        <button
+          key={r}
+          onClick={() => onChange(r)}
+          className={`w-14 h-14 rounded-full font-bold transition-all ${
+            selected === r
+              ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          }`}
+        >
+          {r}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Step 0: Subjects
   if (step === 0) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Which subjects do you enjoy the most? (Pick up to 3)</h2>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {SUBJECTS.map(s => (
-            <label key={s} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.subjects.includes(s)}
-                onChange={e => {
-                  if (e.target.checked && answers.subjects.length < 3) {
-                    update('subjects', [...answers.subjects, s]);
-                  } else if (!e.target.checked) {
-                    update('subjects', answers.subjects.filter(x => x !== s));
-                  }
-                }}
-              />
-              <span>{s}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-end">
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">
-            Next
-          </button>
-        </div>
-      </div>
+      <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
+        <CheckboxGroup
+          options={SUBJECTS}
+          selected={answers.subjects}
+          onChange={(val: string[]) => update('subjects', val)}
+          maxSelections={3}
+        />
+      </StepContainer>
     );
   }
 
-  // ----- Step 1: Activities -----
+  // Step 1: Activities
   if (step === 1) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Which activities do you prefer? (Pick up to 3)</h2>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {ACTIVITIES.map(a => (
-            <label key={a} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.activities.includes(a)}
-                onChange={e => {
-                  if (e.target.checked && answers.activities.length < 3) {
-                    update('activities', [...answers.activities, a]);
-                  } else if (!e.target.checked) {
-                    update('activities', answers.activities.filter(x => x !== a));
-                  }
-                }}
-              />
-              <span>{a}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="Which activities do you prefer? (Pick up to 3)">
+        <CheckboxGroup
+          options={ACTIVITIES}
+          selected={answers.activities}
+          onChange={(val: string[]) => update('activities', val)}
+          maxSelections={3}
+        />
+      </StepContainer>
     );
   }
 
-  // ----- Steps 2-? Skills (one per step) -----
+  // Steps 2+: Skills
   if (step >= 2 && step < 2 + SKILL_NAMES.length) {
     const skillIndex = step - 2;
     const skill = SKILL_NAMES[skillIndex];
     const currentRating = answers.skills[skill.id as keyof Answers['skills']];
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Rate your confidence: {skill.label} (1-5)</h2>
-        <div className="flex gap-4 mt-6 justify-center">
-          {[1,2,3,4,5].map(r => (
-            <button
-              key={r}
-              onClick={() => updateSkill(skill.id as keyof Answers['skills'], r)}
-              className={`w-12 h-12 rounded-full text-lg font-bold ${
-                currentRating === r ? 'bg-blue-600 text-white' : 'bg-gray-200'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">
-            {skillIndex === SKILL_NAMES.length - 1 ? 'Next' : 'Next'}
-          </button>
-        </div>
-      </div>
+      <StepContainer title={`Rate your ${skill.label} (1-5)`}>
+        <RatingButtons
+          ratings={[1, 2, 3, 4, 5]}
+          selected={currentRating}
+          onChange={(val: number) => updateSkill(skill.id as keyof Answers['skills'], val)}
+        />
+      </StepContainer>
     );
   }
 
-  // Step after skills: Thinking Style
   let stepOffset = 2 + SKILL_NAMES.length;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Which describes you better?</h2>
-        <div className="mt-4 space-y-2">
-          {THINKING_STYLES.map(opt => (
-            <label key={opt} className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="thinkingStyle"
-                checked={answers.thinkingStyle === opt}
-                onChange={() => update('thinkingStyle', opt)}
-              />
-              <span>{opt}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="Which describes you better?">
+        <RadioGroup
+          options={THINKING_STYLES}
+          selected={answers.thinkingStyle}
+          onChange={(val: string) => update('thinkingStyle', val)}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">How do you learn best? (Pick 1)</h2>
-        <div className="mt-4 space-y-2">
-          {LEARNING_STYLES.map(opt => (
-            <label key={opt} className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="learningStyle"
-                checked={answers.learningStyle === opt}
-                onChange={() => update('learningStyle', opt)}
-              />
-              <span>{opt}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="How do you learn best?">
+        <RadioGroup
+          options={LEARNING_STYLES}
+          selected={answers.learningStyle}
+          onChange={(val: string) => update('learningStyle', val)}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">What motivates you most? (Pick up to 2)</h2>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {MOTIVATIONS.map(m => (
-            <label key={m} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.motivations.includes(m)}
-                onChange={e => {
-                  if (e.target.checked && answers.motivations.length < 2) {
-                    update('motivations', [...answers.motivations, m]);
-                  } else if (!e.target.checked) {
-                    update('motivations', answers.motivations.filter(x => x !== m));
-                  }
-                }}
-              />
-              <span>{m}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="What motivates you most? (Pick up to 2)">
+        <CheckboxGroup
+          options={MOTIVATIONS}
+          selected={answers.motivations}
+          onChange={(val: string[]) => update('motivations', val)}
+          maxSelections={2}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Which matters more to you? (Pick 1)</h2>
-        <div className="mt-4 space-y-2">
-          {WHAT_MATTERS.map(opt => (
-            <label key={opt} className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="whatMatters"
-                checked={answers.whatMattersMore === opt}
-                onChange={() => update('whatMattersMore', opt)}
-              />
-              <span>{opt}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="Which matters more to you?">
+        <RadioGroup
+          options={WHAT_MATTERS}
+          selected={answers.whatMattersMore}
+          onChange={(val: string) => update('whatMattersMore', val)}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Are you comfortable with studying for long hours?</h2>
-        <div className="mt-4 space-y-2">
-          <label className="flex items-center space-x-2">
-            <input type="radio" name="studyHours" checked={answers.studyHours === 'YES'} onChange={() => update('studyHours', 'YES')} />
-            <span>YES</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input type="radio" name="studyHours" checked={answers.studyHours === 'NO'} onChange={() => update('studyHours', 'NO')} />
-            <span>NO</span>
-          </label>
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="Are you comfortable with studying for long hours?">
+        <RadioGroup
+          options={['YES', 'NO']}
+          selected={answers.studyHours}
+          onChange={(val: string) => update('studyHours', val)}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">How far would you like to go academically? (1-5)</h2>
-        <div className="flex gap-4 mt-6 justify-center">
-          {[1,2,3,4,5].map(r => (
-            <button
-              key={r}
-              onClick={() => update('academicLevel', r)}
-              className={`w-12 h-12 rounded-full text-lg font-bold ${
-                answers.academicLevel === r ? 'bg-blue-600 text-white' : 'bg-gray-200'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="How far would you like to go academically?">
+        <RatingButtons
+          ratings={[1, 2, 3, 4, 5]}
+          selected={answers.academicLevel}
+          onChange={(val: number) => update('academicLevel', val)}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">In social situations, you usually prefer: (Pick 1)</h2>
-        <div className="mt-4 space-y-2">
-          {SOCIAL_PREFERENCES.map(opt => (
-            <label key={opt} className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="socialPref"
-                checked={answers.socialPreference === opt}
-                onChange={() => update('socialPreference', opt)}
-              />
-              <span>{opt}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="In social situations, you usually prefer?">
+        <RadioGroup
+          options={SOCIAL_PREFERENCES}
+          selected={answers.socialPreference}
+          onChange={(val: string) => update('socialPreference', val)}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Which work environment fits you best? (Pick up to 2)</h2>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {WORK_ENVIRONMENTS.map(env => (
-            <label key={env} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.workEnvironment.includes(env)}
-                onChange={e => {
-                  if (e.target.checked && answers.workEnvironment.length < 2) {
-                    update('workEnvironment', [...answers.workEnvironment, env]);
-                  } else if (!e.target.checked) {
-                    update('workEnvironment', answers.workEnvironment.filter(x => x !== env));
-                  }
-                }}
-              />
-              <span>{env}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="Which work environment fits you best? (Pick up to 2)">
+        <CheckboxGroup
+          options={WORK_ENVIRONMENTS}
+          selected={answers.workEnvironment}
+          onChange={(val: string[]) => update('workEnvironment', val)}
+          maxSelections={2}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">Which job types interest you? (Choose as many as you want)</h2>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {JOB_TYPES.map(job => (
-            <label key={job} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.jobVision.includes(job)}
-                onChange={e => {
-                  if (e.target.checked) {
-                    update('jobVision', [...answers.jobVision, job]);
-                  } else {
-                    update('jobVision', answers.jobVision.filter(x => x !== job));
-                  }
-                }}
-              />
-              <span>{job}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Back</button>
-          <button onClick={nextStep} className="px-4 py-2 bg-blue-600 text-white rounded">Next</button>
-        </div>
-      </div>
+      <StepContainer title="Which job types interest you?">
+        <CheckboxGroup
+          options={JOB_TYPES}
+          selected={answers.jobVision}
+          onChange={(val: string[]) => update('jobVision', val)}
+          maxSelections={Infinity}
+        />
+      </StepContainer>
     );
   }
 
   stepOffset++;
-  // Last step: Dealbreaker jobs
   if (step === stepOffset) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h2 className="text-xl font-bold">What is a job type you wouldn't want to do? (Choose as many as you want)</h2>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          {JOB_TYPES.map(job => (
-            <label key={job} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.dealbreakerJobs.includes(job)}
-                onChange={e => {
-                  if (e.target.checked) {
-                    update('dealbreakerJobs', [...answers.dealbreakerJobs, job]);
-                  } else {
-                    update('dealbreakerJobs', answers.dealbreakerJobs.filter(x => x !== job));
-                  }
-                }}
-              />
-              <span>{job}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-between">
-          <button onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded">Back</button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
-          >
-            {loading ? 'Calculating...' : 'See My Results'}
-          </button>
+      <div className={containerClasses}>
+        <div className="max-w-2xl mx-auto p-6">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Final Step</span>
+            </div>
+            <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
+              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+            </div>
+          </div>
+
+          <div className={`${cardClasses} p-8`}>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">What job types would you avoid?</h2>
+            <CheckboxGroup
+              options={JOB_TYPES}
+              selected={answers.dealbreakerJobs}
+              onChange={(val: string[]) => update('dealbreakerJobs', val)}
+              maxSelections={Infinity}
+            />
+
+            <div className="mt-8 flex justify-between gap-4">
+              <button onClick={prevStep} className={buttonSecondaryClasses}>
+                ← Back
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className={`flex-1 ${buttonPrimaryClasses}`}
+              >
+                {loading ? '✨ Calculating...' : '🚀 See My Results'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
