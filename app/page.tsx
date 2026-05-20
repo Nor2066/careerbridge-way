@@ -219,8 +219,8 @@ export default function Home() {
 
       return (
         <div className={`mt-8 pt-8 border-t border-gray-200 dark:border-gray-700`}>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Help us improve</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">Leave your feedback to help us improve CareerBridge Way.</p>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Leave your feedback to help us improve CareerBridge Way.</p>
 
           <div className="space-y-6">
             {!user ? (
@@ -238,8 +238,8 @@ export default function Home() {
             ) : null}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">How accurate were your results? *</label>
-              <div className="flex gap-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
+              <div className="flex gap-3 justify-center">
                 {[1, 2, 3, 4, 5].map(r => (
                   <button
                     key={r}
@@ -282,7 +282,7 @@ export default function Home() {
     return (
       <div className={containerClasses}>
         <div className="max-w-2xl mx-auto p-6">
-          <div className="mb-8">
+          <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
               CareerBridge Way
             </h1>
@@ -290,7 +290,7 @@ export default function Home() {
           </div>
 
           <div className={`${cardClasses} p-8 mb-8`}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Top 3 Career Clusters</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
             <ul className="space-y-4">
               {result.top3.map((item: any, idx: number) => (
                 <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
@@ -322,29 +322,28 @@ export default function Home() {
   const StepContainer = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className={containerClasses}>
       <div className="max-w-2xl mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center mb-4">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Step {step + 1} of {2 + SKILL_NAMES.length + 10}
-            </span>
           </div>
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">
+            Step {step + 1} of {2 + SKILL_NAMES.length + 10}
+          </span>
           <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / (2 + SKILL_NAMES.length + 10)) * 100}%` }}></div>
           </div>
         </div>
 
         <div className={`${cardClasses} p-8`}>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{title}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{title}</h2>
           {children}
 
-          <div className="mt-8 flex justify-between gap-4">
+          <div className="mt-8 flex justify-center gap-4">
             {step > 0 && (
               <button onClick={prevStep} className={buttonSecondaryClasses}>
                 ← Back
               </button>
             )}
-            <div className="flex-1"></div>
             <button onClick={nextStep} className={buttonPrimaryClasses}>
               Next →
             </button>
@@ -393,7 +392,7 @@ export default function Home() {
   );
 
   const RatingButtons = ({ ratings, selected, onChange }: any) => (
-    <div className="flex gap-4 justify-center">
+    <div className="flex gap-4 justify-center flex-wrap">
       {ratings.map((r: number) => (
         <button
           key={r}
@@ -579,18 +578,18 @@ export default function Home() {
     return (
       <div className={containerClasses}>
         <div className="max-w-2xl mx-auto p-6">
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+          <div className="mb-8 text-center">
+            <div className="flex items-center justify-center mb-4">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Final Step</span>
             </div>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">Final Step</span>
             <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
 
           <div className={`${cardClasses} p-8`}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">What job types would you avoid?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What job types would you avoid?</h2>
             <CheckboxGroup
               options={JOB_TYPES}
               selected={answers.dealbreakerJobs}
@@ -598,14 +597,14 @@ export default function Home() {
               maxSelections={Infinity}
             />
 
-            <div className="mt-8 flex justify-between gap-4">
+            <div className="mt-8 flex justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>
                 ← Back
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className={`flex-1 ${buttonPrimaryClasses}`}
+                className={`${buttonPrimaryClasses}`}
               >
                 {loading ? '✨ Calculating...' : '🚀 See My Results'}
               </button>
