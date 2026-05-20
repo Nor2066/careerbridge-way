@@ -8,23 +8,58 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const router = useRouter();
 
+  // Password login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     try {
       await signIn(email, password);
-      router.push('/'); // redirect to home after login
+      router.push('/');
     } catch (err) {
       setError('Invalid email or password');
+    }
+  };
+
+  // Magic link login
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        setMessage('Check your email for the login link!');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to send magic link');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="max-w-md mx-auto p-6 mt-20">
       <h1 className="text-2xl font-bold">Login</h1>
+
+      {/* Password form */}
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <input
           type="email"
@@ -47,10 +82,31 @@ export default function LoginPage() {
           required
         />
         {error && <p className="text-red-500">{error}</p>}
+        {message && <p className="text-green-600">{message}</p>}
         <button type="submit" className="w-full p-2 bg-blue-600 text-white rounded">
-          Login
+          Login with Password
         </button>
       </form>
+
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or</span>
+        </div>
+      </div>
+
+      {/* Magic link button */}
+      <button
+        onClick={handleMagicLink}
+        disabled={loading}
+        className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+      >
+        {loading ? 'Sending...' : 'Send Magic Link'}
+      </button>
+
       <p className="mt-4 text-center">
         Don't have an account? <a href="/signup" className="text-blue-600">Sign up</a>
       </p>
