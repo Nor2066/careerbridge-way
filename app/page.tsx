@@ -146,7 +146,7 @@ export default function Home() {
     setLoading(false);
   };
 
-  const containerClasses = "min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800";
+  const containerClasses = "min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4";
   const cardClasses = "bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700";
   const buttonPrimaryClasses = "px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed";
   const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
@@ -270,7 +270,7 @@ export default function Home() {
             <button
               onClick={saveToSupabase}
               disabled={saving}
-              className={buttonPrimaryClasses}
+              className={buttonPrimaryClasses + " w-full"}
             >
               {saving ? 'Saving...' : 'Submit Feedback & Get Results'}
             </button>
@@ -281,7 +281,7 @@ export default function Home() {
 
     return (
       <div className={containerClasses}>
-        <div className="max-w-2xl mx-auto p-6">
+        <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
               CareerBridge Way
@@ -321,7 +321,7 @@ export default function Home() {
 
   const StepContainer = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className={containerClasses}>
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
@@ -338,7 +338,7 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{title}</h2>
           {children}
 
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             {step > 0 && (
               <button onClick={prevStep} className={buttonSecondaryClasses}>
                 ← Back
@@ -577,7 +577,7 @@ export default function Home() {
   if (step === stepOffset) {
     return (
       <div className={containerClasses}>
-        <div className="max-w-2xl mx-auto p-6">
+        <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <div className="flex items-center justify-center mb-4">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
@@ -597,7 +597,7 @@ export default function Home() {
               maxSelections={Infinity}
             />
 
-            <div className="mt-8 flex justify-center gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>
                 ← Back
               </button>
