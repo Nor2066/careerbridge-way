@@ -1,56 +1,7 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { useState } from 'react';
-
-useEffect(() => {
-  const loadProgress = async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`/api/load-progress?userId=${user.id}`);
-      const data = await res.json();
-      if (data.answers && data.step !== undefined) {
-        setAnswers(data.answers);
-        setStep(data.step);
-      }
-    } catch (err) {
-      console.error('Failed to load progress:', err);
-    }
-  };
-  loadProgress();
-}, [user]);
-
-// Inside component
-const { user } = useAuth();
-const saveTimeout = useRef<NodeJS.Timeout | null>(null);
-
-const autoSave = async (currentAnswers: Answers, currentStep: number) => {
-  if (!user) return;
-  try {
-    await fetch('/api/save-progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user.id,
-        answers: currentAnswers,
-        step: currentStep,
-      }),
-    });
-  } catch (err) {
-    console.error('Auto-save failed:', err);
-  }
-};
-
-// Debounced save (waits 1 second after last change)
-useEffect(() => {
-  if (saveTimeout.current) clearTimeout(saveTimeout.current);
-  saveTimeout.current = setTimeout(() => {
-    autoSave(answers, step);
-  }, 1000);
-  return () => {
-    if (saveTimeout.current) clearTimeout(saveTimeout.current);
-  };
-}, [answers, step, user]);
 
 type Answers = {
   subjects: string[];
@@ -161,6 +112,55 @@ export default function Home() {
     dealbreakerJobs: []
   });
 
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Load saved progress when user logs in
+  useEffect(() => {
+    const loadProgress = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch(`/api/load-progress?userId=${user.id}`);
+        const data = await res.json();
+        if (data.answers && data.step !== undefined) {
+          setAnswers(data.answers);
+          setStep(data.step);
+        }
+      } catch (err) {
+        console.error('Failed to load progress:', err);
+      }
+    };
+    loadProgress();
+  }, [user]);
+
+  // Auto-save function
+  const autoSave = async (currentAnswers: Answers, currentStep: number) => {
+    if (!user) return;
+    try {
+      await fetch('/api/save-progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          answers: currentAnswers,
+          step: currentStep,
+        }),
+      });
+    } catch (err) {
+      console.error('Auto-save failed:', err);
+    }
+  };
+
+  // Debounced auto-save
+  useEffect(() => {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      autoSave(answers, step);
+    }, 1000);
+    return () => {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [answers, step, user]);
+
   const update = (field: keyof Answers, value: any) => {
     setAnswers(prev => ({ ...prev, [field]: value }));
   };
@@ -200,6 +200,7 @@ export default function Home() {
   const buttonPrimaryClasses = "px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed";
   const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
 
+  // ----- Result display block (no change needed, keep as is) -----
   if (result) {
     const FeedbackForm = () => {
       const [email, setEmail] = useState('');
@@ -256,10 +257,7 @@ export default function Home() {
               </svg>
             </div>
             <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
-            <button
-              onClick={() => setResult(null)}
-              className={buttonPrimaryClasses}
-            >
+            <button onClick={() => setResult(null)} className={buttonPrimaryClasses}>
               Take Assessment Again
             </button>
           </div>
@@ -267,12 +265,12 @@ export default function Home() {
       }
 
       return (
-        <div className={`mt-8 pt-8 border-t border-gray-200 dark:border-gray-700`}>
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Leave your feedback to help us improve CareerBridge Way.</p>
 
           <div className="space-y-6">
-            {!user ? (
+            {!user && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
                 <input
@@ -284,7 +282,7 @@ export default function Home() {
                   required
                 />
               </div>
-            ) : null}
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
@@ -294,8 +292,8 @@ export default function Home() {
                     key={r}
                     onClick={() => setFeedbackRating(r)}
                     className={`w-12 h-12 rounded-full font-bold transition-all ${
-                      feedbackRating === r 
-                        ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' 
+                      feedbackRating === r
+                        ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                     }`}
                   >
@@ -316,11 +314,7 @@ export default function Home() {
               />
             </div>
 
-            <button
-              onClick={saveToSupabase}
-              disabled={saving}
-              className={buttonPrimaryClasses + " w-full"}
-            >
+            <button onClick={saveToSupabase} disabled={saving} className={buttonPrimaryClasses + " w-full"}>
               {saving ? 'Saving...' : 'Submit Feedback & Get Results'}
             </button>
           </div>
@@ -368,6 +362,7 @@ export default function Home() {
     );
   }
 
+  // ----- Helper components for steps -----
   const StepContainer = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className={containerClasses}>
       <div className="w-full max-w-2xl">
@@ -458,7 +453,7 @@ export default function Home() {
     </div>
   );
 
-  // Step 0: Subjects
+  // ----- Step rendering -----
   if (step === 0) {
     return (
       <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
@@ -472,7 +467,6 @@ export default function Home() {
     );
   }
 
-  // Step 1: Activities
   if (step === 1) {
     return (
       <StepContainer title="Which activities do you prefer? (Pick up to 3)">
@@ -486,7 +480,6 @@ export default function Home() {
     );
   }
 
-  // Steps 2+: Skills
   if (step >= 2 && step < 2 + SKILL_NAMES.length) {
     const skillIndex = step - 2;
     const skill = SKILL_NAMES[skillIndex];
@@ -503,6 +496,7 @@ export default function Home() {
   }
 
   let stepOffset = 2 + SKILL_NAMES.length;
+
   if (step === stepOffset) {
     return (
       <StepContainer title="Which describes you better?">
@@ -623,46 +617,43 @@ export default function Home() {
   }
 
   stepOffset++;
-  if (step === stepOffset) {
-    return (
-      <div className={containerClasses}>
-        <div className="w-full max-w-2xl">
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
-            </div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">Final Step</span>
-            <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
-            </div>
+  // Final step: dealbreakers
+  return (
+    <div className={containerClasses}>
+      <div className="w-full max-w-2xl">
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
           </div>
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">Final Step</span>
+          <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+          </div>
+        </div>
 
-          <div className={`${cardClasses} p-8`}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What job types would you avoid?</h2>
-            <CheckboxGroup
-              options={JOB_TYPES}
-              selected={answers.dealbreakerJobs}
-              onChange={(val: string[]) => update('dealbreakerJobs', val)}
-              maxSelections={Infinity}
-            />
+        <div className={`${cardClasses} p-8`}>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What job types would you avoid?</h2>
+          <CheckboxGroup
+            options={JOB_TYPES}
+            selected={answers.dealbreakerJobs}
+            onChange={(val: string[]) => update('dealbreakerJobs', val)}
+            maxSelections={Infinity}
+          />
 
-            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-              <button onClick={prevStep} className={buttonSecondaryClasses}>
-                ← Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className={`${buttonPrimaryClasses}`}
-              >
-                {loading ? '✨ Calculating...' : '🚀 See My Results'}
-              </button>
-            </div>
+          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+            <button onClick={prevStep} className={buttonSecondaryClasses}>
+              ← Back
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className={buttonPrimaryClasses}
+            >
+              {loading ? '✨ Calculating...' : '🚀 See My Results'}
+            </button>
           </div>
         </div>
       </div>
-    );
-  }
-
-  return <div>Unknown step</div>;
+    </div>
+  );
 }
