@@ -3,6 +3,55 @@
 import { useAuth } from '@/lib/AuthContext';
 import { useState } from 'react';
 
+useEffect(() => {
+  const loadProgress = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/load-progress?userId=${user.id}`);
+      const data = await res.json();
+      if (data.answers && data.step !== undefined) {
+        setAnswers(data.answers);
+        setStep(data.step);
+      }
+    } catch (err) {
+      console.error('Failed to load progress:', err);
+    }
+  };
+  loadProgress();
+}, [user]);
+
+// Inside component
+const { user } = useAuth();
+const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+const autoSave = async (currentAnswers: Answers, currentStep: number) => {
+  if (!user) return;
+  try {
+    await fetch('/api/save-progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        answers: currentAnswers,
+        step: currentStep,
+      }),
+    });
+  } catch (err) {
+    console.error('Auto-save failed:', err);
+  }
+};
+
+// Debounced save (waits 1 second after last change)
+useEffect(() => {
+  if (saveTimeout.current) clearTimeout(saveTimeout.current);
+  saveTimeout.current = setTimeout(() => {
+    autoSave(answers, step);
+  }, 1000);
+  return () => {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+  };
+}, [answers, step, user]);
+
 type Answers = {
   subjects: string[];
   activities: string[];
