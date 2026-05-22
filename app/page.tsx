@@ -84,55 +84,112 @@ const JOB_TYPES = [
   'Education role', 'Creative role', 'Social impact role', 'Analytical/data role'
 ];
 
+// Default empty answers (used for reset)
+const initialAnswers: Answers = {
+  subjects: [],
+  activities: [],
+  skills: {
+    logicalReasoning: 3, creativity: 3, communication: 3, workingWithData: 3,
+    manualSkills: 3, teamwork: 3, criticalThinking: 3, timeManagement: 3,
+    uncertaintyComfort: 3, financialRiskComfort: 3, pressureTolerance: 3,
+    empathy: 3, artistic: 3, mechanical: 3, organization: 3, adaptability: 3,
+    physicalStamina: 3
+  },
+  thinkingStyle: '',
+  learningStyle: '',
+  motivations: [],
+  whatMattersMore: '',
+  studyHours: '',
+  academicLevel: 3,
+  socialPreference: '',
+  workEnvironment: [],
+  jobVision: [],
+  dealbreakerJobs: []
+};
+
 export default function Home() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [submittedAnswers, setSubmittedAnswers] = useState<any>(null);
-  const [answers, setAnswers] = useState<Answers>({
-    subjects: [],
-    activities: [],
-    skills: {
-      logicalReasoning: 3, creativity: 3, communication: 3, workingWithData: 3,
-      manualSkills: 3, teamwork: 3, criticalThinking: 3, timeManagement: 3,
-      uncertaintyComfort: 3, financialRiskComfort: 3, pressureTolerance: 3,
-      empathy: 3, artistic: 3, mechanical: 3, organization: 3, adaptability: 3,
-      physicalStamina: 3
-    },
-    thinkingStyle: '',
-    learningStyle: '',
-    motivations: [],
-    whatMattersMore: '',
-    studyHours: '',
-    academicLevel: 3,
-    socialPreference: '',
-    workEnvironment: [],
-    jobVision: [],
-    dealbreakerJobs: []
-  });
+  const [answers, setAnswers] = useState<Answers>(initialAnswers);
 
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const loadedRef = useRef(false);
+  const isReadyRef = useRef(false);
+  const savedResultRef = useRef(false);
+
+  // Reset everything (local state + delete saved progress in DB)
+  const resetAssessment = async () => {
+    setStep(0);
+    setAnswers(initialAnswers);
+    setResult(null);
+    setSubmittedAnswers(null);
+    if (user) {
+      // Clear saved progress in database
+      await fetch('/api/save-progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          answers: initialAnswers,
+          step: 0,
+        }),
+      });
+    }
+    // Reset refs
+    loadedRef.current = false;
+    isReadyRef.current = false;
+  };
 
   // Load saved progress when user logs in
   useEffect(() => {
+    let isMounted = true;
+
     const loadProgress = async () => {
       if (!user) return;
+      if (loadedRef.current) {
+        console.log("⏭️ Already loaded – skipping");
+        return;
+      }
+
+      console.log("🟢 Loading progress for user:", user.id);
       try {
         const res = await fetch(`/api/load-progress?userId=${user.id}`);
         const data = await res.json();
-        if (data.answers && data.step !== undefined) {
-          setAnswers(data.answers);
-          setStep(data.step);
+        console.log("📦 Loaded data from API:", data);
+
+        if (data.answers && data.step !== undefined && data.step !== null) {
+          if (isMounted) {
+            console.log("✅ Restoring answers and step:", data.step);
+            setAnswers(data.answers);
+            setStep(data.step);
+            await fetch('/api/save-progress', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: user.id,
+                answers: data.answers,
+                step: data.step,
+              }),
+            });
+          }
+        } else {
+          console.log("⚠️ No saved progress found – starting fresh");
         }
+        loadedRef.current = true;
+        isReadyRef.current = true;
       } catch (err) {
-        console.error('Failed to load progress:', err);
+        console.error('❌ Failed to load progress:', err);
+        isReadyRef.current = true;
       }
     };
+
     loadProgress();
+    return () => { isMounted = false; };
   }, [user]);
 
-  // Auto-save function
   const autoSave = async (currentAnswers: Answers, currentStep: number) => {
     if (!user) return;
     try {
@@ -150,16 +207,27 @@ export default function Home() {
     }
   };
 
-  // Debounced auto-save
   useEffect(() => {
+    if (!isReadyRef.current) {
+      console.log("⏸️ Auto-save waiting for restore to complete...");
+      return;
+    }
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
+      console.log("💾 Auto‑saving answers and step:", step);
       autoSave(answers, step);
     }, 1000);
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
   }, [answers, step, user]);
+
+  useEffect(() => {
+    if (!user) {
+      loadedRef.current = false;
+      isReadyRef.current = false;
+    }
+  }, [user]);
 
   const update = (field: keyof Answers, value: any) => {
     setAnswers(prev => ({ ...prev, [field]: value }));
@@ -182,9 +250,7 @@ export default function Home() {
       studyHours: answers.studyHours === 'YES',
       academicLevel: Number(answers.academicLevel),
     };
-
     setSubmittedAnswers(payload);
-
     const res = await fetch('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -200,7 +266,6 @@ export default function Home() {
   const buttonPrimaryClasses = "px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed";
   const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
 
-  // ----- Result display block (no change needed, keep as is) -----
   if (result) {
     const FeedbackForm = () => {
       const [email, setEmail] = useState('');
@@ -236,6 +301,17 @@ export default function Home() {
             body: JSON.stringify(payload),
           });
           if (res.ok) {
+            // Also save the final results to user_results table
+            await fetch('/api/save-results', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: user?.id,
+                topClusters: result.top3,
+                rawScores: result.rawScores,
+                answers: submittedAnswers,
+              }),
+            });
             setSaved(true);
           } else {
             const responseData = await res.json();
@@ -257,7 +333,7 @@ export default function Home() {
               </svg>
             </div>
             <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
-            <button onClick={() => setResult(null)} className={buttonPrimaryClasses}>
+            <button onClick={resetAssessment} className={buttonPrimaryClasses}>
               Take Assessment Again
             </button>
           </div>
@@ -268,7 +344,6 @@ export default function Home() {
         <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Leave your feedback to help us improve CareerBridge Way.</p>
-
           <div className="space-y-6">
             {!user && (
               <div>
@@ -283,11 +358,10 @@ export default function Home() {
                 />
               </div>
             )}
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
               <div className="flex gap-3 justify-center">
-                {[1, 2, 3, 4, 5].map(r => (
+                {[1,2,3,4,5].map(r => (
                   <button
                     key={r}
                     onClick={() => setFeedbackRating(r)}
@@ -302,7 +376,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
               <textarea
@@ -313,7 +386,6 @@ export default function Home() {
                 placeholder="What did you think? Any suggestions?"
               />
             </div>
-
             <button onClick={saveToSupabase} disabled={saving} className={buttonPrimaryClasses + " w-full"}>
               {saving ? 'Saving...' : 'Submit Feedback & Get Results'}
             </button>
@@ -326,12 +398,9 @@ export default function Home() {
       <div className={containerClasses}>
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              CareerBridge Way
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
             <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
           </div>
-
           <div className={`${cardClasses} p-8 mb-8`}>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
             <ul className="space-y-4">
@@ -353,7 +422,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
           <div className={`${cardClasses} p-8`}>
             <FeedbackForm />
           </div>
@@ -362,7 +430,7 @@ export default function Home() {
     );
   }
 
-  // ----- Helper components for steps -----
+  // ---- Step components (unchanged) ----
   const StepContainer = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className={containerClasses}>
       <div className="w-full max-w-2xl">
@@ -377,20 +445,14 @@ export default function Home() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / (2 + SKILL_NAMES.length + 10)) * 100}%` }}></div>
           </div>
         </div>
-
         <div className={`${cardClasses} p-8`}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{title}</h2>
           {children}
-
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             {step > 0 && (
-              <button onClick={prevStep} className={buttonSecondaryClasses}>
-                ← Back
-              </button>
+              <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
             )}
-            <button onClick={nextStep} className={buttonPrimaryClasses}>
-              Next →
-            </button>
+            <button onClick={nextStep} className={buttonPrimaryClasses}>Next →</button>
           </div>
         </div>
       </div>
@@ -453,7 +515,7 @@ export default function Home() {
     </div>
   );
 
-  // ----- Step rendering -----
+  // ----- Step rendering (unchanged) -----
   if (step === 0) {
     return (
       <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
@@ -487,7 +549,7 @@ export default function Home() {
     return (
       <StepContainer title={`Rate your ${skill.label} (1-5)`}>
         <RatingButtons
-          ratings={[1, 2, 3, 4, 5]}
+          ratings={[1,2,3,4,5]}
           selected={currentRating}
           onChange={(val: number) => updateSkill(skill.id as keyof Answers['skills'], val)}
         />
@@ -567,7 +629,7 @@ export default function Home() {
     return (
       <StepContainer title="How far would you like to go academically?">
         <RatingButtons
-          ratings={[1, 2, 3, 4, 5]}
+          ratings={[1,2,3,4,5]}
           selected={answers.academicLevel}
           onChange={(val: number) => update('academicLevel', val)}
         />
@@ -630,7 +692,6 @@ export default function Home() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
           </div>
         </div>
-
         <div className={`${cardClasses} p-8`}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What job types would you avoid?</h2>
           <CheckboxGroup
@@ -639,16 +700,9 @@ export default function Home() {
             onChange={(val: string[]) => update('dealbreakerJobs', val)}
             maxSelections={Infinity}
           />
-
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <button onClick={prevStep} className={buttonSecondaryClasses}>
-              ← Back
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className={buttonPrimaryClasses}
-            >
+            <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
+            <button onClick={handleSubmit} disabled={loading} className={buttonPrimaryClasses}>
               {loading ? '✨ Calculating...' : '🚀 See My Results'}
             </button>
           </div>
