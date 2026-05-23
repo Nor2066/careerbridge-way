@@ -120,14 +120,13 @@ export default function Home() {
   const isReadyRef = useRef(false);
   const savedResultRef = useRef(false);
 
-  // Reset everything (local state + delete saved progress in DB)
+  // Reset everything
   const resetAssessment = async () => {
     setStep(0);
     setAnswers(initialAnswers);
     setResult(null);
     setSubmittedAnswers(null);
     if (user) {
-      // Clear saved progress in database
       await fetch('/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -138,12 +137,11 @@ export default function Home() {
         }),
       });
     }
-    // Reset refs
     loadedRef.current = false;
     isReadyRef.current = false;
   };
 
-  // Load saved progress when user logs in
+  // Load saved progress
   useEffect(() => {
     let isMounted = true;
 
@@ -207,6 +205,7 @@ export default function Home() {
     }
   };
 
+  // Debounced auto-save
   useEffect(() => {
     if (!isReadyRef.current) {
       console.log("⏸️ Auto-save waiting for restore to complete...");
@@ -222,6 +221,7 @@ export default function Home() {
     };
   }, [answers, step, user]);
 
+  // Reset flags on logout
   useEffect(() => {
     if (!user) {
       loadedRef.current = false;
@@ -262,10 +262,11 @@ export default function Home() {
   };
 
   const containerClasses = "min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4";
-  const cardClasses = "bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700";
-  const buttonPrimaryClasses = "px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed";
+  const cardClasses = "card p-8";   // uses CSS variables from style editor + fixed padding
+  const buttonPrimaryClasses = "btn-primary";
   const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
 
+  // ---- Result display (with card and btn-primary) ----
   if (result) {
     const FeedbackForm = () => {
       const [email, setEmail] = useState('');
@@ -301,7 +302,6 @@ export default function Home() {
             body: JSON.stringify(payload),
           });
           if (res.ok) {
-            // Also save the final results to user_results table
             await fetch('/api/save-results', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -401,7 +401,7 @@ export default function Home() {
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
             <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
           </div>
-          <div className={`${cardClasses} p-8 mb-8`}>
+          <div className={`${cardClasses} mb-8`}>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
             <ul className="space-y-4">
               {result.top3.map((item: any, idx: number) => (
@@ -422,7 +422,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div className={`${cardClasses} p-8`}>
+          <div className={cardClasses}>
             <FeedbackForm />
           </div>
         </div>
@@ -430,7 +430,7 @@ export default function Home() {
     );
   }
 
-  // ---- Step components (unchanged) ----
+  // ---- Step components ----
   const StepContainer = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className={containerClasses}>
       <div className="w-full max-w-2xl">
@@ -445,14 +445,18 @@ export default function Home() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / (2 + SKILL_NAMES.length + 10)) * 100}%` }}></div>
           </div>
         </div>
-        <div className={`${cardClasses} p-8`}>
+        <div className={cardClasses}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{title}</h2>
           {children}
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             {step > 0 && (
-              <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
+              <button onClick={prevStep} className={buttonSecondaryClasses}>
+                ← Back
+              </button>
             )}
-            <button onClick={nextStep} className={buttonPrimaryClasses}>Next →</button>
+            <button onClick={nextStep} className={buttonPrimaryClasses}>
+              Next →
+            </button>
           </div>
         </div>
       </div>
@@ -692,7 +696,7 @@ export default function Home() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
           </div>
         </div>
-        <div className={`${cardClasses} p-8`}>
+        <div className={cardClasses}>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What job types would you avoid?</h2>
           <CheckboxGroup
             options={JOB_TYPES}

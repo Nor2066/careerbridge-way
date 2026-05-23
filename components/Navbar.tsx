@@ -15,7 +15,7 @@ export default function Navbar() {
             <>
               <Link href="/history" className="hover:underline">History</Link>
               <span>{user.email}</span>
-              <button onClick={() => signOut()} className="bg-red-600 px-3 py-1 rounded">
+              <button onClick={() => signOut()} className="btn-secondary">
                 Logout
               </button>
             </>

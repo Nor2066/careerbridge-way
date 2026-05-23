@@ -19,19 +19,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Helper to get session and handle errors
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Session error:', error);
+          // If the error is about an invalid refresh token, sign out
+          if (error.message?.includes('Invalid Refresh Token') || error.status === 400) {
+            await supabase.auth.signOut();
+            setUser(null);
+          }
+        } else {
+          setUser(session?.user ?? null);
+        }
+      } catch (err) {
+        console.error('Unexpected auth error:', err);
+        // Force sign out to clear corrupted session
+        await supabase.auth.signOut();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initSession();
 
     // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => listener?.subscription.unsubscribe();
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {

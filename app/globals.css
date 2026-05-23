@@ -1,169 +1,101 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --accent: #10b981;
-  --accent-light: #34d399;
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-accent: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  --gradient-cool: linear-gradient(135deg, #30b0fe 0%, #4834d4 100%);
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
+  /* Background & Cards */
+  --body-bg-start: #f9fafb;
+  --body-bg-end: #f1f5f9;
+  --card-bg: #ffffff;
+  --card-radius: 1rem;
+  --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
+  /* Primary buttons (Next, Submit, etc.) */
+  --btn-primary-bg-start: #4f46e5;
+  --btn-primary-bg-end: #9333ea;
+  --btn-primary-text: #ffffff;
+  --btn-primary-px: 1rem;
+  --btn-primary-py: 0.5rem;
+  --btn-primary-radius: 0.5rem;
+  --btn-primary-font-size: 0.875rem;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-    --primary: #818cf8;
-    --primary-dark: #6366f1;
-    --accent: #10b981;
-    --accent-light: #34d399;
-  }
-}
+  /* Secondary buttons (Back) */
+  --btn-secondary-bg: #e5e7eb;
+  --btn-secondary-text: #1f2937;
+  --btn-secondary-px: 1rem;
+  --btn-secondary-py: 0.5rem;
+  --btn-secondary-radius: 0.5rem;
+  --btn-secondary-font-size: 0.875rem;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+  /* Text styles */
+  --heading1-size: 2.25rem;
+  --heading1-color: #111827;
+  --heading2-size: 1.875rem;
+  --heading2-color: #111827;
+  --body-text-color: #374151;
+  --label-text-color: #4b5563;
+  --result-text-color: #1f2937;
 
-html {
-  scroll-behavior: smooth;
+  /* Global base */
+  --global-font-size: 1rem;
 }
 
 body {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e0e7ff 100%);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  line-height: 1.6;
-  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, var(--body-bg-start), var(--body-bg-end));
+  color: var(--body-text-color);
+  font-size: var(--global-font-size);
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #1e1b4b 100%);
-  }
+.card {
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
 }
 
-/* Smooth transitions */
-button, input, textarea, select {
-  transition: all 0.3s ease;
+/* Primary button */
+.btn-primary {
+  padding: var(--btn-primary-py) var(--btn-primary-px);
+  border-radius: var(--btn-primary-radius);
+  font-size: var(--btn-primary-font-size);
+  background: linear-gradient(135deg, var(--btn-primary-bg-start), var(--btn-primary-bg-end));
+  color: var(--btn-primary-text);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Secondary button */
+.btn-secondary {
+  padding: var(--btn-secondary-py) var(--btn-secondary-px);
+  border-radius: var(--btn-secondary-radius);
+  font-size: var(--btn-secondary-font-size);
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
+/* Headings */
+h1 {
+  font-size: var(--heading1-size);
+  color: var(--heading1-color);
+}
+h2 {
+  font-size: var(--heading2-size);
+  color: var(--heading2-color);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 4px;
+/* Labels (for form fields) */
+label {
+  color: var(--label-text-color);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark);
-}
-
-/* Utility classes */
-.gradient-primary {
-  background: var(--gradient-primary);
-}
-
-.gradient-accent {
-  background: var(--gradient-accent);
-}
-
-.gradient-warm {
-  background: var(--gradient-warm);
-}
-
-.gradient-cool {
-  background: var(--gradient-cool);
-}
-
-.text-gradient {
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Animated background elements */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes pulse-slow {
-  0%, 100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 4s ease-in-out infinite;
-}
-
-/* Blob decorations */
-.blob {
-  position: absolute;
-  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-  animation: float 8s ease-in-out infinite;
-}
-
-.blob-1 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.2) 100%);
-  top: -100px;
-  left: -50px;
-}
-
-.blob-2 {
-  width: 200px;
-  height: 200px;
-  background: linear-gradient(135deg, rgba(240, 147, 251, 0.3) 0%, rgba(245, 87, 108, 0.2) 100%);
-  bottom: -50px;
-  right: -30px;
-  animation-delay: 2s;
-}
-
-.blob-3 {
-  width: 250px;
-  height: 250px;
-  background: linear-gradient(135deg, rgba(48, 176, 254, 0.3) 0%, rgba(72, 52, 212, 0.2) 100%);
-  top: 50%;
-  right: -100px;
-  animation-delay: 4s;
+/* Result text (top clusters percentages, etc.) */
+.result-text {
+  color: var(--result-text-color);
 }
