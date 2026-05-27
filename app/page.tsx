@@ -39,53 +39,137 @@ type Answers = {
     profile: string;
     subAnswers: any;
   };
+  // New fields
+  dreamJob: string;
+  topValues: string;
+  fulfillingProject: string;
+  pastConsiderations: string;
+  salaryAim: string;
+  relocateWillingness: string;
+  remoteWork: string;
+  workSchedule: string;
+  jobSecurity: string;
+  travelPreference: string;
+  teamEnvironment: string;
+  criticismHandling: string;
 };
 
+// ---------- Clarified subject options ----------
 const SUBJECTS = [
-  'Mathematics', 'Sciences', 'Technology / Computing', 'Business / Economics',
-  'Social Sciences', 'Arts / Humanities', 'Creative Fields', 'Languages'
+  'Mathematics',
+  'Sciences',
+  'Technology / Computing',
+  'Business / Economics',
+  'Social Sciences (psychology, sociology, politics)',
+  'Arts / Humanities (history, literature, art)',
+  'Creative Fields (art, design, writing)',
+  'Languages'
 ];
 
+// ---------- Clarified activity options ----------
 const ACTIVITIES = [
-  'Solving problems', 'Experiments / Hands-on', 'Designing / Creating',
-  'Reading / Analyzing', 'Helping people', 'Building / Using tech',
-  'Leading / Organizing', 'Coding / Programming', 'Making / Building things',
-  'Teaching / Explaining', 'Advocating / Raising awareness'
+  'Solving problems',
+  'Experiments / Hands-on (like science labs or building things)',
+  'Designing / Creating',
+  'Reading / Analyzing (reading and thinking deeply)',
+  'Helping people',
+  'Building / Using tech (computers, phones, apps)',
+  'Leading / Organizing (being in charge or planning)',
+  'Coding / Programming (writing code for computers or apps)',
+  'Making / Building things (woodworking, repairs, crafts)',
+  'Teaching / Explaining',
+  'Advocating / Raising awareness (speaking up for a cause, e.g. climate change, bullying)'
 ];
 
+// ---------- Skill names with examples ----------
 const SKILL_NAMES = [
-  { id: 'logicalReasoning', label: 'Logical Reasoning' },
-  { id: 'creativity', label: 'Creativity' },
-  { id: 'communication', label: 'Communication' },
-  { id: 'workingWithData', label: 'Working with Data' },
-  { id: 'manualSkills', label: 'Manual Skills' },
-  { id: 'teamwork', label: 'Teamwork' },
-  { id: 'criticalThinking', label: 'Critical Thinking' },
-  { id: 'timeManagement', label: 'Time Management' },
-  { id: 'uncertaintyComfort', label: 'Uncertainty Comfort' },
-  { id: 'financialRiskComfort', label: 'Financial Risk Comfort' },
-  { id: 'pressureTolerance', label: 'Pressure Tolerance' },
-  { id: 'empathy', label: 'Empathy / Emotional Intelligence' },
-  { id: 'artistic', label: 'Artistic / Visual Thinking' },
-  { id: 'mechanical', label: 'Mechanical / Spatial Reasoning' },
-  { id: 'organization', label: 'Organization / Attention to Detail' },
-  { id: 'adaptability', label: 'Adaptability / Flexibility' },
-  { id: 'physicalStamina', label: 'Physical Stamina / Endurance' }
+  { id: 'logicalReasoning', label: 'Logical Reasoning (solving puzzles, finding patterns)' },
+  { id: 'creativity', label: 'Creativity (coming up with new ideas)' },
+  { id: 'communication', label: 'Communication (talking, writing, presenting)' },
+  { id: 'workingWithData', label: 'Working with Data (using numbers, charts, spreadsheets)' },
+  { id: 'manualSkills', label: 'Manual Skills (fixing things, using tools, crafts)' },
+  { id: 'teamwork', label: 'Teamwork (working well with others)' },
+  { id: 'criticalThinking', label: 'Critical Thinking (thinking carefully before deciding)' },
+  { id: 'timeManagement', label: 'Time Management (planning your time, meeting deadlines)' },
+  { id: 'uncertaintyComfort', label: 'Uncertainty Comfort (being okay when you don’t know the answer)' },
+  { id: 'financialRiskComfort', label: 'Financial Risk Comfort (being okay with money risks, like investing)' },
+  { id: 'pressureTolerance', label: 'Pressure Tolerance (handling stress and tight deadlines)' },
+  { id: 'empathy', label: 'Empathy / Emotional Intelligence (understanding how others feel)' },
+  { id: 'artistic', label: 'Artistic / Visual Thinking (thinking in pictures, design)' },
+  { id: 'mechanical', label: 'Mechanical / Spatial Reasoning (understanding how things fit together, like puzzles or building)' },
+  { id: 'organization', label: 'Organization / Attention to Detail (keeping things tidy, noticing small things)' },
+  { id: 'adaptability', label: 'Adaptability / Flexibility (adjusting to change easily)' },
+  { id: 'physicalStamina', label: 'Physical Stamina / Endurance (staying active for long periods)' }
 ];
 
-const THINKING_STYLES = ['Right/Wrong', 'Open-ended', 'Mix'];
-const LEARNING_STYLES = ['Hands-on', 'Reading & Theory', 'Visual / Creative', 'Group Discussion', 'Independent Study'];
-const MOTIVATIONS = [
-  'High Earning', 'Helping / Impact', 'Creativity', 'Stability', 'Research',
-  'Working with Tech', 'Leadership', 'Self-Realization', 'Creation (Physical/Mental)'
+// ---------- Clarified thinking style options ----------
+const THINKING_STYLES = [
+  'I like clear answers that are either right or wrong (like math problems)',
+  'I like open‑ended questions with many possible answers (like creative writing)',
+  'A mix of both'
 ];
-const WHAT_MATTERS = ['Work-Life Balance', 'Career Growth', 'Meaningful Impact', 'Financial Independence', 'Autonomy'];
+
+// ---------- Learning style options (clarified) ----------
+const LEARNING_STYLES = [
+  'Hands-on',
+  'Reading & Theory (learning from books, not hands‑on)',
+  'Visual / Creative',
+  'Group Discussion',
+  'Independent Study'
+];
+
+// ---------- Clarified motivations ----------
+const MOTIVATIONS = [
+  'High Earning',
+  'Helping / Impact',
+  'Creativity',
+  'Stability',
+  'Research',
+  'Working with Tech',
+  'Leadership',
+  'Personal growth and becoming the best version of yourself',
+  'Creating things (art, buildings, inventions, ideas)'
+];
+
+// ---------- Clarified "What matters more" options ----------
+const WHAT_MATTERS = [
+  'Work-Life Balance',
+  'Career Growth (opportunities to move up and earn more)',
+  'Meaningful Impact (making a difference in the world)',
+  'Financial Independence (having enough money to not rely on others)',
+  'Autonomy (freedom to make your own decisions)'
+];
+
 const SOCIAL_PREFERENCES = ['Energized by Many People', 'Small Groups', 'One-on-One', 'Working Alone'];
-const WORK_ENVIRONMENTS = ['Structured', 'Fast-Paced', 'Independent', 'Collaborative', 'Competitive', 'Calm'];
+
+// ---------- Clarified work environment options ----------
+const WORK_ENVIRONMENTS = [
+  'Structured (clear rules and schedules)',
+  'Fast-Paced',
+  'Independent',
+  'Collaborative (working closely with a team)',
+  'Competitive',
+  'Calm'
+];
+
+// ---------- Updated JOB_TYPES with new clusters ----------
 const JOB_TYPES = [
-  'Research job', 'Healthcare job', 'Entrepreneurial', 'Hands-on trade',
-  'Transport / logistics', 'Business role', 'IT role', 'Engineering role',
-  'Education role', 'Creative role', 'Social impact role', 'Analytical/data role'
+  'Research job',
+  'Healthcare job',
+  'Entrepreneurial',
+  'Hands-on trade',
+  'Transport / logistics',
+  'Business role',
+  'IT role',
+  'Engineering role',
+  'Education role',
+  'Creative role',
+  'Social impact role',
+  'Analytical/data role',
+  // New clusters
+  'Legal / Justice',
+  'Sales / Marketing',
+  'Hospitality / Tourism'
 ];
 
 const initialAnswers: Answers = {
@@ -108,7 +192,20 @@ const initialAnswers: Answers = {
   workEnvironment: [],
   jobVision: [],
   dealbreakerJobs: [],
-  careerContext: { profile: '', subAnswers: {} }
+  careerContext: { profile: '', subAnswers: {} },
+  // New fields default values
+  dreamJob: '',
+  topValues: '',
+  fulfillingProject: '',
+  pastConsiderations: '',
+  salaryAim: '',
+  relocateWillingness: '',
+  remoteWork: '',
+  workSchedule: '',
+  jobSecurity: '',
+  travelPreference: '',
+  teamEnvironment: '',
+  criticismHandling: '',
 };
 
 export default function Home() {
@@ -123,16 +220,32 @@ export default function Home() {
   const loadedRef = useRef(false);
   const isReadyRef = useRef(false);
 
-  // Step constants – must be defined before hooks that use them
+  // Step constants – adjusted for new steps (original steps count unchanged, but we add many new steps after context)
   const originalStepsCount = 2 + SKILL_NAMES.length + 10; // 2+17+10=29
-  const totalSteps = originalStepsCount + 5; // 34
+  // New steps: profile (1) + 3 follow‑ups (3) + 12 new questions (12) + final submit (1) = 17
+  const newStepsCount = 17;
+  const totalSteps = originalStepsCount + newStepsCount;
   let stepOffset = 2 + SKILL_NAMES.length;
   const dealbreakerStep = originalStepsCount - 1; // 28
   const profileStep = dealbreakerStep + 1; // 29
   const followUp1Step = profileStep + 1; // 30
   const followUp2Step = followUp1Step + 1; // 31
   const followUp3Step = followUp2Step + 1; // 32
-  const finalSubmitStep = followUp3Step + 1; // 33
+  // After follow‑ups, we add the 12 new questions as individual steps
+  const newQuestionsStart = followUp3Step + 1; // 33
+  const salaryStep = newQuestionsStart;
+  const relocateStep = salaryStep + 1;
+  const remoteStep = relocateStep + 1;
+  const scheduleStep = remoteStep + 1;
+  const securityStep = scheduleStep + 1;
+  const travelStep = securityStep + 1;
+  const teamStep = travelStep + 1;
+  const criticismStep = teamStep + 1;
+  const dreamJobStep = criticismStep + 1;
+  const topValuesStep = dreamJobStep + 1;
+  const fulfillingStep = topValuesStep + 1;
+  const pastConsiderationsStep = fulfillingStep + 1;
+  const finalSubmitStep = pastConsiderationsStep + 1; // 45
 
   const clampStep = (s: number) => Math.min(Math.max(s, 0), finalSubmitStep);
   const nextStep = () => setStep(s => clampStep(s + 1));
@@ -216,7 +329,7 @@ export default function Home() {
     }
   }, [user]);
 
-  // Safety redirect for follow-up steps (must be before any conditional returns)
+  // Safety redirect for follow-up steps
   const profile = answers.careerContext?.profile || '';
   useEffect(() => {
     if ((step === followUp1Step || step === followUp2Step || step === followUp3Step) && !profile) {
@@ -251,7 +364,6 @@ export default function Home() {
   const buttonPrimaryClasses = "btn-primary";
   const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
 
-  // ----- Helper components (must be defined before step rendering) -----
   const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
     <div className={containerClasses}>
       <div className="w-full max-w-2xl">
@@ -271,9 +383,7 @@ export default function Home() {
           {children}
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             {step > 0 && <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>}
-            <button onClick={nextStep} disabled={!isValid} className={buttonPrimaryClasses}>
-              Next →
-            </button>
+            <button onClick={nextStep} disabled={!isValid} className={buttonPrimaryClasses}>Next →</button>
           </div>
         </div>
       </div>
@@ -424,7 +534,7 @@ export default function Home() {
     );
   }
 
-  // ---------- STEP RENDERING (all conditional returns after hooks) ----------
+  // ---------- ORIGINAL STEP RENDERING (with clarified text) ----------
   if (step === 0) {
     return (
       <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
@@ -445,6 +555,9 @@ export default function Home() {
     const currentRating = answers.skills[skill.id as keyof Answers['skills']];
     return (
       <StepContainer title={`Rate your ${skill.label} (1-5)`}>
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">
+          1 = Not confident at all &nbsp;|&nbsp; 3 = Moderate &nbsp;|&nbsp; 5 = Very confident
+        </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={currentRating} onChange={(val: number) => updateSkill(skill.id as keyof Answers['skills'], val)} />
       </StepContainer>
     );
@@ -459,17 +572,33 @@ export default function Home() {
   stepOffset++;
   if (step === stepOffset) return (<StepContainer title="Which matters more to you?"><RadioGroup options={WHAT_MATTERS} selected={answers.whatMattersMore} onChange={(val: string) => update('whatMattersMore', val)} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="Are you comfortable with studying for long hours?"><RadioGroup options={['YES', 'NO']} selected={answers.studyHours} onChange={(val: string) => update('studyHours', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title="Are you willing to study or work for long hours?"><RadioGroup options={['YES', 'NO']} selected={answers.studyHours} onChange={(val: string) => update('studyHours', val)} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="How far would you like to go academically?"><RatingButtons ratings={[1,2,3,4,5]} selected={answers.academicLevel} onChange={(val: number) => update('academicLevel', val)} /></StepContainer>);
+  if (step === stepOffset) {
+    const levelLabels = [
+      '1 = High school diploma',
+      '2 = Some college / trade school',
+      '3 = Bachelor\'s degree',
+      '4 = Master\'s degree',
+      '5 = Doctorate / professional degree (MD, PhD, JD)'
+    ];
+    return (
+      <StepContainer title="How far would you like to go academically?">
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center space-y-1">
+          {levelLabels.map(label => <div key={label}>{label}</div>)}
+        </div>
+        <RatingButtons ratings={[1,2,3,4,5]} selected={answers.academicLevel} onChange={(val: number) => update('academicLevel', val)} />
+      </StepContainer>
+    );
+  }
   stepOffset++;
   if (step === stepOffset) return (<StepContainer title="In social situations, you usually prefer?"><RadioGroup options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepContainer>);
   stepOffset++;
   if (step === stepOffset) return (<StepContainer title="Which work environment fits you best? (Pick up to 2)"><CheckboxGroup options={WORK_ENVIRONMENTS} selected={answers.workEnvironment} onChange={(val: string[]) => update('workEnvironment', val)} maxSelections={2} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="Which job types interest you?"><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title="Which job types interest you? (Choose as many as you want)"><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
 
-  // Dealbreaker step
+  // Dealbreaker step (clarified wording)
   if (step === dealbreakerStep) {
     return (
       <div className={containerClasses}>
@@ -482,7 +611,8 @@ export default function Home() {
             </div>
           </div>
           <div className={cardClasses}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">What job types would you avoid?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Which job types would you NEVER want to do?</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Now be honest – these will be removed from your recommendations. (Even if you selected them before, choose them here if you would refuse that job.)</p>
             <CheckboxGroup options={JOB_TYPES} selected={answers.dealbreakerJobs} onChange={(val: string[]) => update('dealbreakerJobs', val)} maxSelections={Infinity} />
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
@@ -494,25 +624,25 @@ export default function Home() {
     );
   }
 
-  // New context steps
+  // ---------- Career context steps (unchanged but with rephrased "Trade school") ----------
   if (step === profileStep) {
     const profileDisplayMap: Record<string, string> = {
       high_school: 'High school student',
       university: 'University student / graduate',
-      specialized_training: 'Specialized training',
+      specialized_training: 'Trade school or vocational training',
       employed: 'Employed',
       unemployed: 'Unemployed'
     };
     return (
       <StepContainer title="Which describes you the best?" isValid={answers.careerContext.profile !== ''}>
         <RadioGroup
-          options={['High school student', 'University student / graduate', 'Specialized training', 'Employed', 'Unemployed']}
+          options={['High school student', 'University student / graduate', 'Trade school or vocational training', 'Employed', 'Unemployed']}
           selected={profileDisplayMap[answers.careerContext?.profile] || ''}
           onChange={(val: string) => {
             const profileMap: Record<string, string> = {
               'High school student': 'high_school',
               'University student / graduate': 'university',
-              'Specialized training': 'specialized_training',
+              'Trade school or vocational training': 'specialized_training',
               'Employed': 'employed',
               'Unemployed': 'unemployed'
             };
@@ -578,6 +708,154 @@ export default function Home() {
       return (<StepContainer title="Which would help you most with career choice today?"><RadioGroup options={['Free career counseling', 'Short training programs', 'Help with job search strategy', 'Assessment of my strengths']} selected={answers.careerContext?.subAnswers?.unemployedHelp || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, unemployedHelp: val } } }))} /></StepContainer>);
     }
     return <StepContainer title="Error">Please go back and select a profile.</StepContainer>;
+  }
+
+  // ---------- NEW MULTIPLE-CHOICE AND OPEN-ENDED STEPS ----------
+  if (step === salaryStep) {
+    return (
+      <StepContainer title="What level of salary are you aiming for in your career?">
+        <RadioGroup
+          options={[
+            'Comfortable living – I don\'t need much',
+            'Good average salary – like most people in my job',
+            'Above average – better than most',
+            'High income – top earner level',
+            'Wealthy – millionaire or more'
+          ]}
+          selected={answers.salaryAim}
+          onChange={(val: string) => update('salaryAim', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === relocateStep) {
+    return (
+      <StepContainer title="How willing are you to relocate for a job?">
+        <RadioGroup
+          options={['Not willing (stay in my city)', 'Willing within my region', 'Willing anywhere in my country', 'Willing to move abroad']}
+          selected={answers.relocateWillingness}
+          onChange={(val: string) => update('relocateWillingness', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === remoteStep) {
+    return (
+      <StepContainer title="How do you feel about remote work?">
+        <RadioGroup
+          options={['Must be fully remote', 'Prefer hybrid (2–3 days in office)', 'Prefer fully in‑office', 'No preference']}
+          selected={answers.remoteWork}
+          onChange={(val: string) => update('remoteWork', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === scheduleStep) {
+    return (
+      <StepContainer title="What is your preferred work schedule?">
+        <RadioGroup
+          options={['Standard 9–5', 'Flexible hours (core hours only)', 'Shift work (evenings/nights/weekends)', 'Compressed workweek (4x10h)', 'No preference']}
+          selected={answers.workSchedule}
+          onChange={(val: string) => update('workSchedule', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === securityStep) {
+    return (
+      <StepContainer title="How important is job security to you?">
+        <RadioGroup
+          options={['Extremely important (stable industry, government, etc.)', 'Somewhat important', 'Not important (willing to take risks)']}
+          selected={answers.jobSecurity}
+          onChange={(val: string) => update('jobSecurity', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === travelStep) {
+    return (
+      <StepContainer title="How do you feel about travel as part of your job?">
+        <RadioGroup
+          options={['Never travel', 'Occasional (a few times a year)', 'Frequent (weekly)', 'Love it, open to 50%+ travel']}
+          selected={answers.travelPreference}
+          onChange={(val: string) => update('travelPreference', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === teamStep) {
+    return (
+      <StepContainer title="Which of these best describes your ideal team environment?">
+        <RadioGroup
+          options={['I work best alone', 'Small, tight‑knit team', 'Large, collaborative team', 'I like leading a team']}
+          selected={answers.teamEnvironment}
+          onChange={(val: string) => update('teamEnvironment', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === criticismStep) {
+    return (
+      <StepContainer title="How do you handle criticism?">
+        <RadioGroup
+          options={['Use it to improve', 'Find it difficult but accept it', 'Prefer positive feedback only', 'Not sure', 'I can\'t stand it']}
+          selected={answers.criticismHandling}
+          onChange={(val: string) => update('criticismHandling', val)}
+        />
+      </StepContainer>
+    );
+  }
+  if (step === dreamJobStep) {
+    return (
+      <StepContainer title="What is your dream job? (Write a short description. If you don't know it exactly, write the most important features your job should or shouldn't have)">
+        <textarea
+          value={answers.dreamJob}
+          onChange={(e) => update('dreamJob', e.target.value)}
+          rows={4}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
+        />
+      </StepContainer>
+    );
+  }
+  if (step === topValuesStep) {
+    return (
+      <StepContainer title="What are the top 3 things you value most in a career? (e.g., money, freedom, helping others, creativity)">
+        <textarea
+          value={answers.topValues}
+          onChange={(e) => update('topValues', e.target.value)}
+          rows={3}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
+        />
+      </StepContainer>
+    );
+  }
+  if (step === fulfillingStep) {
+    return (
+      <StepContainer title="Describe a time you felt truly fulfilled in a work or school project">
+        <textarea
+          value={answers.fulfillingProject}
+          onChange={(e) => update('fulfillingProject', e.target.value)}
+          rows={4}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="What did you do? Why did it feel meaningful?"
+        />
+      </StepContainer>
+    );
+  }
+  if (step === pastConsiderationsStep) {
+    return (
+      <StepContainer title="What career(s) have you considered before? Why did you consider them? Why did you get discouraged from them, if you got discouraged?">
+        <textarea
+          value={answers.pastConsiderations}
+          onChange={(e) => update('pastConsiderations', e.target.value)}
+          rows={4}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
+        />
+      </StepContainer>
+    );
   }
 
   if (step === finalSubmitStep) {
