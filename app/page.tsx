@@ -140,7 +140,12 @@ const WHAT_MATTERS = [
   'Autonomy (freedom to make your own decisions)'
 ];
 
-const SOCIAL_PREFERENCES = ['Energized by Many People', 'Small Groups', 'One-on-One', 'Working Alone'];
+const SOCIAL_PREFERENCES = [
+  'Being around many people (I feel energized)',
+  'Small groups',
+  'One-on-one conversations',
+  'Working alone / being by myself'
+];
 
 // ---------- Clarified work environment options ----------
 const WORK_ENVIRONMENTS = [
@@ -592,7 +597,7 @@ export default function Home() {
     );
   }
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="In social situations, you usually prefer?"><RadioGroup options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title="In social situations, what do you usually prefer?"><RadioGroup options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepContainer>);
   stepOffset++;
   if (step === stepOffset) return (<StepContainer title="Which work environment fits you best? (Pick up to 2)"><CheckboxGroup options={WORK_ENVIRONMENTS} selected={answers.workEnvironment} onChange={(val: string[]) => update('workEnvironment', val)} maxSelections={2} /></StepContainer>);
   stepOffset++;
