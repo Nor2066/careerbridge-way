@@ -13,114 +13,119 @@ export const MAX_SCORES = {
   Creative: 118,
   SkilledTrades: 117,
   Operations: 138,
-  // New clusters – temporary max scores (to be adjusted later)
-  Legal: 100,
-  Sales: 100,
-  Hospitality: 100,
+  // New clusters
+  Legal: 189,
+  Sales: 193,
+  Hospitality: 191,
 } as const;
 
 export type Cluster = keyof typeof MAX_SCORES;
 
-// ---------- Subject weights (with zero for new clusters) ----------
+// ---------- Subject weights (with new clusters) ----------
 const subjectWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  Mathematics: { Analytical: 3, Engineering: 2, IT: 2, Research: 1, Business: 1, Legal: 0, Sales: 0, Hospitality: 0 },
+  Mathematics: { Analytical: 3, Engineering: 2, IT: 2, Research: 1, Business: 1, Legal: 1, Sales: 0, Hospitality: 0 },
   Sciences: { Analytical: 1, Engineering: 2, Healthcare: 2, Research: 3, Education: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Technology / Computing": { Analytical: 1, Engineering: 2, IT: 3, Entrepreneurship: 1, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Business / Economics": { Analytical: 1, Business: 3, Entrepreneurship: 2, Education: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Social Sciences": { Research: 2, SocialImpact: 2, Education: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Arts / Humanities": { Research: 1, SocialImpact: 1, Education: 2, Creative: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Creative Fields": { Engineering: 1, IT: 1, Entrepreneurship: 1, Creative: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  Languages: { Business: 1, SocialImpact: 2, Education: 2, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Technology / Computing": { Analytical: 1, Engineering: 2, IT: 3, Entrepreneurship: 1, Creative: 1, Legal: 1, Sales: 1, Hospitality: 0 },
+  "Business / Economics": { Analytical: 1, Business: 3, Entrepreneurship: 2, Education: 1, Operations: 1, Legal: 1, Sales: 2, Hospitality: 1 },
+  "Social Sciences": { Research: 2, SocialImpact: 2, Education: 2, Legal: 2, Sales: 1, Hospitality: 1 },
+  "Arts / Humanities": { Research: 1, SocialImpact: 1, Education: 2, Creative: 3, Legal: 0, Sales: 1, Hospitality: 1 },
+  "Creative Fields": { Engineering: 1, IT: 1, Entrepreneurship: 1, Creative: 4, Legal: 0, Sales: 1, Hospitality: 1 },
+  Languages: { Business: 1, SocialImpact: 2, Education: 2, Legal: 0, Sales: 1, Hospitality: 2 },
 };
 
-// ---------- Activity weights (with zero for new clusters) ----------
+// ---------- Activity weights (with new clusters) ----------
 const activityWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  "Solving problems": { Analytical: 3, Engineering: 2, IT: 3, Research: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Experiments / Hands-on": { Engineering: 3, IT: 1, Healthcare: 2, Research: 2, SkilledTrades: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Designing / Creating": { Engineering: 2, IT: 1, Entrepreneurship: 1, Creative: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Reading / Analyzing": { Analytical: 2, IT: 1, Research: 3, Business: 1, Education: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Helping people": { Healthcare: 4, SocialImpact: 4, Education: 3, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Building / Using tech": { Analytical: 1, Engineering: 4, IT: 4, Entrepreneurship: 1, Creative: 1, SkilledTrades: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Leading / Organizing": { Business: 3, Entrepreneurship: 3, SocialImpact: 1, Education: 1, Operations: 3, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Solving problems": { Analytical: 3, Engineering: 2, IT: 3, Research: 1, Legal: 1, Sales: 0, Hospitality: 0 },
+  "Experiments / Hands-on": { Engineering: 3, IT: 1, Healthcare: 2, Research: 2, SkilledTrades: 4, Legal: 1, Sales: 0, Hospitality: 0 },
+  "Designing / Creating": { Engineering: 2, IT: 1, Entrepreneurship: 1, Creative: 4, Legal: 0, Sales: 1, Hospitality: 1 },
+  "Reading / Analyzing": { Analytical: 2, IT: 1, Research: 3, Business: 1, Education: 2, Legal: 2, Sales: 0, Hospitality: 0 },
+  "Helping people": { Healthcare: 4, SocialImpact: 4, Education: 3, Creative: 1, Legal: 1, Sales: 0, Hospitality: 2 },
+  "Building / Using tech": { Analytical: 1, Engineering: 4, IT: 4, Entrepreneurship: 1, Creative: 1, SkilledTrades: 1, Operations: 1, Legal: 1, Sales: 1, Hospitality: 1 },
+  "Leading / Organizing": { Business: 3, Entrepreneurship: 3, SocialImpact: 1, Education: 1, Operations: 3, Legal: 1, Sales: 2, Hospitality: 2 },
   "Coding / Programming": { Analytical: 2, Engineering: 2, IT: 5, Research: 1, Entrepreneurship: 1, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
   "Making / Building things": { Engineering: 3, Creative: 2, SkilledTrades: 5, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Teaching / Explaining": { Analytical: 1, IT: 1, Healthcare: 1, Research: 1, Business: 1, SocialImpact: 2, Education: 4, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Advocating / Raising awareness": { Healthcare: 1, Research: 1, Entrepreneurship: 1, SocialImpact: 4, Education: 2, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Teaching / Explaining": { Analytical: 1, IT: 1, Healthcare: 1, Research: 1, Business: 1, SocialImpact: 2, Education: 4, Creative: 1, Legal: 1, Sales: 1, Hospitality: 1 },
+  "Advocating / Raising awareness": { Healthcare: 1, Research: 1, Entrepreneurship: 1, SocialImpact: 4, Education: 2, Creative: 1, Legal: 3, Sales: 0, Hospitality: 0 },
 };
 
-// ---------- Skill multipliers (with zero for new clusters) ----------
+// ---------- Skill multipliers (with new clusters) ----------
 const skillMultipliers: Record<string, Partial<Record<Cluster, number>>> = {
-  logicalReasoning: { Analytical: 3, Engineering: 2, IT: 2, Healthcare: 1, Research: 2, Business: 1, Entrepreneurship: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  creativity: { Analytical: 1, Engineering: 1, IT: 2, Research: 1, Business: 1, Entrepreneurship: 2, SocialImpact: 1, Education: 1, Creative: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  communication: { Healthcare: 2, Research: 1, Business: 2, Entrepreneurship: 1, SocialImpact: 3, Education: 3, Creative: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  workingWithData: { Analytical: 3, Engineering: 1, IT: 2, Research: 2, Business: 2, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
+  logicalReasoning: { Analytical: 3, Engineering: 2, IT: 2, Healthcare: 1, Research: 2, Business: 1, Entrepreneurship: 1, Operations: 1, Legal: 3, Sales: 1, Hospitality: 1 },
+  creativity: { Analytical: 1, Engineering: 1, IT: 2, Research: 1, Business: 1, Entrepreneurship: 2, SocialImpact: 1, Education: 1, Creative: 4, Legal: 1, Sales: 2, Hospitality: 2 },
+  communication: { Healthcare: 2, Research: 1, Business: 2, Entrepreneurship: 1, SocialImpact: 3, Education: 3, Creative: 1, Operations: 1, Legal: 3, Sales: 4, Hospitality: 3 },
+  workingWithData: { Analytical: 3, Engineering: 1, IT: 2, Research: 2, Business: 2, Operations: 1, Legal: 2, Sales: 2, Hospitality: 1 },
   manualSkills: { Engineering: 2, Healthcare: 1, Creative: 1, SkilledTrades: 5, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  teamwork: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 2, Research: 1, Business: 2, Entrepreneurship: 1, SocialImpact: 3, Education: 2, SkilledTrades: 2, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  criticalThinking: { Analytical: 2, Engineering: 1, IT: 1, Healthcare: 1, Research: 3, Business: 2, Entrepreneurship: 1, SocialImpact: 1, Education: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  timeManagement: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 1, Research: 1, Business: 2, Entrepreneurship: 2, SocialImpact: 1, Education: 1, SkilledTrades: 1, Operations: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  uncertaintyComfort: { IT: 1, Research: 1, Business: 2, Entrepreneurship: 3, Creative: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  financialRiskComfort: { Analytical: 1, Business: 3, Entrepreneurship: 3, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  pressureTolerance: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 3, Research: 2, Business: 2, Entrepreneurship: 2, SocialImpact: 1, Education: 1, SkilledTrades: 2, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  empathy: { Healthcare: 3, Research: 1, Business: 1, Entrepreneurship: 1, SocialImpact: 4, Education: 3, Creative: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  artistic: { Analytical: 1, Engineering: 1, IT: 1, Research: 1, SocialImpact: 1, Education: 2, Creative: 4, Legal: 0, Sales: 0, Hospitality: 0 },
+  teamwork: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 2, Research: 1, Business: 2, Entrepreneurship: 1, SocialImpact: 3, Education: 2, SkilledTrades: 2, Operations: 2, Legal: 2, Sales: 2, Hospitality: 3 },
+  criticalThinking: { Analytical: 2, Engineering: 1, IT: 1, Healthcare: 1, Research: 3, Business: 2, Entrepreneurship: 1, SocialImpact: 1, Education: 1, Operations: 1, Legal: 3, Sales: 1, Hospitality: 1 },
+  timeManagement: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 1, Research: 1, Business: 2, Entrepreneurship: 2, SocialImpact: 1, Education: 1, SkilledTrades: 1, Operations: 3, Legal: 2, Sales: 2, Hospitality: 2 },
+  uncertaintyComfort: { IT: 1, Research: 1, Business: 2, Entrepreneurship: 3, Creative: 1, Operations: 1, Legal: 2, Sales: 3, Hospitality: 2 },
+  financialRiskComfort: { Analytical: 1, Business: 3, Entrepreneurship: 3, Operations: 1, Legal: 0, Sales: 3, Hospitality: 1 },
+  pressureTolerance: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 3, Research: 2, Business: 2, Entrepreneurship: 2, SocialImpact: 1, Education: 1, SkilledTrades: 2, Operations: 2, Legal: 3, Sales: 2, Hospitality: 2 },
+  empathy: { Healthcare: 3, Research: 1, Business: 1, Entrepreneurship: 1, SocialImpact: 4, Education: 3, Creative: 1, Operations: 1, Legal: 2, Sales: 2, Hospitality: 4 },
+  artistic: { Analytical: 1, Engineering: 1, IT: 1, Research: 1, SocialImpact: 1, Education: 2, Creative: 4, Legal: 0, Sales: 2, Hospitality: 2 },
   mechanical: { Analytical: 1, Engineering: 3, IT: 1, Healthcare: 1, Research: 1, Creative: 1, SkilledTrades: 4, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  organization: { Analytical: 2, Engineering: 2, IT: 2, Healthcare: 2, Research: 2, Business: 1, Entrepreneurship: 1, SocialImpact: 1, Education: 2, Creative: 1, SkilledTrades: 1, Operations: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  adaptability: { Analytical: 1, Engineering: 1, IT: 2, Healthcare: 2, Research: 1, Business: 2, Entrepreneurship: 3, SocialImpact: 2, Education: 2, Creative: 2, SkilledTrades: 1, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  physicalStamina: { Engineering: 1, Healthcare: 2, SkilledTrades: 3, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
+  organization: { Analytical: 2, Engineering: 2, IT: 2, Healthcare: 2, Research: 2, Business: 1, Entrepreneurship: 1, SocialImpact: 1, Education: 2, Creative: 1, SkilledTrades: 1, Operations: 3, Legal: 3, Sales: 2, Hospitality: 2 },
+  adaptability: { Analytical: 1, Engineering: 1, IT: 2, Healthcare: 2, Research: 1, Business: 2, Entrepreneurship: 3, SocialImpact: 2, Education: 2, Creative: 2, SkilledTrades: 1, Operations: 2, Legal: 2, Sales: 3, Hospitality: 3 },
+  physicalStamina: { Engineering: 1, Healthcare: 2, SkilledTrades: 3, Operations: 1, Legal: 1, Sales: 0, Hospitality: 2 },
 };
 
-// ---------- Other weight objects (all zero for new clusters) ----------
+// ---------- Thinking style weights ----------
 const thinkingStyleWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  "Right/Wrong": { Analytical: 3, Engineering: 2, IT: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Open-ended": { Research: 2, Entrepreneurship: 1, Creative: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  Mix: { Business: 2, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
+  "I like clear answers that are either right or wrong (like math problems)": { Analytical: 3, Engineering: 2, IT: 2, Legal: 2, Sales: 0, Hospitality: 0 },
+  "I like open‑ended questions with many possible answers (like creative writing)": { Research: 2, Entrepreneurship: 1, Creative: 3, Legal: 0, Sales: 1, Hospitality: 1 },
+  "A mix of both": { Business: 2, Operations: 2, Legal: 0, Sales: 1, Hospitality: 0 },
 };
 
+// ---------- Learning style weights ----------
 const learningStyleWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  "Hands-on": { Engineering: 2, Healthcare: 2, SkilledTrades: 2, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Reading & Theory": { Analytical: 2, Research: 2, Education: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Visual / Creative": { IT: 1, Creative: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Group Discussion": { Business: 1, SocialImpact: 2, Education: 2, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Independent Study": { Analytical: 2, IT: 2, Research: 2, Entrepreneurship: 1, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Hands-on": { Engineering: 2, Healthcare: 2, SkilledTrades: 2, Operations: 1, Legal: 0, Sales: 0, Hospitality: 1 },
+  "Reading & Theory": { Analytical: 2, Research: 2, Education: 1, Legal: 2, Sales: 0, Hospitality: 0 },
+  "Visual / Creative": { IT: 1, Creative: 2, Legal: 0, Sales: 1, Hospitality: 1 },
+  "Group Discussion": { Business: 1, SocialImpact: 2, Education: 2, Operations: 1, Legal: 1, Sales: 2, Hospitality: 2 },
+  "Independent Study": { Analytical: 2, IT: 2, Research: 2, Entrepreneurship: 1, Creative: 1, Legal: 1, Sales: 0, Hospitality: 0 },
 };
 
+// ---------- Motivation weights ----------
 const motivationWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  "High Earning": { Analytical: 1, Business: 3, Entrepreneurship: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Helping / Impact": { Healthcare: 3, SocialImpact: 4, Education: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  Creativity: { Entrepreneurship: 1, Creative: 5, Legal: 0, Sales: 0, Hospitality: 0 },
-  Stability: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 2, Research: 1, Education: 1, SkilledTrades: 2, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  Research: { Analytical: 1, Research: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Working with Tech": { Engineering: 2, IT: 4, Entrepreneurship: 1, SkilledTrades: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  Leadership: { Business: 3, Entrepreneurship: 3, Education: 1, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
+  "High Earning": { Analytical: 1, Business: 3, Entrepreneurship: 3, Legal: 2, Sales: 3, Hospitality: 1 },
+  "Helping / Impact": { Healthcare: 3, SocialImpact: 4, Education: 2, Legal: 3, Sales: 0, Hospitality: 1 },
+  Creativity: { Entrepreneurship: 1, Creative: 5, Legal: 0, Sales: 2, Hospitality: 2 },
+  Stability: { Analytical: 1, Engineering: 1, IT: 1, Healthcare: 2, Research: 1, Education: 1, SkilledTrades: 2, Operations: 2, Legal: 2, Sales: 1, Hospitality: 2 },
+  Research: { Analytical: 1, Research: 4, Legal: 2, Sales: 0, Hospitality: 0 },
+  "Working with Tech": { Engineering: 2, IT: 4, Entrepreneurship: 1, SkilledTrades: 1, Legal: 1, Sales: 1, Hospitality: 0 },
+  Leadership: { Business: 3, Entrepreneurship: 3, Education: 1, Operations: 2, Legal: 2, Sales: 3, Hospitality: 2 },
   "Self-Realization": { Entrepreneurship: 2, Creative: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Creation (Physical/Mental)": { Engineering: 2, Entrepreneurship: 1, Creative: 3, SkilledTrades: 4, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Creation (Physical/Mental)": { Engineering: 2, Entrepreneurship: 1, Creative: 3, SkilledTrades: 4, Legal: 0, Sales: 1, Hospitality: 1 },
 };
 
+// ---------- "What matters more" weights ----------
 const whatMattersWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  "Work-Life Balance": { SocialImpact: 3, Education: 4, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Career Growth": { Business: 4, Entrepreneurship: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Meaningful Impact": { Healthcare: 4, SocialImpact: 3, Education: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Financial Independence": { Analytical: 1, Business: 3, Entrepreneurship: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  Autonomy: { IT: 1, Entrepreneurship: 4, Creative: 2, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Work-Life Balance": { SocialImpact: 3, Education: 4, Operations: 2, Legal: 1, Sales: 0, Hospitality: 3 },
+  "Career Growth": { Business: 4, Entrepreneurship: 3, Legal: 2, Sales: 3, Hospitality: 2 },
+  "Meaningful Impact": { Healthcare: 4, SocialImpact: 3, Education: 2, Legal: 3, Sales: 0, Hospitality: 1 },
+  "Financial Independence": { Analytical: 1, Business: 3, Entrepreneurship: 4, Legal: 2, Sales: 3, Hospitality: 1 },
+  Autonomy: { IT: 1, Entrepreneurship: 4, Creative: 2, Legal: 2, Sales: 2, Hospitality: 2 },
 };
 
+// ---------- Work environment weights ----------
 const workEnvironmentWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  Structured: { Analytical: 3, Healthcare: 2, Education: 1, Operations: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Fast-Paced": { Healthcare: 2, Business: 3, Entrepreneurship: 3, SocialImpact: 1, Operations: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  Independent: { IT: 4, Research: 3, Entrepreneurship: 3, Creative: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  Collaborative: { Healthcare: 3, Business: 3, SocialImpact: 4, SkilledTrades: 1, Operations: 2, Legal: 0, Sales: 0, Hospitality: 0 },
-  Competitive: { Analytical: 1, Business: 4, Entrepreneurship: 4, Legal: 0, Sales: 0, Hospitality: 0 },
-  Calm: { Analytical: 2, Research: 3, Education: 3, Creative: 2, Legal: 0, Sales: 0, Hospitality: 0 },
+  Structured: { Analytical: 3, Healthcare: 2, Education: 1, Operations: 3, Legal: 3, Sales: 1, Hospitality: 1 },
+  "Fast-Paced": { Healthcare: 2, Business: 3, Entrepreneurship: 3, SocialImpact: 1, Operations: 1, Legal: 1, Sales: 3, Hospitality: 3 },
+  Independent: { IT: 4, Research: 3, Entrepreneurship: 3, Creative: 2, Legal: 1, Sales: 0, Hospitality: 0 },
+  Collaborative: { Healthcare: 3, Business: 3, SocialImpact: 4, SkilledTrades: 1, Operations: 2, Legal: 2, Sales: 3, Hospitality: 3 },
+  Competitive: { Analytical: 1, Business: 4, Entrepreneurship: 4, Legal: 1, Sales: 4, Hospitality: 1 },
+  Calm: { Analytical: 2, Research: 3, Education: 3, Creative: 2, Legal: 1, Sales: 0, Hospitality: 1 },
 };
 
+// ---------- Social preference weights ----------
 const socialPreferenceWeights: Record<string, Partial<Record<Cluster, number>>> = {
-  "Energized by Many People": { Business: 3, Entrepreneurship: 3, SocialImpact: 1, Education: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Small Groups": { Healthcare: 2, SocialImpact: 1, Education: 3, Legal: 0, Sales: 0, Hospitality: 0 },
-  "One-on-One": { Healthcare: 3, SocialImpact: 3, Education: 1, Legal: 0, Sales: 0, Hospitality: 0 },
-  "Working Alone": { Analytical: 3, IT: 3, Research: 3, Creative: 1, Legal: 0, Sales: 0, Hospitality: 0 },
+  "Energized by Many People": { Business: 3, Entrepreneurship: 3, SocialImpact: 1, Education: 1, Legal: 0, Sales: 3, Hospitality: 3 },
+  "Small Groups": { Healthcare: 2, SocialImpact: 1, Education: 3, Legal: 1, Sales: 1, Hospitality: 2 },
+  "One-on-One": { Healthcare: 3, SocialImpact: 3, Education: 1, Legal: 3, Sales: 1, Hospitality: 2 },
+  "Working Alone": { Analytical: 3, IT: 3, Research: 3, Creative: 1, Legal: 2, Sales: 0, Hospitality: 0 },
 };
 
-// Updated jobVisionWeights to include the three new clusters
+// ---------- Job vision mapping (including new clusters) ----------
 const jobVisionWeights: Record<string, Cluster> = {
   "Research job": "Research",
   "Healthcare job": "Healthcare",
@@ -134,29 +139,14 @@ const jobVisionWeights: Record<string, Cluster> = {
   "Creative role": "Creative",
   "Social impact role": "SocialImpact",
   "Analytical/data role": "Analytical",
-  // New clusters
   "Legal / Justice": "Legal",
   "Sales / Marketing": "Sales",
   "Hospitality / Tourism": "Hospitality",
 };
 
-// Updated dealbreakerMap to include new clusters
+// ---------- Dealbreaker mapping (same as job vision) ----------
 export const dealbreakerMap: Record<string, Cluster> = {
-  "Research job": "Research",
-  "Healthcare job": "Healthcare",
-  Entrepreneurial: "Entrepreneurship",
-  "Hands-on trade": "SkilledTrades",
-  "Transport / logistics": "Operations",
-  "Business role": "Business",
-  "IT role": "IT",
-  "Engineering role": "Engineering",
-  "Education role": "Education",
-  "Creative role": "Creative",
-  "Social impact role": "SocialImpact",
-  "Analytical/data role": "Analytical",
-  "Legal / Justice": "Legal",
-  "Sales / Marketing": "Sales",
-  "Hospitality / Tourism": "Hospitality",
+  ...jobVisionWeights,
 };
 
 function initScores(): Record<Cluster, number> {
@@ -168,7 +158,7 @@ function initScores(): Record<Cluster, number> {
   };
 }
 
-// Extended UserAnswers type to include all new fields
+// ---------- Extended UserAnswers type (including all new fields) ----------
 export interface UserAnswers {
   subjects: string[];
   activities: string[];
@@ -199,20 +189,21 @@ export interface UserAnswers {
   criticismHandling: string;
 }
 
+// ---------- Scoring function (unchanged logic, now includes new clusters) ----------
 export function calculateScores(answers: UserAnswers) {
   let scores = initScores();
 
-  // Subject weights
+  // Subjects
   for (const s of answers.subjects) {
     const w = subjectWeights[s];
     if (w) for (const [c, v] of Object.entries(w)) scores[c as Cluster] += v;
   }
-  // Activity weights
+  // Activities
   for (const a of answers.activities) {
     const w = activityWeights[a];
     if (w) for (const [c, v] of Object.entries(w)) scores[c as Cluster] += v;
   }
-  // Skill multipliers
+  // Skills (rating * multiplier)
   for (const [skill, rating] of Object.entries(answers.skills)) {
     const m = skillMultipliers[skill];
     if (m) for (const [c, mult] of Object.entries(m)) scores[c as Cluster] += rating * mult;
@@ -231,14 +222,16 @@ export function calculateScores(answers: UserAnswers) {
   // What matters more
   const wm = whatMattersWeights[answers.whatMattersMore];
   if (wm) for (const [c, v] of Object.entries(wm)) scores[c as Cluster] += v;
-  // Study hours
+  // Study hours (YES)
   if (answers.studyHours) {
     scores.Analytical += 1; scores.Engineering += 2; scores.Healthcare += 2; scores.Research += 2;
+    scores.Legal += 1; scores.Sales += 0; scores.Hospitality += 0;
   }
   // Academic level
   const level = answers.academicLevel;
   scores.Analytical += 2 * level; scores.Engineering += 2 * level;
   scores.Healthcare += 3 * level; scores.Research += 3 * level; scores.Education += 2 * level;
+  scores.Legal += 2 * level; scores.Sales += 1 * level; scores.Hospitality += 1 * level;
   // Social preference
   const sp = socialPreferenceWeights[answers.socialPreference];
   if (sp) for (const [c, v] of Object.entries(sp)) scores[c as Cluster] += v;
