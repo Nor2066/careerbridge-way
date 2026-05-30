@@ -231,6 +231,7 @@ export default function Home() {
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const loadedRef = useRef(false);
   const isReadyRef = useRef(false);
+  const autoSavedRef = useRef(false);
 
   // Step constants – adjusted for new steps
   const originalStepsCount = 2 + SKILL_NAMES.length + 10; // 2+17+10=29
@@ -464,145 +465,227 @@ export default function Home() {
   );
 
   // ---------- RESULTS DISPLAY ----------
-  if (result) {
-    const FeedbackForm = () => {
-      const [email, setEmail] = useState('');
-      const [feedbackRating, setFeedbackRating] = useState(0);
-      const [feedbackComment, setFeedbackComment] = useState('');
-      const [saved, setSaved] = useState(false);
-      const [saving, setSaving] = useState(false);
-
-      const saveToSupabase = async () => {
-        const finalEmail = user ? user.email : email;
-        if (!finalEmail) { alert('Please enter your email'); return; }
-        if (feedbackRating === 0) { alert('Please rate your experience'); return; }
-        setSaving(true);
-        try {
-          const payload = {
-            email: finalEmail,
-            userId: user?.id || null,
-            feedbackRating,
-            feedbackComment,
+ if (result) {
+  // Auto‑save results on mount (once)
+  useEffect(() => {
+    const autoSaveResults = async () => {
+      if (!user || autoSavedRef.current) return;
+      autoSavedRef.current = true;
+      try {
+        // Save to assessments (with null feedback)
+        await fetch('/api/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            userId: user.id,
+            feedbackRating: null,
+            feedbackComment: null,
             topClusters: result.top3,
             rawScores: result.rawScores,
             answers: submittedAnswers,
-          };
-          const res = await fetch('/api/save-result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if (res.ok) {
-            await fetch('/api/save-results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user?.id, topClusters: result.top3, rawScores: result.rawScores, answers: submittedAnswers }) });
-            setSaved(true);
-          } else {
-            const responseData = await res.json();
-            alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
-          }
-        } catch (err) { alert('Network error. Please try again.'); }
-        finally { setSaving(false); }
-      };
-
-      if (saved) {
-        return (
-          <div className="text-center py-8">
-            <div className="inline-block p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
-              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
-            <button onClick={resetAssessment} className={buttonPrimaryClasses}>Take Assessment Again</button>
-          </div>
-        );
+          }),
+        });
+        // Save to user_results
+        await fetch('/api/save-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          }),
+        });
+        console.log('✅ Results auto‑saved');
+      } catch (err) {
+        console.error('Auto‑save failed:', err);
       }
+    };
+    if (submittedAnswers && result) autoSaveResults();
+  }, [user, result, submittedAnswers]);
 
-      return (
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Leave your feedback to help us improve CareerBridge Way.</p>
-          <div className="space-y-6">
-            {!user && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="you@example.com" required />
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
-              <div className="flex gap-3 justify-center">
-                {[1,2,3,4,5].map(r => (
-                  <button key={r} onClick={() => setFeedbackRating(r)} className={`w-12 h-12 rounded-full font-bold transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'}`}>{r}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
-              <textarea value={feedbackComment} onChange={(e) => setFeedbackComment(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="What did you think? Any suggestions?" />
-            </div>
-            <button onClick={saveToSupabase} disabled={saving} className={buttonPrimaryClasses + " w-full"}>{saving ? 'Saving...' : 'Submit Feedback & Get Results'}</button>
-          </div>
-        </div>
-      );
+  // ------------------------------------------------------------------
+  // FeedbackForm (now only saves feedback, not the entire results)
+  // ------------------------------------------------------------------
+  const FeedbackForm = () => {
+    const [email, setEmail] = useState('');
+    const [feedbackRating, setFeedbackRating] = useState(0);
+    const [feedbackComment, setFeedbackComment] = useState('');
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const saveFeedback = async () => {
+      const finalEmail = user ? user.email : email;
+      if (!finalEmail) {
+        alert('Please enter your email');
+        return;
+      }
+      if (feedbackRating === 0) {
+        alert('Please rate your experience');
+        return;
+      }
+      setSaving(true);
+      try {
+        // Only save the feedback (assessments table)
+        const payload = {
+          email: finalEmail,
+          userId: user?.id || null,
+          feedbackRating,
+          feedbackComment,
+          topClusters: result.top3,
+          rawScores: result.rawScores,
+          answers: submittedAnswers,
+        };
+        const res = await fetch('/api/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          setSaved(true);
+        } else {
+          const responseData = await res.json();
+          alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      } finally {
+        setSaving(false);
+      }
     };
 
+    if (saved) {
+      return (
+        <div className="text-center py-8">
+          <div className="inline-block p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
+          <button onClick={() => setResult(null)} className={buttonPrimaryClasses}>Take Assessment Again</button>
+        </div>
+      );
+    }
+
     return (
-      <div className={containerClasses}>
-        <div className="w-full max-w-2xl">
-          <div className="mb-8 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
-            <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
-          </div>
-          <div className={`${cardClasses} mb-8`}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
-            <ul className="space-y-4">
-              {result.top3.map((item: any, idx: number) => (
-                <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-gray-900 dark:text-white text-lg">{item.cluster}</span>
-                    <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text font-bold text-xl">{item.percentage}%</span>
-                  </div>
-                  <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-3">
-                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
-                  </div>
-                </li>
+      <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Your results have already been saved. Optionally leave a rating and comment.</p>
+        <div className="space-y-6">
+          {!user && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
+            <div className="flex gap-3 justify-center">
+              {[1,2,3,4,5].map(r => (
+                <button
+                  key={r}
+                  onClick={() => setFeedbackRating(r)}
+                  className={`w-12 h-12 rounded-full font-bold transition-all ${
+                    feedbackRating === r
+                      ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
+                  }`}
+                >
+                  {r}
+                </button>
               ))}
-            </ul>
-            {result.warningMessage && (
-              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">⚠️ {result.warningMessage}</div>
-            )}
+            </div>
           </div>
-          <div className={cardClasses}>
-            <FeedbackForm />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
+            <textarea
+              value={feedbackComment}
+              onChange={(e) => setFeedbackComment(e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="What did you think? Any suggestions?"
+            />
           </div>
-          {/* AI Report Button & Display */}
-          <div className="mt-8">
-            {!reportGenerated ? (
-              <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
-                {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
-              </button>
-            ) : (
-              <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
-              </div>
-            )}
-          </div>
- {/* 👇 NEW BUTTON FOR FOLLOW‑UP QUESTIONS 👇 */}
-          <div className="mt-6">
-            <button
-              onClick={() => {
-                // Store the top 3 cluster names in localStorage
-                const topClusterNames = result.top3.map((item: any) => item.cluster);
-                localStorage.setItem('topClusters', JSON.stringify(topClusterNames));
-                // Navigate to the follow‑up page
-                router.push('/followup');
-              }}
-              className={buttonPrimaryClasses}
-            >
-              📋 Answer more questions for better advice
-            </button>
-          </div>
+          <button onClick={saveFeedback} disabled={saving} className={buttonPrimaryClasses + " w-full"}>
+            {saving ? 'Saving...' : 'Submit Feedback'}
+          </button>
         </div>
       </div>
     );
-  }
+  };
+
+  // ------------------------------------------------------------------
+  // Return JSX (same as before, but with the modified FeedbackForm)
+  // ------------------------------------------------------------------
+  return (
+    <div className={containerClasses}>
+      <div className="w-full max-w-2xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
+          <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
+        </div>
+        <div className={`${cardClasses} mb-8`}>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+          <ul className="space-y-4">
+            {result.top3.map((item: any, idx: number) => (
+              <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-semibold text-gray-900 dark:text-white text-lg">{item.cluster}</span>
+                  <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                </div>
+                <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {result.warningMessage && (
+            <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">⚠️ {result.warningMessage}</div>
+          )}
+        </div>
+        <div className={cardClasses}>
+          <FeedbackForm />
+        </div>
+
+        {/* AI Report Button & Display (unchanged) */}
+        <div className="mt-8">
+          {!reportGenerated ? (
+            <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
+              {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
+            </button>
+          ) : (
+            <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Follow‑up button */}
+        <div className="mt-6">
+          <button
+            onClick={() => {
+              localStorage.setItem('topClusters', JSON.stringify(result.top3.map((item: any) => item.cluster)));
+              router.push('/followup');
+            }}
+            className={buttonPrimaryClasses}
+          >
+            📋 Answer more questions for better advice
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   // ---------- ORIGINAL STEP RENDERING (with clarified text) ----------
   if (step === 0) {
