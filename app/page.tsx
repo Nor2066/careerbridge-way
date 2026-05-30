@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
+import { useRouter } from 'next/navigation';
 
 type Answers = {
   subjects: string[];
@@ -220,24 +221,28 @@ export default function Home() {
   const [result, setResult] = useState<any>(null);
   const [submittedAnswers, setSubmittedAnswers] = useState<any>(null);
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
+ const router = useRouter();
+
+  // AI report state (moved to top level)
+  const [aiReport, setAiReport] = useState('');
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [reportGenerated, setReportGenerated] = useState(false);
 
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const loadedRef = useRef(false);
   const isReadyRef = useRef(false);
 
-  // Step constants – adjusted for new steps (original steps count unchanged, but we add many new steps after context)
+  // Step constants – adjusted for new steps
   const originalStepsCount = 2 + SKILL_NAMES.length + 10; // 2+17+10=29
-  // New steps: profile (1) + 3 follow‑ups (3) + 12 new questions (12) + final submit (1) = 17
   const newStepsCount = 17;
   const totalSteps = originalStepsCount + newStepsCount;
   let stepOffset = 2 + SKILL_NAMES.length;
-  const dealbreakerStep = originalStepsCount - 1; // 28
-  const profileStep = dealbreakerStep + 1; // 29
-  const followUp1Step = profileStep + 1; // 30
-  const followUp2Step = followUp1Step + 1; // 31
-  const followUp3Step = followUp2Step + 1; // 32
-  // After follow‑ups, we add the 12 new questions as individual steps
-  const newQuestionsStart = followUp3Step + 1; // 33
+  const dealbreakerStep = originalStepsCount - 1;
+  const profileStep = dealbreakerStep + 1;
+  const followUp1Step = profileStep + 1;
+  const followUp2Step = followUp1Step + 1;
+  const followUp3Step = followUp2Step + 1;
+  const newQuestionsStart = followUp3Step + 1;
   const salaryStep = newQuestionsStart;
   const relocateStep = salaryStep + 1;
   const remoteStep = relocateStep + 1;
@@ -250,7 +255,7 @@ export default function Home() {
   const topValuesStep = dreamJobStep + 1;
   const fulfillingStep = topValuesStep + 1;
   const pastConsiderationsStep = fulfillingStep + 1;
-  const finalSubmitStep = pastConsiderationsStep + 1; // 45
+  const finalSubmitStep = pastConsiderationsStep + 1;
 
   const clampStep = (s: number) => Math.min(Math.max(s, 0), finalSubmitStep);
   const nextStep = () => setStep(s => clampStep(s + 1));
@@ -354,6 +359,7 @@ export default function Home() {
     };
     delete (payload as any).careerContext;
     setSubmittedAnswers(payload);
+    localStorage.setItem('mainAnswers', JSON.stringify(payload));
     const res = await fetch('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -362,6 +368,35 @@ export default function Home() {
     const data = await res.json();
     setResult(data);
     setLoading(false);
+  };
+
+  // AI report generation function (called after results are shown)
+  const generateAIReport = async () => {
+    if (!result) return;
+    setLoadingReport(true);
+    try {
+      const res = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          answers: submittedAnswers,
+          rawScores: result.rawScores,
+          topClusters: result.top3,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiReport(data.report);
+        setReportGenerated(true);
+      } else {
+        alert('Failed to generate report: ' + (data.error || 'unknown error'));
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    } finally {
+      setLoadingReport(false);
+    }
   };
 
   const containerClasses = "min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4";
@@ -428,7 +463,7 @@ export default function Home() {
     </div>
   );
 
-  // ---------- RESULTS DISPLAY (unchanged) ----------
+  // ---------- RESULTS DISPLAY ----------
   if (result) {
     const FeedbackForm = () => {
       const [email, setEmail] = useState('');
@@ -533,7 +568,37 @@ export default function Home() {
               <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">⚠️ {result.warningMessage}</div>
             )}
           </div>
-          <div className={cardClasses}><FeedbackForm /></div>
+          <div className={cardClasses}>
+            <FeedbackForm />
+          </div>
+          {/* AI Report Button & Display */}
+          <div className="mt-8">
+            {!reportGenerated ? (
+              <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
+                {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
+              </button>
+            ) : (
+              <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
+              </div>
+            )}
+          </div>
+ {/* 👇 NEW BUTTON FOR FOLLOW‑UP QUESTIONS 👇 */}
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                // Store the top 3 cluster names in localStorage
+                const topClusterNames = result.top3.map((item: any) => item.cluster);
+                localStorage.setItem('topClusters', JSON.stringify(topClusterNames));
+                // Navigate to the follow‑up page
+                router.push('/followup');
+              }}
+              className={buttonPrimaryClasses}
+            >
+              📋 Answer more questions for better advice
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -814,12 +879,13 @@ export default function Home() {
     return (
       <StepContainer title="What is your dream job? (Write a short description. If you don't know it exactly, write the most important features your job should or shouldn't have)">
         <textarea
-          value={answers.dreamJob}
-          onChange={(e) => update('dreamJob', e.target.value)}
-          rows={4}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
-        />
+  key="dreamJob"
+  defaultValue={answers.dreamJob}
+  onBlur={(e) => update('dreamJob', e.target.value)}
+  rows={4}
+  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
+/>
       </StepContainer>
     );
   }
@@ -827,12 +893,13 @@ export default function Home() {
     return (
       <StepContainer title="What are the top 3 things you value most in a career? (e.g., money, freedom, helping others, creativity)">
         <textarea
-          value={answers.topValues}
-          onChange={(e) => update('topValues', e.target.value)}
-          rows={3}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
-        />
+  key="topValues"
+  defaultValue={answers.topValues}
+  onBlur={(e) => update('topValues', e.target.value)}
+  rows={3}
+  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
+/>
       </StepContainer>
     );
   }
@@ -840,12 +907,13 @@ export default function Home() {
     return (
       <StepContainer title="Describe a time you felt truly fulfilled in a work or school project">
         <textarea
-          value={answers.fulfillingProject}
-          onChange={(e) => update('fulfillingProject', e.target.value)}
-          rows={4}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="What did you do? Why did it feel meaningful?"
-        />
+  key="fulfillingProject"
+  defaultValue={answers.fulfillingProject}
+  onBlur={(e) => update('fulfillingProject', e.target.value)}
+  rows={4}
+  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  placeholder="What did you do? Why did it feel meaningful?"
+/>
       </StepContainer>
     );
   }
@@ -853,12 +921,13 @@ export default function Home() {
     return (
       <StepContainer title="What career(s) have you considered before? Why did you consider them? Why did you get discouraged from them, if you got discouraged?">
         <textarea
-          value={answers.pastConsiderations}
-          onChange={(e) => update('pastConsiderations', e.target.value)}
-          rows={4}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
-        />
+  key="pastConsiderations"
+  defaultValue={answers.pastConsiderations}
+  onBlur={(e) => update('pastConsiderations', e.target.value)}
+  rows={4}
+  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
+/>
       </StepContainer>
     );
   }
