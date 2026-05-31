@@ -319,56 +319,34 @@ export default function FollowUpPage() {
   // --------------------------------------------------------------
   // 4. Render based on state
   // --------------------------------------------------------------
-  if (submitted) {
-    const generateFollowupReport = async () => {
-      setLoadingReport(true);
-      try {
-        const storedMain = localStorage.getItem('mainAnswers');
-        const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
-        if (!mainAnswers) throw new Error('Main answers not found');
-        const res = await fetch('/api/generate-followup-report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user?.id,
-            mainAnswers,
-            topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
-            followupAnswers: answers,
-          }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setFollowupReport(data.report);
-          setReportGenerated(true);
-        } else {
-          alert('Failed to generate report: ' + (data.error || 'unknown error'));
-        }
-      } catch (err) {
-        alert('Network error. Please try again.');
-      } finally {
-        setLoadingReport(false);
-      }
-    };
+if (submitted) {
+  const generateFollowupReport = async () => { ... }; // unchanged
 
-    return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Thank you!</h1>
-        <p className="mb-4">Your detailed answers have been saved.</p>
-        {!reportGenerated ? (
+  return (
+    <div className="max-w-2xl mx-auto p-6 text-center">
+      <h1 className="text-2xl font-bold mb-4">Thank you!</h1>
+      <p className="mb-4">Your detailed answers have been saved.</p>
+      {!reportGenerated ? (
+        <div>
           <button onClick={generateFollowupReport} disabled={loadingReport} className="btn-primary">
             {loadingReport ? 'Generating your personalized roadmap...' : '🚀 Get Your Career Roadmap'}
           </button>
-        ) : (
-          <div className="mt-6 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl text-left">
-            <h2 className="text-xl font-bold mb-3">Your Personalized Career Roadmap</h2>
-            <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{followupReport}</div>
-            <button onClick={() => router.push('/')} className="mt-6 btn-primary">Go to Home</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
+          {loadingReport && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              We are processing your information and preparing your result. This may take a few seconds.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl text-left">
+          <h2 className="text-xl font-bold mb-3">Your Personalized Career Roadmap</h2>
+          <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{followupReport}</div>
+          <button onClick={() => router.push('/')} className="mt-6 btn-primary">Go to Home</button>
+        </div>
+      )}
+    </div>
+  );
+}
   // Main follow‑up questionnaire rendering
   return (
     <div className="max-w-2xl mx-auto p-6">

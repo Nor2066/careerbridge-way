@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type Answers = {
   subjects: string[];
@@ -40,7 +40,6 @@ type Answers = {
     profile: string;
     subAnswers: any;
   };
-  // New fields
   dreamJob: string;
   topValues: string;
   fulfillingProject: string;
@@ -55,7 +54,7 @@ type Answers = {
   criticismHandling: string;
 };
 
-// ---------- Clarified subject options ----------
+// ---------- Constants ----------
 const SUBJECTS = [
   'Mathematics',
   'Sciences',
@@ -67,7 +66,6 @@ const SUBJECTS = [
   'Languages'
 ];
 
-// ---------- Clarified activity options ----------
 const ACTIVITIES = [
   'Solving problems',
   'Experiments / Hands-on (like science labs or building things)',
@@ -82,7 +80,6 @@ const ACTIVITIES = [
   'Advocating / Raising awareness (speaking up for a cause, e.g. climate change, bullying)'
 ];
 
-// ---------- Skill names with examples ----------
 const SKILL_NAMES = [
   { id: 'logicalReasoning', label: 'Logical Reasoning (solving puzzles, finding patterns)' },
   { id: 'creativity', label: 'Creativity (coming up with new ideas)' },
@@ -103,14 +100,12 @@ const SKILL_NAMES = [
   { id: 'physicalStamina', label: 'Physical Stamina / Endurance (staying active for long periods)' }
 ];
 
-// ---------- Clarified thinking style options ----------
 const THINKING_STYLES = [
   'I like clear answers that are either right or wrong (like math problems)',
   'I like open‑ended questions with many possible answers (like creative writing)',
   'A mix of both'
 ];
 
-// ---------- Learning style options (clarified) ----------
 const LEARNING_STYLES = [
   'Hands-on',
   'Reading & Theory (learning from books, not hands‑on)',
@@ -119,7 +114,6 @@ const LEARNING_STYLES = [
   'Independent Study'
 ];
 
-// ---------- Clarified motivations ----------
 const MOTIVATIONS = [
   'High Earning',
   'Helping / Impact',
@@ -132,7 +126,6 @@ const MOTIVATIONS = [
   'Creating things (art, buildings, inventions, ideas)'
 ];
 
-// ---------- Clarified "What matters more" options ----------
 const WHAT_MATTERS = [
   'Work-Life Balance',
   'Career Growth (opportunities to move up and earn more)',
@@ -148,7 +141,6 @@ const SOCIAL_PREFERENCES = [
   'Working alone / being by myself'
 ];
 
-// ---------- Clarified work environment options ----------
 const WORK_ENVIRONMENTS = [
   'Structured (clear rules and schedules)',
   'Fast-Paced',
@@ -158,7 +150,6 @@ const WORK_ENVIRONMENTS = [
   'Calm'
 ];
 
-// ---------- Updated JOB_TYPES with new clusters ----------
 const JOB_TYPES = [
   'Research job',
   'Healthcare job',
@@ -172,7 +163,6 @@ const JOB_TYPES = [
   'Creative role',
   'Social impact role',
   'Analytical/data role',
-  // New clusters
   'Legal / Justice',
   'Sales / Marketing',
   'Hospitality / Tourism'
@@ -199,7 +189,6 @@ const initialAnswers: Answers = {
   jobVision: [],
   dealbreakerJobs: [],
   careerContext: { profile: '', subAnswers: {} },
-  // New fields default values
   dreamJob: '',
   topValues: '',
   fulfillingProject: '',
@@ -216,14 +205,13 @@ const initialAnswers: Answers = {
 
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [submittedAnswers, setSubmittedAnswers] = useState<any>(null);
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
- const router = useRouter();
-
-  // AI report state (moved to top level)
   const [aiReport, setAiReport] = useState('');
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
@@ -232,8 +220,9 @@ export default function Home() {
   const loadedRef = useRef(false);
   const isReadyRef = useRef(false);
   const autoSavedRef = useRef(false);
+  const resetTriggered = useRef(false);
 
-  // Step constants – adjusted for new steps
+  // ---------- Step constants ----------
   const originalStepsCount = 2 + SKILL_NAMES.length + 10; // 2+17+10=29
   const newStepsCount = 17;
   const totalSteps = originalStepsCount + newStepsCount;
@@ -262,12 +251,14 @@ export default function Home() {
   const nextStep = () => setStep(s => clampStep(s + 1));
   const prevStep = () => setStep(s => clampStep(s - 1));
 
-  // Reset assessment
+  // ---------- Reset assessment function ----------
   const resetAssessment = async () => {
     setStep(0);
     setAnswers(initialAnswers);
     setResult(null);
     setSubmittedAnswers(null);
+    setAiReport('');
+    setReportGenerated(false);
     if (user) {
       await fetch('/api/save-progress', {
         method: 'POST',
@@ -277,9 +268,19 @@ export default function Home() {
     }
     loadedRef.current = false;
     isReadyRef.current = false;
+    autoSavedRef.current = false;
   };
 
-  // Load saved progress
+  // ---------- Reset query parameter handler ----------
+  useEffect(() => {
+    if (searchParams.get('reset') === 'true' && !resetTriggered.current && user) {
+      resetTriggered.current = true;
+      resetAssessment();
+      router.replace('/', { scroll: false });
+    }
+  }, [searchParams, user, resetAssessment, router]);
+
+  // ---------- Load saved progress ----------
   useEffect(() => {
     let isMounted = true;
     const loadProgress = async () => {
@@ -360,7 +361,6 @@ export default function Home() {
     };
     delete (payload as any).careerContext;
     setSubmittedAnswers(payload);
-    localStorage.setItem('mainAnswers', JSON.stringify(payload));
     const res = await fetch('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -371,7 +371,6 @@ export default function Home() {
     setLoading(false);
   };
 
-  // AI report generation function (called after results are shown)
   const generateAIReport = async () => {
     if (!result) return;
     setLoadingReport(true);
@@ -405,6 +404,7 @@ export default function Home() {
   const buttonPrimaryClasses = "btn-primary";
   const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
 
+  // Helper components
   const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
     <div className={containerClasses}>
       <div className="w-full max-w-2xl">
@@ -464,230 +464,187 @@ export default function Home() {
     </div>
   );
 
-  // ---------- RESULTS DISPLAY ----------
- if (result) {
-  // Auto‑save results on mount (once)
-  useEffect(() => {
-    const autoSaveResults = async () => {
-      if (!user || autoSavedRef.current) return;
-      autoSavedRef.current = true;
-      try {
-        // Save to assessments (with null feedback)
-        await fetch('/api/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: user.email,
-            userId: user.id,
-            feedbackRating: null,
-            feedbackComment: null,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
-            answers: submittedAnswers,
-          }),
-        });
-        // Save to user_results
-        await fetch('/api/save-results', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.id,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
-            answers: submittedAnswers,
-          }),
-        });
-        console.log('✅ Results auto‑saved');
-      } catch (err) {
-        console.error('Auto‑save failed:', err);
-      }
-    };
-    if (submittedAnswers && result) autoSaveResults();
-  }, [user, result, submittedAnswers]);
-
-  // ------------------------------------------------------------------
-  // FeedbackForm (now only saves feedback, not the entire results)
-  // ------------------------------------------------------------------
-  const FeedbackForm = () => {
-    const [email, setEmail] = useState('');
-    const [feedbackRating, setFeedbackRating] = useState(0);
-    const [feedbackComment, setFeedbackComment] = useState('');
-    const [saved, setSaved] = useState(false);
-    const [saving, setSaving] = useState(false);
-
-    const saveFeedback = async () => {
-      const finalEmail = user ? user.email : email;
-      if (!finalEmail) {
-        alert('Please enter your email');
-        return;
-      }
-      if (feedbackRating === 0) {
-        alert('Please rate your experience');
-        return;
-      }
-      setSaving(true);
-      try {
-        // Only save the feedback (assessments table)
-        const payload = {
-          email: finalEmail,
-          userId: user?.id || null,
-          feedbackRating,
-          feedbackComment,
-          topClusters: result.top3,
-          rawScores: result.rawScores,
-          answers: submittedAnswers,
-        };
-        const res = await fetch('/api/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          setSaved(true);
-        } else {
-          const responseData = await res.json();
-          alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
+  // ---------- RESULTS DISPLAY (with auto‑save and feedback form) ----------
+  if (result) {
+    // Auto‑save results once
+    useEffect(() => {
+      const autoSaveResults = async () => {
+        if (!user || autoSavedRef.current) return;
+        autoSavedRef.current = true;
+        try {
+          await fetch('/api/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.email,
+              userId: user.id,
+              feedbackRating: null,
+              feedbackComment: null,
+              topClusters: result.top3,
+              rawScores: result.rawScores,
+              answers: submittedAnswers,
+            }),
+          });
+          await fetch('/api/save-results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              topClusters: result.top3,
+              rawScores: result.rawScores,
+              answers: submittedAnswers,
+            }),
+          });
+          console.log('✅ Results auto‑saved');
+        } catch (err) {
+          console.error('Auto‑save failed:', err);
         }
-      } catch (err) {
-        alert('Network error. Please try again.');
-      } finally {
-        setSaving(false);
-      }
-    };
+      };
+      if (submittedAnswers && result) autoSaveResults();
+    }, [user, result, submittedAnswers]);
 
-    if (saved) {
-      return (
-        <div className="text-center py-8">
-          <div className="inline-block p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
-            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
+    const FeedbackForm = () => {
+      const [email, setEmail] = useState('');
+      const [feedbackRating, setFeedbackRating] = useState(0);
+      const [feedbackComment, setFeedbackComment] = useState('');
+      const [saved, setSaved] = useState(false);
+      const [saving, setSaving] = useState(false);
+
+      const saveFeedback = async () => {
+        const finalEmail = user ? user.email : email;
+        if (!finalEmail) { alert('Please enter your email'); return; }
+        if (feedbackRating === 0) { alert('Please rate your experience'); return; }
+        setSaving(true);
+        try {
+          const payload = {
+            email: finalEmail,
+            userId: user?.id || null,
+            feedbackRating,
+            feedbackComment,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          };
+          const res = await fetch('/api/save-result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (res.ok) {
+            setSaved(true);
+          } else {
+            const responseData = await res.json();
+            alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
+          }
+        } catch (err) { alert('Network error. Please try again.'); }
+        finally { setSaving(false); }
+      };
+
+      if (saved) {
+        return (
+          <div className="text-center py-8">
+            <div className="inline-block p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
+            <button onClick={() => setResult(null)} className={buttonPrimaryClasses}>Take Assessment Again</button>
           </div>
-          <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
-          <button onClick={() => setResult(null)} className={buttonPrimaryClasses}>Take Assessment Again</button>
+        );
+      }
+
+      return (
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Your results have already been saved. Optionally leave a rating and comment.</p>
+          <div className="space-y-6">
+            {!user && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="you@example.com" required />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
+              <div className="flex gap-3 justify-center">
+                {[1,2,3,4,5].map(r => (
+                  <button key={r} onClick={() => setFeedbackRating(r)} className={`w-12 h-12 rounded-full font-bold transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'}`}>{r}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
+              <textarea value={feedbackComment} onChange={(e) => setFeedbackComment(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="What did you think? Any suggestions?" />
+            </div>
+            <button onClick={saveFeedback} disabled={saving} className={buttonPrimaryClasses + " w-full"}>{saving ? 'Saving...' : 'Submit Feedback'}</button>
+          </div>
         </div>
       );
-    }
+    };
 
     return (
-      <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Your results have already been saved. Optionally leave a rating and comment.</p>
-        <div className="space-y-6">
-          {!user && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
-            <div className="flex gap-3 justify-center">
-              {[1,2,3,4,5].map(r => (
-                <button
-                  key={r}
-                  onClick={() => setFeedbackRating(r)}
-                  className={`w-12 h-12 rounded-full font-bold transition-all ${
-                    feedbackRating === r
-                      ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
-                  }`}
-                >
-                  {r}
-                </button>
+      <div className={containerClasses}>
+        <div className="w-full max-w-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
+            <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
+          </div>
+          <div className={`${cardClasses} mb-8`}>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+            <ul className="space-y-4">
+              {result.top3.map((item: any, idx: number) => (
+                <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-gray-900 dark:text-white text-lg">{item.cluster}</span>
+                    <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
+            {result.warningMessage && (
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">⚠️ {result.warningMessage}</div>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
-            <textarea
-              value={feedbackComment}
-              onChange={(e) => setFeedbackComment(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="What did you think? Any suggestions?"
-            />
+          <div className={cardClasses}>
+            <FeedbackForm />
           </div>
-          <button onClick={saveFeedback} disabled={saving} className={buttonPrimaryClasses + " w-full"}>
-            {saving ? 'Saving...' : 'Submit Feedback'}
-          </button>
+          <div className="mt-8">
+            {!reportGenerated ? (
+              <div>
+                <button onClick={generateAIReport} disabled=                  {loadingReport} className={buttonPrimaryClasses}>
+        {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
+      </button>
+      {loadingReport && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          We are processing your information and preparing your result. This may take a few seconds.
+        </p>
+      )}
+    </div>
+  ) : (
+    <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
+      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
+    </div>
+  )}
+</div>
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                localStorage.setItem('topClusters', JSON.stringify(result.top3.map((item: any) => item.cluster)));
+                router.push('/followup');
+              }}
+              className={buttonPrimaryClasses}
+            >
+              📋 Answer more questions for better advice
+            </button>
+          </div>
         </div>
       </div>
     );
-  };
+  }
 
-  // ------------------------------------------------------------------
-  // Return JSX (same as before, but with the modified FeedbackForm)
-  // ------------------------------------------------------------------
-  return (
-    <div className={containerClasses}>
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
-          <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
-        </div>
-        <div className={`${cardClasses} mb-8`}>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
-          <ul className="space-y-4">
-            {result.top3.map((item: any, idx: number) => (
-              <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold text-gray-900 dark:text-white text-lg">{item.cluster}</span>
-                  <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text font-bold text-xl">{item.percentage}%</span>
-                </div>
-                <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          {result.warningMessage && (
-            <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">⚠️ {result.warningMessage}</div>
-          )}
-        </div>
-        <div className={cardClasses}>
-          <FeedbackForm />
-        </div>
-
-        {/* AI Report Button & Display (unchanged) */}
-        <div className="mt-8">
-          {!reportGenerated ? (
-            <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
-              {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
-            </button>
-          ) : (
-            <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Follow‑up button */}
-        <div className="mt-6">
-          <button
-            onClick={() => {
-              localStorage.setItem('topClusters', JSON.stringify(result.top3.map((item: any) => item.cluster)));
-              router.push('/followup');
-            }}
-            className={buttonPrimaryClasses}
-          >
-            📋 Answer more questions for better advice
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-  // ---------- ORIGINAL STEP RENDERING (with clarified text) ----------
+  // ---------- STEP RENDERING ----------
+  // Subjects
   if (step === 0) {
     return (
       <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
@@ -695,6 +652,7 @@ export default function Home() {
       </StepContainer>
     );
   }
+  // Activities
   if (step === 1) {
     return (
       <StepContainer title="Which activities do you prefer? (Pick up to 3)">
@@ -702,6 +660,7 @@ export default function Home() {
       </StepContainer>
     );
   }
+  // Skills
   if (step >= 2 && step < 2 + SKILL_NAMES.length) {
     const skillIndex = step - 2;
     const skill = SKILL_NAMES[skillIndex];
@@ -751,7 +710,7 @@ export default function Home() {
   stepOffset++;
   if (step === stepOffset) return (<StepContainer title="Which job types interest you? (Choose as many as you want)"><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
 
-  // Dealbreaker step (clarified wording)
+  // Dealbreaker step
   if (step === dealbreakerStep) {
     return (
       <div className={containerClasses}>
@@ -777,7 +736,7 @@ export default function Home() {
     );
   }
 
-  // ---------- Career context steps (unchanged but with rephrased "Trade school") ----------
+  // Career context steps
   if (step === profileStep) {
     const profileDisplayMap: Record<string, string> = {
       high_school: 'High school student',
@@ -863,7 +822,7 @@ export default function Home() {
     return <StepContainer title="Error">Please go back and select a profile.</StepContainer>;
   }
 
-  // ---------- NEW MULTIPLE-CHOICE AND OPEN-ENDED STEPS ----------
+  // New multiple-choice and open-ended steps
   if (step === salaryStep) {
     return (
       <StepContainer title="What level of salary are you aiming for in your career?">
@@ -962,13 +921,13 @@ export default function Home() {
     return (
       <StepContainer title="What is your dream job? (Write a short description. If you don't know it exactly, write the most important features your job should or shouldn't have)">
         <textarea
-  key="dreamJob"
-  defaultValue={answers.dreamJob}
-  onBlur={(e) => update('dreamJob', e.target.value)}
-  rows={4}
-  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
-/>
+          key="dreamJob"
+          defaultValue={answers.dreamJob}
+          onBlur={(e) => update('dreamJob', e.target.value)}
+          rows={4}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
+        />
       </StepContainer>
     );
   }
@@ -976,13 +935,13 @@ export default function Home() {
     return (
       <StepContainer title="What are the top 3 things you value most in a career? (e.g., money, freedom, helping others, creativity)">
         <textarea
-  key="topValues"
-  defaultValue={answers.topValues}
-  onBlur={(e) => update('topValues', e.target.value)}
-  rows={3}
-  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
-/>
+          key="topValues"
+          defaultValue={answers.topValues}
+          onBlur={(e) => update('topValues', e.target.value)}
+          rows={3}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
+        />
       </StepContainer>
     );
   }
@@ -990,13 +949,13 @@ export default function Home() {
     return (
       <StepContainer title="Describe a time you felt truly fulfilled in a work or school project">
         <textarea
-  key="fulfillingProject"
-  defaultValue={answers.fulfillingProject}
-  onBlur={(e) => update('fulfillingProject', e.target.value)}
-  rows={4}
-  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  placeholder="What did you do? Why did it feel meaningful?"
-/>
+          key="fulfillingProject"
+          defaultValue={answers.fulfillingProject}
+          onBlur={(e) => update('fulfillingProject', e.target.value)}
+          rows={4}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="What did you do? Why did it feel meaningful?"
+        />
       </StepContainer>
     );
   }
@@ -1004,13 +963,13 @@ export default function Home() {
     return (
       <StepContainer title="What career(s) have you considered before? Why did you consider them? Why did you get discouraged from them, if you got discouraged?">
         <textarea
-  key="pastConsiderations"
-  defaultValue={answers.pastConsiderations}
-  onBlur={(e) => update('pastConsiderations', e.target.value)}
-  rows={4}
-  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-  placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
-/>
+          key="pastConsiderations"
+          defaultValue={answers.pastConsiderations}
+          onBlur={(e) => update('pastConsiderations', e.target.value)}
+          rows={4}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
+        />
       </StepContainer>
     );
   }
