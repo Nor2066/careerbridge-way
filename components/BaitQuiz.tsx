@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 
-const questions = [
+type Question = {
+  id: number;
+  text: string;
+  options: string[];
+  hoverIcons?: string[];
+};
+
+const questions: Question[] = [
   {
     id: 1,
     text: "What's your natural energy rhythm throughout the day?",
@@ -12,7 +19,7 @@ const questions = [
       "Evening – I do my best work after 6 PM",
       "Flexible – I adapt to whatever schedule is needed",
     ],
-    hoverIcons: ["🌞", "☀️", "🌙", "⏰"], // emoji – replace with image URLs if needed
+    hoverIcons: ["🌞", "☀️", "🌙", "⏰"],
   },
   {
     id: 2,
@@ -87,12 +94,16 @@ const questions = [
   },
 ];
 
-export default function BaitQuiz({ onComplete }) {
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [hoveredIndex, setHoveredIndex] = useState(null);
+type BaitQuizProps = {
+  onComplete: () => void;
+};
 
-  const handleAnswer = (answer) => {
+export default function BaitQuiz({ onComplete }: BaitQuizProps) {
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const handleAnswer = (answer: string) => {
     setAnswers({ ...answers, [current]: answer });
     if (current + 1 < questions.length) {
       setCurrent(current + 1);
@@ -108,11 +119,10 @@ export default function BaitQuiz({ onComplete }) {
   const progress = ((current + 1) / questions.length) * 100;
   const q = questions[current];
   const hasHoverIcons = q.hoverIcons && q.hoverIcons.length === q.options.length;
-  const hoverIcon = hasHoverIcons && hoveredIndex !== null ? q.hoverIcons[hoveredIndex] : null;
+  const hoverIcon = hasHoverIcons && hoveredIndex !== null ? q.hoverIcons![hoveredIndex] : null;
 
   return (
     <div className="p-6 md:p-8">
-      {/* Progress bar and question counter */}
       <div className="flex justify-between items-center mb-2 text-sm text-gray-400">
         <span>Question {current + 1} of {questions.length}</span>
         <span>{Math.round(progress)}% Complete</span>
@@ -121,7 +131,6 @@ export default function BaitQuiz({ onComplete }) {
         <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
       </div>
 
-      {/* Question header with optional hover icon */}
       <div className="flex items-center gap-3 mb-6">
         <h3 className="text-xl font-semibold text-white">{q.text}</h3>
         {hoverIcon && (
@@ -131,7 +140,6 @@ export default function BaitQuiz({ onComplete }) {
         )}
       </div>
 
-      {/* Answer options */}
       <div className="space-y-3">
         {q.options.map((opt, idx) => (
           <button
@@ -146,14 +154,12 @@ export default function BaitQuiz({ onComplete }) {
         ))}
       </div>
 
-      {/* Back button */}
       {current > 0 && (
         <button onClick={handleBack} className="mt-6 text-sm text-gray-400 hover:text-gray-200 transition">
           ← Previous question
         </button>
       )}
 
-      {/* CSS animation */}
       <style jsx>{`
         @keyframes bounceIn {
           0% { opacity: 0; transform: scale(0.5); }
