@@ -203,6 +203,8 @@ const initialAnswers: Answers = {
   criticismHandling: '',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
