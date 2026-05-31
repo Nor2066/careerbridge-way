@@ -203,8 +203,6 @@ const initialAnswers: Answers = {
   criticismHandling: '',
 };
 
-export const dynamic = 'force-dynamic';
-
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -351,6 +349,44 @@ export default function Home() {
     }
   }, [step, profile, followUp1Step, followUp2Step, followUp3Step, profileStep]);
 
+  // ---------- Auto-save results when they become available (unconditional hook) ----------
+  useEffect(() => {
+    const autoSaveResults = async () => {
+      if (!user || autoSavedRef.current) return;
+      if (!result || !submittedAnswers) return;
+      autoSavedRef.current = true;
+      try {
+        await fetch('/api/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            userId: user.id,
+            feedbackRating: null,
+            feedbackComment: null,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          }),
+        });
+        await fetch('/api/save-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          }),
+        });
+        console.log('✅ Results auto‑saved');
+      } catch (err) {
+        console.error('Auto‑save failed:', err);
+      }
+    };
+    autoSaveResults();
+  }, [user, result, submittedAnswers]);
+
   const update = (field: keyof Answers, value: any) => setAnswers(prev => ({ ...prev, [field]: value }));
   const updateSkill = (skillId: keyof Answers['skills'], value: number) => setAnswers(prev => ({ ...prev, skills: { ...prev.skills, [skillId]: value } }));
 
@@ -466,45 +502,8 @@ export default function Home() {
     </div>
   );
 
-  // ---------- RESULTS DISPLAY (with auto‑save and feedback form) ----------
+  // ---------- RESULTS DISPLAY ----------
   if (result) {
-    // Auto‑save results once
-    useEffect(() => {
-      const autoSaveResults = async () => {
-        if (!user || autoSavedRef.current) return;
-        autoSavedRef.current = true;
-        try {
-          await fetch('/api/save-result', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.email,
-              userId: user.id,
-              feedbackRating: null,
-              feedbackComment: null,
-              topClusters: result.top3,
-              rawScores: result.rawScores,
-              answers: submittedAnswers,
-            }),
-          });
-          await fetch('/api/save-results', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.id,
-              topClusters: result.top3,
-              rawScores: result.rawScores,
-              answers: submittedAnswers,
-            }),
-          });
-          console.log('✅ Results auto‑saved');
-        } catch (err) {
-          console.error('Auto‑save failed:', err);
-        }
-      };
-      if (submittedAnswers && result) autoSaveResults();
-    }, [user, result, submittedAnswers]);
-
     const FeedbackForm = () => {
       const [email, setEmail] = useState('');
       const [feedbackRating, setFeedbackRating] = useState(0);
@@ -613,22 +612,22 @@ export default function Home() {
           <div className="mt-8">
             {!reportGenerated ? (
               <div>
-                <button onClick={generateAIReport} disabled=                  {loadingReport} className={buttonPrimaryClasses}>
-        {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
-      </button>
-      {loadingReport && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          We are processing your information and preparing your result. This may take a few seconds.
-        </p>
-      )}
-    </div>
-  ) : (
-    <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
-      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
-    </div>
-  )}
-</div>
+                <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
+                  {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
+                </button>
+                {loadingReport && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    We are processing your information and preparing your result. This may take a few seconds.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
+                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
+              </div>
+            )}
+          </div>
           <div className="mt-6">
             <button
               onClick={() => {
