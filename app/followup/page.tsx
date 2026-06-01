@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 
 // --------------------------------------------------------------
-// 1. All 15 clusters, each with 8 questions (same as before)
+// 1. All 15 clusters, each with 8 questions (120 total)
 // --------------------------------------------------------------
 const clusterQuestions: Record<string, string[]> = {
   Analytical: [
@@ -157,12 +157,11 @@ const clusterQuestions: Record<string, string[]> = {
     "How do you handle demanding or angry customers?\n(a) I stay calm and try to help\n(b) I find it stressful\n(c) I avoid it if possible",
     "Would you rather manage others or be in a hands‑on service role (chef, concierge, tour guide)?\n(a) Manage others\n(b) Hands‑on role",
     "What appeals to you most?\n(a) Creating memorable experiences for guests\n(b) Organizing operations behind the scenes\n(c) Promoting destinations (marketing)"
-  ]
+  ],
 };
 
 // --------------------------------------------------------------
-// 2. Helper functions (unchanged)
-// --------------------------------------------------------------
+// Helper to parse options from question text
 function parseOptions(questionText: string): { letter: string; text: string }[] {
   const lines = questionText.split('\n');
   const options: { letter: string; text: string }[] = [];
@@ -300,20 +299,6 @@ export default function FollowUpPage() {
     }
   };
 
-  // Calculate progress
-  let answeredCount = 0;
-  for (const cluster of clusters) {
-    const clusterAnswers = answers[cluster];
-    if (clusterAnswers) {
-      answeredCount += Object.keys(clusterAnswers).length;
-    }
-  }
-  const totalQuestionsAll = clusters.reduce((sum, c) => sum + (clusterQuestions[c]?.length || 0), 0);
-  const progressPercent = totalQuestionsAll ? (answeredCount / totalQuestionsAll) * 100 : 0;
-
-  // ------------------------------------------------------------------
-  // Second AI report generation
-  // ------------------------------------------------------------------
   const generateFollowupReport = async () => {
     setLoadingReport(true);
     try {
@@ -344,96 +329,119 @@ export default function FollowUpPage() {
     }
   };
 
-  // ------------------------------------------------------------------
-  // Render based on state
-  // ------------------------------------------------------------------
+  // Calculate progress
+  let answeredCount = 0;
+  for (const cluster of clusters) {
+    const clusterAnswers = answers[cluster];
+    if (clusterAnswers) {
+      answeredCount += Object.keys(clusterAnswers).length;
+    }
+  }
+  const totalQuestionsAll = clusters.reduce((sum, c) => sum + (clusterQuestions[c]?.length || 0), 0);
+  const progressPercent = totalQuestionsAll ? (answeredCount / totalQuestionsAll) * 100 : 0;
+
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Thank you!</h1>
-        <p className="mb-4">Your detailed answers have been saved.</p>
-        {!reportGenerated ? (
-          <div>
-            <button onClick={generateFollowupReport} disabled={loadingReport} className="btn-primary">
-              {loadingReport ? 'Generating your personalized roadmap...' : '🚀 Get Your Career Roadmap'}
-            </button>
-            {loadingReport && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                We are processing your information and preparing your result. This may take a few seconds.
-              </p>
+      <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
+           style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
+        <div className="absolute inset-0 bg-black/30 z-0" />
+        <div className="relative z-10 max-w-2xl w-full mx-auto">
+          <div className="glass-card text-center">
+            <h1 className="text-2xl font-bold text-white mb-4">Thank you!</h1>
+            <p className="text-gray-200 mb-4">Your detailed answers have been saved.</p>
+            {!reportGenerated ? (
+              <div>
+                <button onClick={generateFollowupReport} disabled={loadingReport} className="btn-primary mt-2">
+                  {loadingReport ? 'Generating your personalized roadmap...' : '🚀 Get Your Career Roadmap'}
+                </button>
+                {loadingReport && (
+                  <p className="text-sm text-gray-300 mt-2">
+                    We are processing your information and preparing your result. This may take a few seconds.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-4 p-4 bg-white/20 rounded-lg">
+                <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
+                <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
+                <button onClick={() => router.push('/')} className="btn-primary mt-4">
+                  Go to Home
+                </button>
+              </div>
             )}
           </div>
-        ) : (
-          <div className="mt-6 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl text-left">
-            <h2 className="text-xl font-bold mb-3">Your Personalized Career Roadmap</h2>
-            <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{followupReport}</div>
-            <button onClick={() => router.push('/')} className="mt-6 btn-primary">Go to Home</button>
-          </div>
-        )}
+        </div>
       </div>
     );
   }
 
-  // Main follow‑up questionnaire rendering
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="mb-4 text-sm text-gray-500">
-        Cluster {clusterIndex + 1} of {clusters.length}: {currentCluster}
-      </div>
-      <div className="mb-4 text-sm text-gray-500">
-        Question {questionIndex + 1} of {totalQuestionsInCluster}
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
-        <div
-          className="bg-blue-600 h-2 rounded-full transition-all"
-          style={{ width: `${progressPercent}%` }}
-        ></div>
-      </div>
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
-        <p className="text-lg font-medium mb-4 whitespace-pre-line">{getQuestionStem(currentQ)}</p>
-        <div className="space-y-3">
-          {options.map(opt => (
-            <label key={opt.letter} className="flex items-center space-x-2">
+    <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
+         style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
+      <div className="absolute inset-0 bg-black/30 z-0" />
+      <div className="relative z-10 w-full max-w-2xl mx-auto">
+        <div className="glass-card">
+          <div className="mb-4 text-sm text-gray-300">
+            Cluster {clusterIndex + 1} of {clusters.length}: {currentCluster}
+          </div>
+          <div className="mb-4 text-sm text-gray-300">
+            Question {questionIndex + 1} of {totalQuestionsInCluster}
+          </div>
+          <div className="w-full bg-gray-600 rounded-full h-2 mb-6">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all"
+                 style={{ width: `${progressPercent}%` }} />
+          </div>
+          <h2 className="text-xl font-semibold text-white mb-6">{getQuestionStem(currentQ)}</h2>
+          <div className="space-y-3">
+            {options.map(opt => {
+              const isChecked = currentAnswer === opt.letter;
+              return (
+                <label
+                  key={opt.letter}
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm ${
+                    isChecked
+                      ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
+                      : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30 hover:shadow-md hover:shadow-indigo-500/20'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="question"
+                    value={opt.letter}
+                    className="hidden"
+                    checked={isChecked}
+                    onChange={() => handleAnswer(opt.letter)}
+                  />
+                  <span className="text-white font-medium">{opt.text}</span>
+                </label>
+              );
+            })}
+            {options.length === 0 && (
               <input
-                type="radio"
-                name="question"
-                value={opt.letter}
-                checked={currentAnswer === opt.letter}
-                onChange={() => handleAnswer(opt.letter)}
-                className="w-4 h-4"
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Type your answer"
+                value={currentAnswer}
+                onChange={(e) => handleAnswer(e.target.value)}
               />
-              <span>{opt.text}</span>
-            </label>
-          ))}
-          {options.length === 0 && (
-            <input
-              type="text"
-              className="w-full p-2 border rounded"
-              placeholder="Type your answer"
-              value={currentAnswer}
-              onChange={(e) => handleAnswer(e.target.value)}
-            />
-          )}
+            )}
+          </div>
+          <div className="mt-8 flex justify-between">
+            <button
+              onClick={goToPrevious}
+              disabled={clusterIndex === 0 && questionIndex === 0}
+              className="btn-secondary"
+            >
+              ← Previous
+            </button>
+            <button onClick={goToNext} disabled={loading} className="btn-primary">
+              {clusterIndex === clusters.length - 1 && questionIndex === totalQuestionsInCluster - 1
+                ? 'Submit'
+                : 'Next →'}
+            </button>
+          </div>
+          {loading && <div className="mt-4 text-center text-gray-300">Saving...</div>}
         </div>
-        <div className="mt-8 flex justify-between">
-          <button
-            onClick={goToPrevious}
-            disabled={clusterIndex === 0 && questionIndex === 0}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded disabled:opacity-50"
-          >
-            ← Previous
-          </button>
-          <button
-            onClick={goToNext}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-          >
-            {clusterIndex === clusters.length - 1 && questionIndex === totalQuestionsInCluster - 1
-              ? 'Submit'
-              : 'Next →'}
-          </button>
-        </div>
-        {loading && <div className="mt-4 text-center">Saving...</div>}
       </div>
     </div>
   );
