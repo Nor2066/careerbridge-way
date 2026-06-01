@@ -11,9 +11,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Add global error listener (optional)
+// Optional: listen to auth changes (only valid events)
 supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-    // do nothing
+  if (event === 'SIGNED_OUT') {
+    // handle sign out if needed
   }
 });
