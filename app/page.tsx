@@ -62,7 +62,7 @@ export default function LandingPage() {
             <div className="glass-card text-center">
               <h2 className="text-2xl font-bold text-white mb-4">Thank you for trying the demo quiz</h2>
               <p className="text-gray-200 mb-6">
-                The demo quiz is just an introduction – it cannot provide reliable, science‑based career recommendations.
+                The demo quiz is just an introduction – is is a great warm-up.
                 For a comprehensive assessment that analyses your skills, interests, and values, please proceed to our full Career Planner.
                 With that you will receive: our recommendation of which career path suits you best, followed by detailed suggestions of which fields would be suitable for you.
               </p>
