@@ -131,7 +131,7 @@ export default function LandingPage() {
               </p>
               <p className="text-gray-200 text-center mt-4 italic">
                 We genuinely want to help – This project came from our own struggles. If we can help even one student feel more confident about their future,
-                it will have been worth it.
+                it was worth it.
               </p>
             </div>
           </>
