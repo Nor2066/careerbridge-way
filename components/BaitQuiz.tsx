@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type Question = {
   id: number;
   text: string;
   options: string[];
-  hoverIcons?: string[];
+  hoverImages?: string[];
 };
 
 const questions: Question[] = [
@@ -19,7 +19,7 @@ const questions: Question[] = [
       "Evening – I do my best work after 6 PM",
       "Flexible – I adapt to whatever schedule is needed",
     ],
-    hoverIcons: ["🌞", "☀️", "🌙", "⏰"],
+    hoverImages: ["morning.jpg", "afternoon.jpg", "evening.jpg", "flexible.jpg"],
   },
   {
     id: 2,
@@ -30,7 +30,7 @@ const questions: Question[] = [
       "Perfect recall – never forget important details",
       "Empathy – understand and connect with anyone",
     ],
-    hoverIcons: ["🎯", "⚡", "🧠", "🤝"],
+    hoverImages: ["focus.jpg", "speed.jpg", "recall.jpg", "empathy.jpg"],
   },
   {
     id: 3,
@@ -41,6 +41,7 @@ const questions: Question[] = [
       "Connecting with friends or family",
       "Exploring outdoors or trying new experiences",
     ],
+    hoverImages: ["learning.jpg", "creating.jpg", "connecting.jpg", "exploring.jpg"],
   },
   {
     id: 4,
@@ -51,6 +52,7 @@ const questions: Question[] = [
       "Collaborative open-plan workspace",
       "Quiet space for deep focused work",
     ],
+    hoverImages: ["structured.jpg", "remote.jpg", "collaborative.jpg", "quiet.jpg"],
   },
   {
     id: 5,
@@ -61,6 +63,7 @@ const questions: Question[] = [
       "Experiment until I find what works",
       "Create a step-by-step structured plan",
     ],
+    hoverImages: ["research.jpg", "consult.jpg", "experiment.jpg", "plan.jpg"],
   },
   {
     id: 6,
@@ -71,6 +74,7 @@ const questions: Question[] = [
       "Work-life balance and flexibility",
       "Recognition and career advancement",
     ],
+    hoverImages: ["impact.jpg", "growth.jpg", "balance.jpg", "recognition.jpg"],
   },
   {
     id: 7,
@@ -81,6 +85,7 @@ const questions: Question[] = [
       "Optimise processes and systems",
       "Lead and inspire teams",
     ],
+    hoverImages: ["build.jpg", "help.jpg", "optimize.jpg", "lead.jpg"],
   },
   {
     id: 8,
@@ -91,8 +96,62 @@ const questions: Question[] = [
       "Connector – relationships and communication",
       "Analyst – data and insights",
     ],
+    hoverImages: ["strategist.jpg", "creator.jpg", "connector.jpg", "analyst.jpg"],
   },
 ];
+
+// Custom background positions for specific images
+const imagePositionMap: Record<string, string> = {
+  'morning.jpg': 'center 60%',
+  'afternoon.jpg': 'center 55%',
+  'evening.jpg': 'center 50%',
+  'flexible.jpg': 'center 52%',
+  'focus.jpg': 'center 37%',
+  'speed.jpg': 'center 82%',
+  'recall.jpg': 'center 45%',
+  'empathy.jpg': 'center 58%',
+  // Add more entries as needed
+ // Question 3 – add your desired positions
+  'learning.jpg': 'center 65%',
+  'creating.jpg': 'center 52%',
+  'connecting.jpg': 'center 61%',
+  'exploring.jpg': 'center 65%',
+
+  // Question 4
+  'structured.jpg': 'center 53%',
+  'remote.jpg': 'center 45%',
+  'collaborative.jpg': 'center 73%',
+  'quiet.jpg': 'center 23%',
+
+  // Question 5
+  'research.jpg': 'center 34%',
+  'consult.jpg': 'center 51%',
+  'experiment.jpg': 'center 75%',
+  'plan.jpg': 'center 25%',
+
+  // Question 6
+  'impact.jpg': 'center 78%',
+  'growth.jpg': 'center 45%',
+  'balance.jpg': 'center 38%',
+  'recognition.jpg': 'center 65%',
+
+  // Question 7
+  'build.jpg': 'center 79%',
+  'help.jpg': 'center 79%',
+  'optimize.jpg': 'center 30%',
+  'lead.jpg': 'center 16%',
+
+  // Question 8
+  'strategist.jpg': 'center 65%',
+  'creator.jpg': 'center 55%',
+  'connector.jpg': 'center 30%',
+  'analyst.jpg': 'center 60%',
+};
+
+function getBackgroundPosition(imagePath: string): string {
+  const filename = imagePath.split('/').pop() || '';
+  return imagePositionMap[filename] || 'center';
+}
 
 type BaitQuizProps = {
   onComplete: () => void;
@@ -102,6 +161,20 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // Preload all images
+  useEffect(() => {
+    const imagePaths: string[] = [];
+    questions.forEach((q) => {
+      if (q.hoverImages) {
+        q.hoverImages.forEach((img) => imagePaths.push(`/images/${img}`));
+      }
+    });
+    imagePaths.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   const handleAnswer = (answer: string) => {
     setAnswers({ ...answers, [current]: answer });
@@ -118,8 +191,10 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
 
   const progress = ((current + 1) / questions.length) * 100;
   const q = questions[current];
-  const hasHoverIcons = q.hoverIcons && q.hoverIcons.length === q.options.length;
-  const hoverIcon = hasHoverIcons && hoveredIndex !== null ? q.hoverIcons![hoveredIndex] : null;
+  if (!q) {
+    return <div className="p-6 text-white">Loading...</div>;
+  }
+  const hoverImage = q.hoverImages && hoveredIndex !== null ? `/images/${q.hoverImages[hoveredIndex]}` : null;
 
   return (
     <div className="p-6 md:p-8">
@@ -131,14 +206,7 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
         <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="flex items-center gap-3 mb-6">
-        <h3 className="text-xl font-semibold text-white">{q.text}</h3>
-        {hoverIcon && (
-          <div className="text-2xl transition-all duration-200 animate-bounce-in">
-            {hoverIcon}
-          </div>
-        )}
-      </div>
+      <h3 className="text-xl font-semibold text-white mb-6">{q.text}</h3>
 
       <div className="space-y-3">
         {q.options.map((opt, idx) => (
@@ -147,9 +215,23 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
             onClick={() => handleAnswer(opt)}
             onMouseEnter={() => setHoveredIndex(idx)}
             onMouseLeave={() => setHoveredIndex(null)}
-            className="w-full text-left p-4 border border-gray-700 rounded-lg hover:border-blue-500 hover:bg-blue-900/30 transition text-gray-200"
+            className="relative w-full text-left p-4 border border-gray-700 rounded-lg overflow-hidden transition-all duration-300 hover:border-blue-500 group"
           >
-            {opt}
+            {hoverImage && hoveredIndex === idx && (
+              <div
+                className="absolute inset-0 transition-opacity duration-300"
+                style={{
+                  backgroundImage: `url(${hoverImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: getBackgroundPosition(hoverImage),
+                  backgroundRepeat: 'no-repeat',
+                  opacity: 0.35,
+                }}
+              />
+            )}
+            <span className="relative z-10 text-gray-200 group-hover:text-white">
+              {opt}
+            </span>
           </button>
         ))}
       </div>
@@ -159,17 +241,6 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
           ← Previous question
         </button>
       )}
-
-      <style jsx>{`
-        @keyframes bounceIn {
-          0% { opacity: 0; transform: scale(0.5); }
-          80% { opacity: 1; transform: scale(1.1); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        .animate-bounce-in {
-          animation: bounceIn 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 }
