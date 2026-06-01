@@ -27,9 +27,9 @@
 
   /* Text styles */
   --heading1-size: 2.25rem;
-  --heading1-color: #111827;
-  --heading2-size: 1.875rem;
-  --heading2-color: #111827;
+  --heading1-color: #ffffff;
+  --heading2-size: 1.2rem;
+  --heading2-color: #ffffff;
   --body-text-color: #374151;
   --label-text-color: #4b5563;
   --result-text-color: #1f2937;
@@ -98,4 +98,30 @@ label {
 /* Result text (top clusters percentages, etc.) */
 .result-text {
   color: var(--result-text-color);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 100px 200px 500px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.glass-card-dark {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  padding: 2rem;
+  color: white;
+}
+
+.shadow-glow-hover {
+  box-shadow: 0 0 12px rgba(225, 0, 0, 6);
+}
+.shadow-glow-selected {
+  box-shadow: 0 0 0px rgba(99, 102, 241, 4);
 }

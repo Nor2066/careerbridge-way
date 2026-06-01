@@ -349,7 +349,7 @@ export default function Home() {
     }
   }, [step, profile, followUp1Step, followUp2Step, followUp3Step, profileStep]);
 
-  // ---------- Auto-save results when they become available (unconditional hook) ----------
+  // ---------- Auto-save results when they become available ----------
   useEffect(() => {
     const autoSaveResults = async () => {
       if (!user || autoSavedRef.current) return;
@@ -437,28 +437,28 @@ export default function Home() {
     }
   };
 
-  const containerClasses = "min-h-[calc(100vh-4rem)] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4";
-  const cardClasses = "card p-8";
+  // ***** STYLING *****
+  const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
   const buttonPrimaryClasses = "btn-primary";
-  const buttonSecondaryClasses = "px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all";
+  const buttonSecondaryClasses = "btn-secondary";
 
-  // Helper components
+  // Helper components with glass-card class
   const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
     <div className={containerClasses}>
       <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
+            <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
           </div>
-          <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">
+          <span className="text-sm font-medium text-gray-300 block mb-4">
             Step {step + 1} of {totalSteps}
           </span>
-          <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
+          <div className="w-full bg-gray-600 rounded-full h-2">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
           </div>
         </div>
-        <div className={cardClasses}>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">{title}</h2>
+        <div className="glass-card">
+          <h2 className="text-2xl font-bold text-white mb-6 text-center">{title}</h2>
           {children}
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             {step > 0 && <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>}
@@ -471,33 +471,66 @@ export default function Home() {
 
   const CheckboxGroup = ({ options, selected, onChange, maxSelections }: any) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {options.map((option: string) => (
-        <label key={option} className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors bg-gray-50 dark:bg-slate-700">
-          <input type="checkbox" checked={selected.includes(option)} onChange={(e) => {
-            if (e.target.checked && selected.length < maxSelections) onChange([...selected, option]);
-            else if (!e.target.checked) onChange(selected.filter((x: string) => x !== option));
-          }} className="w-5 h-5 text-indigo-600 rounded cursor-pointer" />
-          <span className="ml-3 text-gray-900 dark:text-white font-medium">{option}</span>
-        </label>
-      ))}
+      {options.map((option: string) => {
+        const isChecked = selected.includes(option);
+        return (
+          <label
+            key={option}
+            className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm ${
+              isChecked
+                ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
+                : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30 hover:shadow-md hover:shadow-indigo-500/20'
+            }`}
+          >
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={isChecked}
+              onChange={(e) => {
+                if (e.target.checked && selected.length < maxSelections) {
+                  onChange([...selected, option]);
+                } else if (!e.target.checked) {
+                  onChange(selected.filter((x: string) => x !== option));
+                }
+              }}
+            />
+            <span className="text-white font-medium">{option}</span>
+          </label>
+        );
+      })}
     </div>
   );
 
   const RadioGroup = ({ options, selected, onChange }: any) => (
     <div className="space-y-3">
-      {options.map((option: string) => (
-        <label key={option} className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors bg-gray-50 dark:bg-slate-700">
-          <input type="radio" checked={selected === option} onChange={() => onChange(option)} className="w-5 h-5 text-indigo-600 cursor-pointer" />
-          <span className="ml-3 text-gray-900 dark:text-white font-medium">{option}</span>
-        </label>
-      ))}
+      {options.map((option: string) => {
+        const isChecked = selected === option;
+        return (
+          <label
+            key={option}
+            className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm ${
+              isChecked
+                ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
+                : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30 hover:shadow-md hover:shadow-indigo-500/20'
+            }`}
+          >
+            <input
+              type="radio"
+              className="hidden"
+              checked={isChecked}
+              onChange={() => onChange(option)}
+            />
+            <span className="text-white font-medium">{option}</span>
+          </label>
+        );
+      })}
     </div>
   );
 
   const RatingButtons = ({ ratings, selected, onChange }: any) => (
     <div className="flex gap-4 justify-center flex-wrap">
       {ratings.map((r: number) => (
-        <button key={r} onClick={() => onChange(r)} className={`w-14 h-14 rounded-full font-bold transition-all ${selected === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'}`}>{r}</button>
+        <button key={r} onClick={() => onChange(r)} className={`w-14 h-14 rounded-full font-bold transition-all ${selected === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>{r}</button>
       ))}
     </div>
   );
@@ -553,26 +586,26 @@ export default function Home() {
 
       return (
         <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Help us improve</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">Your results have already been saved. Optionally leave a rating and comment.</p>
+          <h3 className="text-2xl font-bold text-white mb-2 text-center">Help us improve</h3>
+          <p className="text-gray-300 mb-6 text-center">Your results have already been saved. Optionally leave a rating and comment.</p>
           <div className="space-y-6">
             {!user && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="you@example.com" required />
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="you@example.com" required />
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">How accurate were your results? *</label>
+              <label className="block text-sm font-medium text-gray-300 mb-3 text-center">How accurate were your results? *</label>
               <div className="flex gap-3 justify-center">
                 {[1,2,3,4,5].map(r => (
-                  <button key={r} onClick={() => setFeedbackRating(r)} className={`w-12 h-12 rounded-full font-bold transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'}`}>{r}</button>
+                  <button key={r} onClick={() => setFeedbackRating(r)} className={`w-12 h-12 rounded-full font-bold transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>{r}</button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments (optional)</label>
-              <textarea value={feedbackComment} onChange={(e) => setFeedbackComment(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="What did you think? Any suggestions?" />
+              <label className="block text-sm font-medium text-gray-300 mb-2">Comments (optional)</label>
+              <textarea value={feedbackComment} onChange={(e) => setFeedbackComment(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="What did you think? Any suggestions?" />
             </div>
             <button onClick={saveFeedback} disabled={saving} className={buttonPrimaryClasses + " w-full"}>{saving ? 'Saving...' : 'Submit Feedback'}</button>
           </div>
@@ -584,29 +617,29 @@ export default function Home() {
       <div className={containerClasses}>
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
-            <p className="text-gray-600 dark:text-gray-400">Your personalized career assessment results</p>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
+            <p className="text-gray-300">Your personalized career assessment results</p>
           </div>
-          <div className={`${cardClasses} mb-8`}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+          <div className="glass-card mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
             <ul className="space-y-4">
               {result.top3.map((item: any, idx: number) => (
-                <li key={idx} className="bg-gray-50 dark:bg-slate-700 p-5 rounded-xl">
+                <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-gray-900 dark:text-white text-lg">{item.cluster}</span>
-                    <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                    <span className="font-semibold text-white text-lg">{item.cluster}</span>
+                    <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
                   </div>
-                  <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-3">
-                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
+                  <div className="w-full bg-gray-600 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
                   </div>
                 </li>
               ))}
             </ul>
             {result.warningMessage && (
-              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200">⚠️ {result.warningMessage}</div>
+              <div className="mt-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100">⚠️ {result.warningMessage}</div>
             )}
           </div>
-          <div className={cardClasses}>
+          <div className="glass-card">
             <FeedbackForm />
           </div>
           <div className="mt-8">
@@ -616,15 +649,15 @@ export default function Home() {
                   {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
                 </button>
                 {loadingReport && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-sm text-gray-400 mt-2">
                     We are processing your information and preparing your result. This may take a few seconds.
                   </p>
                 )}
               </div>
             ) : (
-              <div className="mt-4 p-5 bg-gray-50 dark:bg-slate-700 rounded-xl">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Your Personalized Career Report</h3>
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{aiReport}</p>
+              <div className="mt-4 p-5 bg-white/20 backdrop-blur-md rounded-xl">
+                <h3 className="text-xl font-bold text-white mb-3">Your Personalized Career Report</h3>
+                <p className="text-gray-200 whitespace-pre-wrap">{aiReport}</p>
               </div>
             )}
           </div>
@@ -644,8 +677,7 @@ export default function Home() {
     );
   }
 
-  // ---------- STEP RENDERING ----------
-  // Subjects
+  // ---------- STEP RENDERING (original steps up to dealbreaker) ----------
   if (step === 0) {
     return (
       <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
@@ -653,7 +685,6 @@ export default function Home() {
       </StepContainer>
     );
   }
-  // Activities
   if (step === 1) {
     return (
       <StepContainer title="Which activities do you prefer? (Pick up to 3)">
@@ -661,14 +692,13 @@ export default function Home() {
       </StepContainer>
     );
   }
-  // Skills
   if (step >= 2 && step < 2 + SKILL_NAMES.length) {
     const skillIndex = step - 2;
     const skill = SKILL_NAMES[skillIndex];
     const currentRating = answers.skills[skill.id as keyof Answers['skills']];
     return (
       <StepContainer title={`Rate your ${skill.label} (1-5)`}>
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">
+        <div className="text-sm text-gray-300 mb-4 text-center">
           1 = Not confident at all &nbsp;|&nbsp; 3 = Moderate &nbsp;|&nbsp; 5 = Very confident
         </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={currentRating} onChange={(val: number) => updateSkill(skill.id as keyof Answers['skills'], val)} />
@@ -697,7 +727,7 @@ export default function Home() {
     ];
     return (
       <StepContainer title="How far would you like to go academically?">
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center space-y-1">
+        <div className="text-sm text-gray-300 mb-4 text-center space-y-1">
           {levelLabels.map(label => <div key={label}>{label}</div>)}
         </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={answers.academicLevel} onChange={(val: number) => update('academicLevel', val)} />
@@ -717,15 +747,15 @@ export default function Home() {
       <div className={containerClasses}>
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">Step {step + 1} of {totalSteps}</span>
-            <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
+            <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
+            <span className="text-sm font-medium text-gray-300 block mb-4">Step {step + 1} of {totalSteps}</span>
+            <div className="w-full bg-gray-600 rounded-full h-2">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
             </div>
           </div>
-          <div className={cardClasses}>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Which job types would you NEVER want to do?</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Now be honest – these will be removed from your recommendations. (Even if you selected them before, choose them here if you would refuse that job.)</p>
+          <div className="glass-card">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">Which job types would you NEVER want to do?</h2>
+            <p className="text-sm text-gray-300 mb-4">Now be honest – these will be removed from your recommendations. (Even if you selected them before, choose them here if you would refuse that job.)</p>
             <CheckboxGroup options={JOB_TYPES} selected={answers.dealbreakerJobs} onChange={(val: string[]) => update('dealbreakerJobs', val)} maxSelections={Infinity} />
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
@@ -823,7 +853,7 @@ export default function Home() {
     return <StepContainer title="Error">Please go back and select a profile.</StepContainer>;
   }
 
-  // New multiple-choice and open-ended steps
+  // ---------- NEW MULTIPLE-CHOICE AND OPEN-ENDED STEPS ----------
   if (step === salaryStep) {
     return (
       <StepContainer title="What level of salary are you aiming for in your career?">
@@ -926,7 +956,7 @@ export default function Home() {
           defaultValue={answers.dreamJob}
           onBlur={(e) => update('dreamJob', e.target.value)}
           rows={4}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
         />
       </StepContainer>
@@ -940,7 +970,7 @@ export default function Home() {
           defaultValue={answers.topValues}
           onBlur={(e) => update('topValues', e.target.value)}
           rows={3}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
         />
       </StepContainer>
@@ -954,7 +984,7 @@ export default function Home() {
           defaultValue={answers.fulfillingProject}
           onBlur={(e) => update('fulfillingProject', e.target.value)}
           rows={4}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder="What did you do? Why did it feel meaningful?"
         />
       </StepContainer>
@@ -968,7 +998,7 @@ export default function Home() {
           defaultValue={answers.pastConsiderations}
           onBlur={(e) => update('pastConsiderations', e.target.value)}
           rows={4}
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
         />
       </StepContainer>
@@ -981,15 +1011,15 @@ export default function Home() {
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <div className="flex items-center justify-center mb-4">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">CareerBridge Way</h1>
+              <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
             </div>
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-4">Ready to see your results?</span>
-            <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+            <span className="text-sm font-medium text-gray-300 block mb-4">Ready to see your results?</span>
+            <div className="w-full bg-gray-600 rounded-full h-2">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
-          <div className={cardClasses}>
-            <p className="text-center mb-6">You've answered all questions.</p>
+          <div className="glass-card">
+            <p className="text-center text-gray-200 mb-6">You've answered all questions.</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
               <button onClick={handleSubmit} disabled={loading} className={buttonPrimaryClasses}>
