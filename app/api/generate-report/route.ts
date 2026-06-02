@@ -67,17 +67,17 @@ Do NOT list specific job titles or give concrete next steps. Instead, end the re
 
     const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
 
-    // Save to ai_main_reports (create table if not exists)
+    // Save to ai_main_reports (if table exists)
     const { error } = await supabaseServer.from('ai_main_reports').insert({
       user_id: userId,
       report,
       top_clusters: topClusters,
     });
-    if (error) console.error('Failed to save main AI report:', error);
+    if (error) console.error('Failed to save AI report:', error);
 
     return NextResponse.json({ report });
   } catch (error: any) {
-    console.error('AI error:', error);
+    console.error('OpenAI error:', error);
     const response: { error: string; stack?: string } = { error: 'Internal server error' };
     if (process.env.NODE_ENV === 'development') {
       response.stack = error.stack;

@@ -85,13 +85,14 @@ End with a "Your next 3 months" action plan (3 bullet points).
 
     const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
 
+    // Store the report in Supabase
     const { error } = await supabaseServer.from('ai_followup_reports').insert({
       user_id: userId,
       report,
       top_clusters: topClusters,
       followup_answers: followupAnswers,
     });
-    if (error) console.error('Failed to save follow-up AI report:', error);
+    if (error) throw error;
 
     return NextResponse.json({ report });
   } catch (error: any) {

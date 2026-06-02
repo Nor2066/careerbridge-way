@@ -154,7 +154,7 @@ export default function AdminPage() {
                   </td>
                   <td className="border p-2">
                     {item.raw_scores
-                      ? Object.entries(item.raw_scores)
+                      ? Object.entries(item.raw_scores as Record<string, number>)
                           .sort((a, b) => b[1] - a[1])
                           .slice(0, 3)
                           .map(([k, v]) => `${k}:${v}`)
