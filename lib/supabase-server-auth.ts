@@ -11,6 +11,8 @@ export async function getAuthenticatedUser() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
+        set() {},
+        remove() {},
       },
     }
   );
