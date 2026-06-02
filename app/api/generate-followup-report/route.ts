@@ -29,10 +29,60 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // ... (your existing prompt and OpenAI call) ...
-    // (I'm omitting the long prompt for brevity – keep your existing one)
+    const prompt = `
+You are a career guidance AI. The user has already completed a main career assessment and a detailed follow‑up questionnaire for their top clusters.
 
-    const completion = await openai.chat.completions.create({ ... });
+**First AI report summary (you previously wrote a warm, encouraging report):**  
+You explained why the user fits their top clusters and invited them to take this follow‑up. Now you have their detailed answers.
+
+**User's top career clusters (with match %):**
+${topClusters.map((c: any) => `- ${c.cluster}: ${c.percentage}%`).join('\n')}
+
+**Main assessment data (recap):**
+- Dream job: "${mainAnswers.dreamJob || 'Not provided'}"
+- Top values: "${mainAnswers.topValues || 'Not provided'}"
+- Fulfilling project: "${mainAnswers.fulfillingProject || 'Not provided'}"
+- Past considerations: "${mainAnswers.pastConsiderations || 'Not provided'}"
+- Salary aim: ${mainAnswers.salaryAim || 'Not provided'}
+- Relocation: ${mainAnswers.relocateWillingness || 'Not provided'}
+- Remote work: ${mainAnswers.remoteWork || 'Not provided'}
+- Work schedule: ${mainAnswers.workSchedule || 'Not provided'}
+- Job security: ${mainAnswers.jobSecurity || 'Not provided'}
+- Travel: ${mainAnswers.travelPreference || 'Not provided'}
+- Team environment: ${mainAnswers.teamEnvironment || 'Not provided'}
+- Handling criticism: ${mainAnswers.criticismHandling || 'Not provided'}
+
+**Follow‑up questionnaire answers (per cluster):**
+${Object.entries(followupAnswers).map(([cluster, qa]) => {
+  const answers = qa as Record<number, string>;
+  const answerLines = Object.entries(answers).map(([qIdx, ans]) => `  Q${Number(qIdx)+1}: ${ans}`).join('\n');
+  return `${cluster}:\n${answerLines}`;
+}).join('\n\n')}
+
+**Your task:**
+Write a detailed, personalized career roadmap (500-700 words). Do not repeat the basic cluster explanations from the first report. Instead, use the follow‑up answers to drill down into specific sub‑fields, job titles, required skills, certifications, and actionable next steps.
+
+For each of the top clusters, provide:
+- 2-3 concrete job titles (e.g., "UX researcher" instead of just "Analytical")
+- Recommended online courses, certifications, or learning paths
+- Suggestions for gaining experience (internships, side projects, volunteering)
+- How the user's preferences (salary, remote work, team environment) align with realistic opportunities
+
+Also include a short summary of how the user's values and past experiences (from the main assessment) connect to these recommendations.
+
+End with a "Your next 3 months" action plan (3 bullet points).
+`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You are a career counselor AI. Provide specific, actionable, and encouraging advice. Use concrete examples.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 1200,
+    });
+
     const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
 
     const { error } = await supabaseServer.from('ai_followup_reports').insert({
@@ -41,11 +91,15 @@ export async function POST(request: Request) {
       top_clusters: topClusters,
       followup_answers: followupAnswers,
     });
-    if (error) throw error;
+    if (error) console.error('Failed to save follow-up AI report:', error);
 
     return NextResponse.json({ report });
   } catch (error: any) {
     console.error('Follow‑up AI error:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    const response: { error: string; stack?: string } = { error: 'Internal server error' };
+    if (process.env.NODE_ENV === 'development') {
+      response.stack = error.stack;
+    }
+    return NextResponse.json(response, { status: 500 });
   }
 }
