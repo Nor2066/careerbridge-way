@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
@@ -10,12 +11,27 @@ export default function AdminPage() {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
+  const router = useRouter();
 
-  const handleLogin = () => {
-      console.log('Entered password:', password);
-      console.log('Env password:', process.env.NEXT_PUBLIC_ADMIN_PASSWORD);
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+  useEffect(() => {
+    const checkAuth = async () => {
+      const res = await fetch('/api/admin/check');
+      if (res.ok) {
+        setAuthenticated(true);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleLogin = async () => {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
       setAuthenticated(true);
+      router.refresh();
     } else {
       alert('Wrong password');
     }
@@ -24,22 +40,13 @@ export default function AdminPage() {
   const fetchAssessments = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        rating: filter,
-        sortBy,
-        sortOrder,
-      });
-      const res = await fetch(`/api/admin/assessments?${params}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_SECRET}`,
-        },
-      });
+      const params = new URLSearchParams({ rating: filter, sortBy, sortOrder });
+      const res = await fetch(`/api/admin/assessments?${params}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setAssessments(data);
     } catch (err) {
       console.error(err);
-      alert('Error fetching data');
     } finally {
       setLoading(false);
     }
@@ -55,19 +62,14 @@ export default function AdminPage() {
     return (
       <div className="max-w-md mx-auto p-6 mt-20">
         <h1 className="text-2xl font-bold">Admin Login</h1>
-         <input
-           type="password"
-           id="admin-password"
-           name="admin-password"
-           placeholder="Enter password"
-           value={password}
-           onChange={(e) => setPassword(e.target.value)}
-           className="mt-4 w-full p-2 border rounded"
+        <input
+          type="password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-4 w-full p-2 border rounded"
         />
-        <button
-          onClick={handleLogin}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-        >
+        <button onClick={handleLogin} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
           Login
         </button>
       </div>
@@ -79,7 +81,7 @@ export default function AdminPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-4 mb-4 flex-wrap">
         <div>
           <label className="block text-sm">Filter by rating:</label>
           <select
@@ -133,25 +135,37 @@ export default function AdminPage() {
               <th className="border p-2">Comment</th>
               <th className="border p-2">Top Clusters</th>
               <th className="border p-2">Raw Scores (top 3)</th>
-             </tr>
+            </tr>
           </thead>
           <tbody>
-            {assessments.map((item) => (
-              <tr key={item.id} className="border-b">
-                <td className="border p-2">{new Date(item.created_at).toLocaleString()} </td>
-                <td className="border p-2">{item.email}</td>
-                <td className="border p-2 text-center">{item.feedback_rating}</td>
-                <td className="border p-2 max-w-xs truncate">{item.feedback_comment || '-'}</td>
-                <td className="border p-2">
-                  {item.top_clusters?.map((c: any) => `${c.cluster} (${c.percentage}%)`).join(', ') || '-'}
-                </td>
-                <td className="border p-2">
-                  {item.raw_scores ? Object.entries(item.raw_scores).slice(0,3).map(([k,v]) => `${k}:${v}`).join(', ') : '-'}
-                </td>
-               </tr>
-            ))}
+            {assessments.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center p-4">No assessments found</td>
+              </tr>
+            ) : (
+              assessments.map((item) => (
+                <tr key={item.id} className="border-b">
+                  <td className="border p-2">{new Date(item.created_at).toLocaleString()}</td>
+                  <td className="border p-2">{item.email}</td>
+                  <td className="border p-2 text-center">{item.feedback_rating ?? '-'}</td>
+                  <td className="border p-2 max-w-xs truncate">{item.feedback_comment || '-'}</td>
+                  <td className="border p-2">
+                    {item.top_clusters?.map((c: any) => `${c.cluster} (${c.percentage}%)`).join(', ') || '-'}
+                  </td>
+                  <td className="border p-2">
+                    {item.raw_scores
+                      ? Object.entries(item.raw_scores)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 3)
+                          .map(([k, v]) => `${k}:${v}`)
+                          .join(', ')
+                      : '-'}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
-         </table>
+        </table>
       </div>
     </div>
   );
