@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';   // ✅ added
 
 type HistoryItem = {
   id: string;
@@ -27,7 +28,8 @@ export default function HistoryPage() {
     if (!user) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/user-history');
+        // ✅ replaced fetch with fetchWithAuth (adds Authorization header)
+        const res = await fetchWithAuth('/api/user-history', { credentials: 'include' });
         if (!res.ok) throw new Error();
         const data = await res.json();
         setHistory(data);

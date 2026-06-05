@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/fetchWithAuth';   // ✅ new import
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 // --------------------------------------------------------------
 // 1. All 15 clusters, each with 8 questions (120 total)
@@ -282,7 +282,6 @@ export default function FollowUpPage() {
     }
     setLoading(true);
     try {
-      // ✅ replaced fetch with fetchWithAuth
       const res = await fetchWithAuth('/api/save-followup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -302,42 +301,38 @@ export default function FollowUpPage() {
     }
   };
 
-const generateFollowupReport = async () => {
-  setLoadingReport(true);
-  try {
-    const assessmentId = localStorage.getItem('lastAssessmentId');
-    if (!assessmentId) {
-      alert('Assessment ID not found. Please complete the main assessment first.');
-      return;
+  const generateFollowupReport = async () => {
+    setLoadingReport(true);
+    try {
+      const storedMain = localStorage.getItem('mainAnswers');
+      const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
+      if (!mainAnswers) throw new Error('Main answers not found');
+      const assessmentId = localStorage.getItem('lastAssessmentId');   // ✅ get assessment ID
+      const res = await fetchWithAuth('/api/generate-followup-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user?.id,
+          assessmentId,          // ✅ include it (if server expects it)
+          mainAnswers,
+          topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
+          followupAnswers: answers,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFollowupReport(data.report);
+        setReportGenerated(true);
+      } else {
+        alert('Failed to generate report: ' + (data.error || 'unknown error'));
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    } finally {
+      setLoadingReport(false);
     }
-    const storedMain = localStorage.getItem('mainAnswers');
-    const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
-    if (!mainAnswers) throw new Error('Main answers not found');
-    const res = await fetchWithAuth('/api/generate-followup-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        userId: user?.id,
-        assessmentId,
-        mainAnswers,
-        topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
-        followupAnswers: answers,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setFollowupReport(data.report);
-      setReportGenerated(true);
-    } else {
-      alert('Failed to generate report: ' + (data.error || 'unknown error'));
-    }
-  } catch (err) {
-    alert('Network error. Please try again.');
-  } finally {
-    setLoadingReport(false);
-  }
-};
+  };
 
   // Calculate progress
   let answeredCount = 0;
@@ -374,7 +369,7 @@ const generateFollowupReport = async () => {
               <div className="mt-4 p-4 bg-white/20 rounded-lg">
                 <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
                 <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
-                <button onClick={() => router.push('/?reset=true')} className="btn-primary mt-4">
+                <button onClick={() => router.push('/')} className="btn-primary mt-4">
                   Go to Home
                 </button>
               </div>
