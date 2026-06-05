@@ -263,6 +263,7 @@ export default function Home() {
       await fetch('/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId: user.id, answers: initialAnswers, step: 0 }),
       });
     }
@@ -287,7 +288,9 @@ export default function Home() {
       if (!user) return;
       if (loadedRef.current) return;
       try {
-        const res = await fetch(`/api/load-progress?userId=${user.id}`);
+        const res = await fetch(`/api/load-progress?userId=${user.id}`, {
+          credentials: 'include',
+        });
         const data = await res.json();
         if (data.answers && data.step !== undefined) {
           let loadedStep = data.step;
@@ -302,6 +305,7 @@ export default function Home() {
           await fetch('/api/save-progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ userId: user.id, answers: mergedAnswers, step: loadedStep }),
           });
         }
@@ -322,6 +326,7 @@ export default function Home() {
       await fetch('/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId: user.id, answers: currentAnswers, step: currentStep }),
       });
     } catch (err) {}
@@ -359,6 +364,7 @@ export default function Home() {
         await fetch('/api/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             email: user.email,
             userId: user.id,
@@ -372,6 +378,7 @@ export default function Home() {
         await fetch('/api/save-results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             userId: user.id,
             topClusters: result.top3,
@@ -402,6 +409,7 @@ export default function Home() {
     const res = await fetch('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -416,6 +424,7 @@ export default function Home() {
       const res = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user?.id,
           answers: submittedAnswers,
@@ -559,7 +568,12 @@ export default function Home() {
             rawScores: result.rawScores,
             answers: submittedAnswers,
           };
-          const res = await fetch('/api/save-result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const res = await fetch('/api/save-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+          });
           if (res.ok) {
             setSaved(true);
           } else {
