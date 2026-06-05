@@ -303,32 +303,28 @@ export default function FollowUpPage() {
   };
 
 const generateFollowupReport = async () => {
-  console.log('🚀 generateFollowupReport called');
   setLoadingReport(true);
   try {
     const storedMain = localStorage.getItem('mainAnswers');
-    const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
-    if (!mainAnswers) throw new Error('Main answers not found');
-    
-    const payload = {
-      userId: user?.id,
-      mainAnswers,
-      topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
-      followupAnswers: answers,
-    };
-    console.log('📤 Sending payload:', payload);
+    if (!storedMain) {
+      alert('Please complete the main assessment first before generating a follow-up report.');
+      router.push('/assess');
+      return;
+    }
+    const mainAnswers = JSON.parse(storedMain);
     
     const res = await fetchWithAuth('/api/generate-followup-report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        userId: user?.id,
+        mainAnswers,
+        topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
+        followupAnswers: answers,
+      }),
     });
-    
-    console.log('📥 Response status:', res.status);
     const data = await res.json();
-    console.log('📦 Response data:', data);
-    
     if (res.ok) {
       setFollowupReport(data.report);
       setReportGenerated(true);
@@ -336,7 +332,6 @@ const generateFollowupReport = async () => {
       alert('Failed to generate report: ' + (data.error || 'unknown error'));
     }
   } catch (err) {
-    console.error('❌ generateFollowupReport error:', err);
     alert('Network error. Please try again.');
   } finally {
     setLoadingReport(false);
