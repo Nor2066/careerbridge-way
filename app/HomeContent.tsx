@@ -260,6 +260,8 @@ export default function Home() {
     setSubmittedAnswers(null);
     setAiReport('');
     setReportGenerated(false);
+    localStorage.removeItem('topClusters');
+    localStorage.removeItem('mainAnswers');
     if (user) {
       await fetchWithAuth('/api/save-progress', {
         method: 'POST',

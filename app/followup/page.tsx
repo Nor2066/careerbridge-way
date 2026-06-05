@@ -373,7 +373,7 @@ const generateFollowupReport = async () => {
               <div className="mt-4 p-4 bg-white/20 rounded-lg">
                 <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
                 <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
-                <button onClick={() => router.push('/')} className="btn-primary mt-4">
+                <button onClick={() => router.push('/?reset=true')} className="btn-primary mt-4">
                   Go to Home
                 </button>
               </div>

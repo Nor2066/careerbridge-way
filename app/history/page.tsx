@@ -4,53 +4,154 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 
+type HistoryItem = {
+  id: string;
+  createdAt: string;
+  topClusters: { cluster: string; percentage: number }[];
+  rawScores: Record<string, number>;
+  firstAIReport: string | null;
+  detailedRoadmap: string | null;
+};
+
 export default function HistoryPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [results, setResults] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Record<string, { first: boolean; second: boolean }>>({});
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/login');
-      return;
     }
+  }, [user, authLoading, router]);
 
-    const fetchResults = async () => {
-      const res = await fetch(`/api/user-results?userId=${user.id}`);
-      const data = await res.json();
-      setResults(data);
-      setLoading(false);
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('/api/user-history');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setHistory(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchResults();
-  }, [user, router]);
+    fetchHistory();
+  }, [user]);
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  const toggleFirst = (id: string) => {
+    setExpanded(prev => ({
+      ...prev,
+      [id]: { ...prev[id], first: !prev[id]?.first },
+    }));
+  };
+
+  const toggleSecond = (id: string) => {
+    setExpanded(prev => ({
+      ...prev,
+      [id]: { ...prev[id], second: !prev[id]?.second },
+    }));
+  };
+
+  if (authLoading || loading) {
+    return <div className="p-6 text-center">Loading...</div>;
+  }
+
+  if (!history.length) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-4">Your History</h1>
+        <p className="text-gray-600">No assessments found. Take the full assessment first!</p>
+        <button onClick={() => router.push('/assess')} className="mt-4 btn-primary">
+          Start Assessment
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Your Past Results</h1>
-      {results.length === 0 ? (
-        <p>No past results yet. Take the assessment first!</p>
-      ) : (
-        <div className="space-y-4">
-          {results.map((res, idx) => (
-            <div key={res.id} className="border p-4 rounded">
-              <p className="text-sm text-gray-500">{new Date(res.created_at).toLocaleString()}</p>
-              <p className="font-semibold">Top Clusters:</p>
-              <ul>
-                {res.top_clusters.map((c: any, i: number) => (
-                  <li key={i}>{c.cluster}: {c.percentage}%</li>
-                ))}
-              </ul>
-              <details>
-                <summary>Show raw scores</summary>
-                <pre>{JSON.stringify(res.raw_scores, null, 2)}</pre>
-              </details>
+      <h1 className="text-3xl font-bold mb-6">Your Assessment History</h1>
+      <div className="space-y-6">
+        {history.map((item) => (
+          <div key={item.id} className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <p className="text-sm text-gray-500">
+                  {new Date(item.createdAt).toLocaleDateString()} at{' '}
+                  {new Date(item.createdAt).toLocaleTimeString()}
+                </p>
+                <h2 className="text-xl font-semibold mt-1">Your Top 3 Career Clusters</h2>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+
+            {/* Top 3 clusters with percentage bars */}
+            <div className="space-y-3 mb-6">
+              {item.topClusters.map((cluster) => (
+                <div key={cluster.cluster}>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>{cluster.cluster}</span>
+                    <span>{cluster.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-indigo-600 h-2 rounded-full"
+                      style={{ width: `${cluster.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* First AI Report */}
+            <div className="mt-4 border-t pt-4">
+              <button
+                onClick={() => toggleFirst(item.id)}
+                className="flex justify-between items-center w-full text-left font-medium text-gray-700 hover:text-indigo-600"
+              >
+                <span>📄 First AI Report</span>
+                <span>{expanded[item.id]?.first ? '▲' : '▼'}</span>
+              </button>
+              {expanded[item.id]?.first && (
+                <div className="mt-2 p-4 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap">
+                  {item.firstAIReport ? (
+                    item.firstAIReport
+                  ) : (
+                    <em className="text-gray-500">No AI report was generated for this assessment.</em>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Detailed Roadmap (Second AI Report) */}
+            <div className="mt-4 border-t pt-4">
+              <button
+                onClick={() => toggleSecond(item.id)}
+                className="flex justify-between items-center w-full text-left font-medium text-gray-700 hover:text-indigo-600"
+              >
+                <span>🚀 Detailed Career Roadmap</span>
+                <span>{expanded[item.id]?.second ? '▲' : '▼'}</span>
+              </button>
+              {expanded[item.id]?.second && (
+                <div className="mt-2 p-4 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap">
+                  {item.detailedRoadmap ? (
+                    item.detailedRoadmap
+                  ) : (
+                    <em className="text-gray-500">
+                      No detailed roadmap was generated. Complete the follow‑up questionnaire first.
+                    </em>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
