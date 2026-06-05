@@ -15,7 +15,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const res = await fetch('/api/admin/check');
+      const res = await fetch('/api/admin/check', { credentials: 'include' }); // ✅ added
       if (res.ok) {
         setAuthenticated(true);
       }
@@ -27,6 +27,7 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // ✅ added
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
@@ -41,7 +42,7 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ rating: filter, sortBy, sortOrder });
-      const res = await fetch(`/api/admin/assessments?${params}`);
+      const res = await fetch(`/api/admin/assessments?${params}`, { credentials: 'include' }); // ✅ added
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setAssessments(data);

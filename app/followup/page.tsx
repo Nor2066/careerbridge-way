@@ -284,6 +284,7 @@ export default function FollowUpPage() {
       const res = await fetch('/api/save-followup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // ✅ added
         body: JSON.stringify({ userId: user.id, answers }),
       });
       if (res.ok) {
@@ -308,6 +309,7 @@ export default function FollowUpPage() {
       const res = await fetch('/api/generate-followup-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // ✅ added
         body: JSON.stringify({
           userId: user?.id,
           mainAnswers,
