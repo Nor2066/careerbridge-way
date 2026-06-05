@@ -1,3 +1,4 @@
+console.log('✅ generate-followup-report API called');
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { supabaseServer } from '@/lib/supabase-server';
