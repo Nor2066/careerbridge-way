@@ -1,26 +1,33 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
 import { getAuthenticatedUser } from '@/lib/supabase-server-auth';
-import { saveResultLimiter, getIP } from '@/lib/rate-limit';
 
 export async function GET(request: Request) {
-  const ip = getIP(request);
-  const { success } = await saveResultLimiter.limit(ip);
-  if (!success) {
-    return NextResponse.json(
-      { error: 'Too many requests. Please try again later.' },
-      { status: 429 }
-    );
-  }
-
   try {
+    // ========== DEBUGGING START ==========
+    console.log('=== load-progress DEBUG ===');
+    
+    // Log all cookies (names only)
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    console.log('Cookies present:', allCookies.map(c => c.name));
+    
+    // Log the user from the authentication helper
     const user = await getAuthenticatedUser();
+    console.log('Authenticated user:', user?.id || 'null');
+    
+    // If no user, return 401 with reason
     if (!user) {
+      console.log('❌ No authenticated user – returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    // ========== DEBUGGING END ==========
 
+    // Original logic continues...
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    
     if (userId !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
