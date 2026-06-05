@@ -1,15 +1,29 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { getAuthenticatedUser } from '@/lib/supabase-server-auth';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 
 export async function GET() {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
+    // Get authenticated user from session cookie
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all user_results for this user, ordered by newest first
+    // Fetch all user_results for this user
     const { data: results, error: resultsError } = await supabaseServer
       .from('user_results')
       .select('*')
@@ -18,10 +32,10 @@ export async function GET() {
 
     if (resultsError) throw resultsError;
 
-    // For each result, fetch corresponding AI reports (by user_id and closest created_at)
+    // For each result, fetch the corresponding AI reports
     const history = await Promise.all(
       results.map(async (result) => {
-        // Fetch the AI main report (first AI) that was created around the same time
+        // First AI report (main report) – find the closest one by created_at
         const { data: mainReports } = await supabaseServer
           .from('ai_main_reports')
           .select('report, created_at')
@@ -29,7 +43,7 @@ export async function GET() {
           .order('created_at', { ascending: false })
           .limit(1);
 
-        // Fetch the AI follow‑up report (roadmap) for this result (by user_id and closest created_at)
+        // Second AI report (follow-up roadmap)
         const { data: followupReports } = await supabaseServer
           .from('ai_followup_reports')
           .select('report, created_at')
