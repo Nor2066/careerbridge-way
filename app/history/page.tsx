@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 type HistoryItem = {
   id: string;
-  createdAt: string;
-  topClusters: { cluster: string; percentage: number }[];
-  rawScores: Record<string, number>;
-  firstAIReport: string | null;
-  detailedRoadmap: string | null;
+  created_at: string;
+  top_clusters: { cluster: string; percentage: number }[];
+  raw_scores: Record<string, number>;
 };
 
 export default function HistoryPage() {
@@ -18,7 +17,7 @@ export default function HistoryPage() {
   const router = useRouter();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<Record<string, { first: boolean; second: boolean }>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -30,32 +29,26 @@ export default function HistoryPage() {
     if (!user) return;
 
     const fetchHistory = async () => {
-      try {
-        const res = await fetch('/api/user-history');
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
-        setHistory(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('user_results')
+        .select('id, created_at, top_clusters, raw_scores')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+      } else {
+        setHistory(data || []);
       }
+      setLoading(false);
     };
+
     fetchHistory();
   }, [user]);
 
-  const toggleFirst = (id: string) => {
-    setExpanded(prev => ({
-      ...prev,
-      [id]: { ...prev[id], first: !prev[id]?.first },
-    }));
-  };
-
-  const toggleSecond = (id: string) => {
-    setExpanded(prev => ({
-      ...prev,
-      [id]: { ...prev[id], second: !prev[id]?.second },
-    }));
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   if (authLoading || loading) {
@@ -83,16 +76,15 @@ export default function HistoryPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="text-sm text-gray-500">
-                  {new Date(item.createdAt).toLocaleDateString()} at{' '}
-                  {new Date(item.createdAt).toLocaleTimeString()}
+                  {new Date(item.created_at).toLocaleDateString()} at{' '}
+                  {new Date(item.created_at).toLocaleTimeString()}
                 </p>
                 <h2 className="text-xl font-semibold mt-1">Your Top 3 Career Clusters</h2>
               </div>
             </div>
 
-            {/* Top 3 clusters with percentage bars */}
-            <div className="space-y-3 mb-6">
-              {item.topClusters.map((cluster) => (
+            <div className="space-y-3 mb-4">
+              {item.top_clusters.map((cluster) => (
                 <div key={cluster.cluster}>
                   <div className="flex justify-between text-sm font-medium">
                     <span>{cluster.cluster}</span>
@@ -108,47 +100,17 @@ export default function HistoryPage() {
               ))}
             </div>
 
-            {/* First AI Report */}
-            <div className="mt-4 border-t pt-4">
-              <button
-                onClick={() => toggleFirst(item.id)}
-                className="flex justify-between items-center w-full text-left font-medium text-gray-700 hover:text-indigo-600"
-              >
-                <span>📄 First AI Report</span>
-                <span>{expanded[item.id]?.first ? '▲' : '▼'}</span>
-              </button>
-              {expanded[item.id]?.first && (
-                <div className="mt-2 p-4 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap">
-                  {item.firstAIReport ? (
-                    item.firstAIReport
-                  ) : (
-                    <em className="text-gray-500">No AI report was generated for this assessment.</em>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Detailed Roadmap (Second AI Report) */}
-            <div className="mt-4 border-t pt-4">
-              <button
-                onClick={() => toggleSecond(item.id)}
-                className="flex justify-between items-center w-full text-left font-medium text-gray-700 hover:text-indigo-600"
-              >
-                <span>🚀 Detailed Career Roadmap</span>
-                <span>{expanded[item.id]?.second ? '▲' : '▼'}</span>
-              </button>
-              {expanded[item.id]?.second && (
-                <div className="mt-2 p-4 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap">
-                  {item.detailedRoadmap ? (
-                    item.detailedRoadmap
-                  ) : (
-                    <em className="text-gray-500">
-                      No detailed roadmap was generated. Complete the follow‑up questionnaire first.
-                    </em>
-                  )}
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => toggleExpand(item.id)}
+              className="text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              {expanded[item.id] ? 'Hide raw scores' : 'Show raw scores'}
+            </button>
+            {expanded[item.id] && (
+              <pre className="mt-2 p-3 bg-gray-100 rounded-md text-xs overflow-auto">
+                {JSON.stringify(item.raw_scores, null, 2)}
+              </pre>
+            )}
           </div>
         ))}
       </div>
