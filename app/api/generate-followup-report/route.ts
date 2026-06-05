@@ -1,4 +1,3 @@
-console.log('✅ generate-followup-report API called');
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { supabaseServer } from '@/lib/supabase-server';
@@ -7,6 +6,8 @@ import { generateReportLimiter, getIP } from '@/lib/rate-limit';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: Request) {
+  console.log('✅ generate-followup-report API called');
+
   const ip = getIP(request);
   const { success } = await generateReportLimiter.limit(ip);
   if (!success) {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Full prompt for the follow‑up report
+    // ========== FULL PROMPT (replace with your actual long prompt) ==========
     const prompt = `
 You are a career guidance AI. The user has already completed a main career assessment and a detailed follow‑up questionnaire for their top clusters.
 
@@ -97,7 +98,7 @@ End with a "Your next 3 months" action plan (3 bullet points).
 
     return NextResponse.json({ report });
   } catch (err: any) {
-    console.error(err);
+    console.error('Follow‑up AI error:', err);
     const response: { error: string; stack?: string } = { error: 'Internal server error' };
     if (process.env.NODE_ENV === 'development') {
       response.stack = err.stack;
