@@ -29,8 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Your existing prompt for the first AI report
-    const prompt = `...`; // (keep your existing prompt)
+    // YOUR EXISTING PROMPT FOR THE FIRST AI REPORT
+    const prompt = `...`; // Replace with your actual prompt
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -44,15 +44,17 @@ export async function POST(request: Request) {
 
     const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
 
-    // Optionally save to ai_main_reports
-    // (if you have that table, uncomment)
-    // await supabaseServer.from('ai_main_reports').insert({ user_id: userId, report, top_clusters: topClusters });
+    // Optionally save to ai_main_reports (if table exists)
+    // const { error: dbError } = await supabaseServer.from('ai_main_reports').insert({ user_id: userId, report, top_clusters: topClusters });
+    // if (dbError) console.error('Failed to save AI report:', dbError);
 
     return NextResponse.json({ report });
   } catch (err: any) {
     console.error(err);
-    const response = { error: 'Internal server error' };
-    if (process.env.NODE_ENV === 'development') response.stack = err.stack;
+    const response: { error: string; stack?: string } = { error: 'Internal server error' };
+    if (process.env.NODE_ENV === 'development') {
+      response.stack = err.stack;
+    }
     return NextResponse.json(response, { status: 500 });
   }
 }

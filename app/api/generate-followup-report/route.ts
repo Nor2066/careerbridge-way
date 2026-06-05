@@ -29,8 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Your existing long prompt for the follow‑up report
-    const prompt = `...`; // (keep your existing prompt)
+    // YOUR EXISTING PROMPT GOES HERE (keep the long prompt you had before)
+    const prompt = `...`; // Replace with your actual prompt
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -50,13 +50,16 @@ export async function POST(request: Request) {
       top_clusters: topClusters,
       followup_answers: followupAnswers,
     });
-
     if (dbError) throw dbError;
+
     return NextResponse.json({ report });
   } catch (err: any) {
     console.error(err);
-    const response = { error: 'Internal server error' };
-    if (process.env.NODE_ENV === 'development') response.stack = err.stack;
+    // Explicitly type the response object to allow optional stack property
+    const response: { error: string; stack?: string } = { error: 'Internal server error' };
+    if (process.env.NODE_ENV === 'development') {
+      response.stack = err.stack;
+    }
     return NextResponse.json(response, { status: 500 });
   }
 }
