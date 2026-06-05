@@ -1,3 +1,4 @@
+console.log('✅ generate-followup-report API route loaded');
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { supabaseServer } from '@/lib/supabase-server';
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
   const { success } = await generateReportLimiter.limit(ip);
   if (!success) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+console.log('📨 Request received, method:', request.method);
   }
 
   try {
