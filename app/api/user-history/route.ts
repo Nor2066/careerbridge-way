@@ -1,28 +1,23 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Get the Authorization header
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split(' ')[1];
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Join user_results with AI reports via assessment_id
+    // Verify the token and get the user
+    const { data: { user }, error: userError } = await supabaseServer.auth.getUser(token);
+    if (userError || !user) {
+      console.error('Token verification failed:', userError?.message);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Fetch user_results with AI reports
     const { data, error } = await supabaseServer
       .from('user_results')
       .select(`
@@ -35,7 +30,10 @@ export async function GET() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
 
     const history = data.map(item => ({
       id: item.id,
