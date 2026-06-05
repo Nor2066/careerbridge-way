@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';   // ✅ new import
 
 // --------------------------------------------------------------
 // 1. All 15 clusters, each with 8 questions (120 total)
@@ -281,10 +282,11 @@ export default function FollowUpPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/save-followup', {
+      // ✅ replaced fetch with fetchWithAuth
+      const res = await fetchWithAuth('/api/save-followup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ added
+        credentials: 'include',
         body: JSON.stringify({ userId: user.id, answers }),
       });
       if (res.ok) {
@@ -306,10 +308,11 @@ export default function FollowUpPage() {
       const storedMain = localStorage.getItem('mainAnswers');
       const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
       if (!mainAnswers) throw new Error('Main answers not found');
-      const res = await fetch('/api/generate-followup-report', {
+      // ✅ replaced fetch with fetchWithAuth
+      const res = await fetchWithAuth('/api/generate-followup-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ added
+        credentials: 'include',
         body: JSON.stringify({
           userId: user?.id,
           mainAnswers,

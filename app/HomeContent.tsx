@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/fetchWithAuth'; // ✅ new import
 
 type Answers = {
   subjects: string[];
@@ -260,7 +261,7 @@ export default function Home() {
     setAiReport('');
     setReportGenerated(false);
     if (user) {
-      await fetch('/api/save-progress', {
+      await fetchWithAuth('/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -288,7 +289,7 @@ export default function Home() {
       if (!user) return;
       if (loadedRef.current) return;
       try {
-        const res = await fetch(`/api/load-progress?userId=${user.id}`, {
+        const res = await fetchWithAuth(`/api/load-progress?userId=${user.id}`, {
           credentials: 'include',
         });
         const data = await res.json();
@@ -302,7 +303,7 @@ export default function Home() {
           };
           setAnswers(mergedAnswers);
           setStep(loadedStep);
-          await fetch('/api/save-progress', {
+          await fetchWithAuth('/api/save-progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -323,7 +324,7 @@ export default function Home() {
   const autoSave = async (currentAnswers: Answers, currentStep: number) => {
     if (!user) return;
     try {
-      await fetch('/api/save-progress', {
+      await fetchWithAuth('/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -361,7 +362,7 @@ export default function Home() {
       if (!result || !submittedAnswers) return;
       autoSavedRef.current = true;
       try {
-        await fetch('/api/save-result', {
+        await fetchWithAuth('/api/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -375,7 +376,7 @@ export default function Home() {
             answers: submittedAnswers,
           }),
         });
-        await fetch('/api/save-results', {
+        await fetchWithAuth('/api/save-results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -406,7 +407,7 @@ export default function Home() {
     };
     delete (payload as any).careerContext;
     setSubmittedAnswers(payload);
-    const res = await fetch('/api/assess', {
+    const res = await fetchWithAuth('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -421,7 +422,7 @@ export default function Home() {
     if (!result) return;
     setLoadingReport(true);
     try {
-      const res = await fetch('/api/generate-report', {
+      const res = await fetchWithAuth('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -568,7 +569,7 @@ export default function Home() {
             rawScores: result.rawScores,
             answers: submittedAnswers,
           };
-          const res = await fetch('/api/save-result', {
+          const res = await fetchWithAuth('/api/save-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';   // ✅ new import
 
 export default function AdminPage() {
   const [password, setPassword] = useState('');
@@ -15,7 +16,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const res = await fetch('/api/admin/check', { credentials: 'include' }); // ✅ added
+      // ✅ replaced fetch with fetchWithAuth
+      const res = await fetchWithAuth('/api/admin/check', { credentials: 'include' });
       if (res.ok) {
         setAuthenticated(true);
       }
@@ -24,10 +26,11 @@ export default function AdminPage() {
   }, []);
 
   const handleLogin = async () => {
-    const res = await fetch('/api/admin/login', {
+    // ✅ replaced fetch with fetchWithAuth
+    const res = await fetchWithAuth('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // ✅ added
+      credentials: 'include',
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
@@ -42,7 +45,8 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ rating: filter, sortBy, sortOrder });
-      const res = await fetch(`/api/admin/assessments?${params}`, { credentials: 'include' }); // ✅ added
+      // ✅ replaced fetch with fetchWithAuth
+      const res = await fetchWithAuth(`/api/admin/assessments?${params}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setAssessments(data);
