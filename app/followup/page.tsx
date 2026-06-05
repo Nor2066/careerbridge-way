@@ -304,31 +304,38 @@ export default function FollowUpPage() {
   const generateFollowupReport = async () => {
     setLoadingReport(true);
     try {
+      const assessmentId = localStorage.getItem('lastAssessmentId');
+      if (!assessmentId) {
+        alert('Assessment ID not found. Please complete the main assessment first.');
+        setLoadingReport(false);
+        return;
+      }
       const storedMain = localStorage.getItem('mainAnswers');
       const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
       if (!mainAnswers) throw new Error('Main answers not found');
-      const assessmentId = localStorage.getItem('lastAssessmentId');   // ✅ get assessment ID
+
       const res = await fetchWithAuth('/api/generate-followup-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           userId: user?.id,
-          assessmentId,          // ✅ include it (if server expects it)
+          assessmentId,
           mainAnswers,
           topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
           followupAnswers: answers,
         }),
       });
+
       const data = await res.json();
       if (res.ok) {
         setFollowupReport(data.report);
         setReportGenerated(true);
       } else {
-        alert('Failed to generate report: ' + (data.error || 'unknown error'));
+        alert('Failed to generate report: ' + (data.error || 'Unknown server error'));
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert('Network error. Please check your connection and try again.');
     } finally {
       setLoadingReport(false);
     }

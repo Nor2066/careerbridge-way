@@ -3,23 +3,50 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+    // Try to get the token from the Authorization header
+    const authHeader = request.headers.get('Authorization')?.replace('Bearer ', '');
+    
+    let user = null;
+    if (authHeader) {
+      // Use the token to create an authenticated client
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          global: { headers: { Authorization: `Bearer ${authHeader}` } },
+          cookies: {
+            get(name: string) {
+              return undefined; // not needed when using Authorization header
+            },
           },
-        },
+        }
+      );
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      if (userError || !authUser) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-    );
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      user = authUser;
+    } else {
+      // Fall back to cookie-based auth (original logic)
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+          },
+        }
+      );
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      if (userError || !authUser) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      user = authUser;
     }
 
     // Join user_results with AI reports via assessment_id
