@@ -24,13 +24,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId, assessmentId, answers, rawScores, topClusters } = await request.json();
-    if (!userId || userId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Get the most recent user_results id for this user
+    const { data: latestResult, error: resultError } = await supabaseServer
+      .from('user_results')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (resultError || !latestResult) {
+      console.error('No user_results found for user:', user.id);
+      return NextResponse.json({ error: 'No assessment found. Please complete the main assessment first.' }, { status: 400 });
     }
-    if (!assessmentId) {
-      return NextResponse.json({ error: 'Missing assessmentId' }, { status: 400 });
-    }
+    const assessmentId = latestResult.id;
+
+    const { answers, rawScores, topClusters } = await request.json();
 
     const prompt = `
 You are a career guidance AI. Write a friendly, personalized career report (max 400 words) based on the user's assessment.
@@ -71,7 +80,7 @@ Do NOT list specific job titles or give concrete next steps. Instead, end the re
     const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
 
     const { error: dbError } = await supabaseServer.from('ai_main_reports').insert({
-      user_id: userId,
+      user_id: user.id,
       assessment_id: assessmentId,
       report,
       top_clusters: topClusters,
