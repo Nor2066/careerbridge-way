@@ -5,7 +5,6 @@ import { createServerClient } from '@supabase/ssr';
 
 export async function GET() {
   try {
-    // Get authenticated user from session cookie
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,44 +22,28 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all user_results for this user
-    const { data: results, error: resultsError } = await supabaseServer
+    // Join user_results with AI reports via assessment_id
+    const { data, error } = await supabaseServer
       .from('user_results')
-      .select('*')
+      .select(`
+        id,
+        created_at,
+        top_clusters,
+        ai_main_reports (report),
+        ai_followup_reports (report)
+      `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (resultsError) throw resultsError;
+    if (error) throw error;
 
-    // For each result, fetch the corresponding AI reports
-    const history = await Promise.all(
-      results.map(async (result) => {
-        // First AI report (main report) – find the closest one by created_at
-        const { data: mainReports } = await supabaseServer
-          .from('ai_main_reports')
-          .select('report, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        // Second AI report (follow-up roadmap)
-        const { data: followupReports } = await supabaseServer
-          .from('ai_followup_reports')
-          .select('report, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        return {
-          id: result.id,
-          createdAt: result.created_at,
-          topClusters: result.top_clusters,
-          rawScores: result.raw_scores,
-          firstAIReport: mainReports?.[0]?.report || null,
-          detailedRoadmap: followupReports?.[0]?.report || null,
-        };
-      })
-    );
+    const history = data.map(item => ({
+      id: item.id,
+      createdAt: item.created_at,
+      topClusters: item.top_clusters,
+      firstAIReport: item.ai_main_reports?.[0]?.report || null,
+      detailedRoadmap: item.ai_followup_reports?.[0]?.report || null,
+    }));
 
     return NextResponse.json(history);
   } catch (err) {

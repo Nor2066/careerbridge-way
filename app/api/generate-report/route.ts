@@ -24,13 +24,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId, answers, rawScores, topClusters } = await request.json();
+    const { userId, assessmentId, answers, rawScores, topClusters } = await request.json();
     if (!userId || userId !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-console.log('Received answers:', JSON.stringify(answers, null, 2));
-console.log('Received topClusters:', JSON.stringify(topClusters, null, 2));
-    // YOUR EXISTING PROMPT FOR THE FIRST AI REPORT
+    if (!assessmentId) {
+      return NextResponse.json({ error: 'Missing assessmentId' }, { status: 400 });
+    }
+
     const prompt = `
 You are a career guidance AI. Write a friendly, personalized career report (max 400 words) based on the user's assessment.
 
@@ -38,20 +39,20 @@ You are a career guidance AI. Write a friendly, personalized career report (max 
 ${topClusters.map((c: any) => `- ${c.cluster}: ${c.percentage}%`).join('\n')}
 
 **Their answers to open-ended questions:**
-- Dream job: "${answers?.dreamJob || 'Not provided'}"
-- Top values: "${answers?.topValues || 'Not provided'}"
-- Fulfilling project: "${answers?.fulfillingProject || 'Not provided'}"
-- Past considerations: "${answers?.pastConsiderations || 'Not provided'}"
+- Dream job: "${answers.dreamJob || 'Not provided'}"
+- Top values: "${answers.topValues || 'Not provided'}"
+- Fulfilling project: "${answers.fulfillingProject || 'Not provided'}"
+- Past considerations: "${answers.pastConsiderations || 'Not provided'}"
 
 **Preferences:**
-- Salary aim: ${answers?.salaryAim || 'Not provided'}
-- Relocation: ${answers?.relocateWillingness || 'Not provided'}
-- Remote work: ${answers?.remoteWork || 'Not provided'}
-- Work schedule: ${answers?.workSchedule || 'Not provided'}
-- Job security: ${answers?.jobSecurity || 'Not provided'}
-- Travel: ${answers?.travelPreference || 'Not provided'}
-- Team environment: ${answers?.teamEnvironment || 'Not provided'}
-- Handling criticism: ${answers?.criticismHandling || 'Not provided'}
+- Salary aim: ${answers.salaryAim || 'Not provided'}
+- Relocation: ${answers.relocateWillingness || 'Not provided'}
+- Remote work: ${answers.remoteWork || 'Not provided'}
+- Work schedule: ${answers.workSchedule || 'Not provided'}
+- Job security: ${answers.jobSecurity || 'Not provided'}
+- Travel: ${answers.travelPreference || 'Not provided'}
+- Team environment: ${answers.teamEnvironment || 'Not provided'}
+- Handling criticism: ${answers.criticismHandling || 'Not provided'}
 
 Write a warm, encouraging report. For each of the top 3 clusters, explain why the user fits there based on their answers.
 Do NOT list specific job titles or give concrete next steps. Instead, end the report by inviting the user to take a short follow‑up questionnaire that will provide even more personalized advice about their top clusters.
@@ -60,7 +61,7 @@ Do NOT list specific job titles or give concrete next steps. Instead, end the re
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You are a helpful career counselor AI.' },
+        { role: 'system', content: 'You are a helpful career counselor AI. Provide accurate, actionable advice.' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.7,
@@ -69,9 +70,13 @@ Do NOT list specific job titles or give concrete next steps. Instead, end the re
 
     const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
 
-    // Optionally save to ai_main_reports (if table exists)
-    // const { error: dbError } = await supabaseServer.from('ai_main_reports').insert({ user_id: userId, report, top_clusters: topClusters });
-    // if (dbError) console.error('Failed to save AI report:', dbError);
+    const { error: dbError } = await supabaseServer.from('ai_main_reports').insert({
+      user_id: userId,
+      assessment_id: assessmentId,
+      report,
+      top_clusters: topClusters,
+    });
+    if (dbError) throw dbError;
 
     return NextResponse.json({ report });
   } catch (err: any) {

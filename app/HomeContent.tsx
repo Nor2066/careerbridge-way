@@ -418,6 +418,7 @@ export default function Home() {
     });
     const data = await res.json();
     setResult(data);
+    localStorage.setItem('lastAssessmentId', data.id); // ✅ store assessment ID
     setLoading(false);
   };
 
@@ -425,12 +426,17 @@ export default function Home() {
     if (!result) return;
     setLoadingReport(true);
     try {
+      const assessmentId = localStorage.getItem('lastAssessmentId');
+      if (!assessmentId) {
+        alert('Assessment ID not found. Please try again.');
+        return;
+      }
       const res = await fetchWithAuth('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           userId: user?.id,
+          assessmentId,
           answers: submittedAnswers,
           rawScores: result.rawScores,
           topClusters: result.top3,

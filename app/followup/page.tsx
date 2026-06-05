@@ -305,20 +305,21 @@ export default function FollowUpPage() {
 const generateFollowupReport = async () => {
   setLoadingReport(true);
   try {
-    const storedMain = localStorage.getItem('mainAnswers');
-    if (!storedMain) {
-      alert('Please complete the main assessment first before generating a follow-up report.');
-      router.push('/assess');
+    const assessmentId = localStorage.getItem('lastAssessmentId');
+    if (!assessmentId) {
+      alert('Assessment ID not found. Please complete the main assessment first.');
       return;
     }
-    const mainAnswers = JSON.parse(storedMain);
-    
+    const storedMain = localStorage.getItem('mainAnswers');
+    const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
+    if (!mainAnswers) throw new Error('Main answers not found');
     const res = await fetchWithAuth('/api/generate-followup-report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
         userId: user?.id,
+        assessmentId,
         mainAnswers,
         topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
         followupAnswers: answers,

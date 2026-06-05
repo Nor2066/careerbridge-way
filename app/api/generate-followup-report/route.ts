@@ -1,4 +1,3 @@
-console.log('✅ generate-followup-report API route loaded');
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { supabaseServer } from '@/lib/supabase-server';
@@ -11,7 +10,6 @@ export async function POST(request: Request) {
   const { success } = await generateReportLimiter.limit(ip);
   if (!success) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-console.log('📨 Request received, method:', request.method);
   }
 
   try {
@@ -26,9 +24,12 @@ console.log('📨 Request received, method:', request.method);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId, mainAnswers, topClusters, followupAnswers } = await request.json();
+    const { userId, assessmentId, mainAnswers, topClusters, followupAnswers } = await request.json();
     if (!userId || userId !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (!assessmentId) {
+      return NextResponse.json({ error: 'Missing assessmentId' }, { status: 400 });
     }
 
     const prompt = `
@@ -89,6 +90,7 @@ End with a "Your next 3 months" action plan (3 bullet points).
 
     const { error: dbError } = await supabaseServer.from('ai_followup_reports').insert({
       user_id: userId,
+      assessment_id: assessmentId,
       report,
       top_clusters: topClusters,
       followup_answers: followupAnswers,
