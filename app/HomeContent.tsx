@@ -359,41 +359,45 @@ export default function Home() {
 
   // ---------- Auto-save results when they become available ----------
   useEffect(() => {
-    const autoSaveResults = async () => {
-      if (!user || autoSavedRef.current) return;
-      if (!result || !submittedAnswers) return;
-      autoSavedRef.current = true;
-      try {
-        await fetchWithAuth('/api/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            email: user.email,
-            userId: user.id,
-            feedbackRating: null,
-            feedbackComment: null,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
-            answers: submittedAnswers,
-          }),
-        });
-        await fetchWithAuth('/api/save-results', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            userId: user.id,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
-            answers: submittedAnswers,
-          }),
-        });
-        console.log('✅ Results auto‑saved');
-      } catch (err) {
-        console.error('Auto‑save failed:', err);
-      }
-    };
+const autoSaveResults = async () => {
+  if (!user || autoSavedRef.current) return;
+  if (!result || !submittedAnswers) return;
+  autoSavedRef.current = true;
+  try {
+    // Save to assessments (feedback)
+    await fetchWithAuth('/api/save-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: user.email,
+        userId: user.id,
+        feedbackRating: null,
+        feedbackComment: null,
+        topClusters: result.top3,
+        rawScores: result.rawScores,
+        answers: submittedAnswers,
+      }),
+    });
+    // Save to user_results and get the ID
+    const res = await fetchWithAuth('/api/save-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        topClusters: result.top3,
+        rawScores: result.rawScores,
+        answers: submittedAnswers,
+      }),
+    });
+    const data = await res.json();
+    if (data.id) {
+      localStorage.setItem('lastAssessmentId', data.id);
+    }
+    console.log('✅ Results auto‑saved');
+  } catch (err) {
+    console.error('Auto‑save failed:', err);
+  }
+};
     autoSaveResults();
   }, [user, result, submittedAnswers]);
 
@@ -422,39 +426,39 @@ export default function Home() {
     setLoading(false);
   };
 
-  const generateAIReport = async () => {
-    if (!result) return;
-    setLoadingReport(true);
-    try {
-      const assessmentId = localStorage.getItem('lastAssessmentId');
-      if (!assessmentId) {
-        alert('Assessment ID not found. Please try again.');
-        return;
-      }
-      const res = await fetchWithAuth('/api/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.id,
-          assessmentId,
-          answers: submittedAnswers,
-          rawScores: result.rawScores,
-          topClusters: result.top3,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setAiReport(data.report);
-        setReportGenerated(true);
-      } else {
-        alert('Failed to generate report: ' + (data.error || 'unknown error'));
-      }
-    } catch (err) {
-      alert('Network error. Please try again.');
-    } finally {
-      setLoadingReport(false);
+const generateAIReport = async () => {
+  if (!result) return;
+  const assessmentId = localStorage.getItem('lastAssessmentId');
+  if (!assessmentId) {
+    alert('Please wait a moment for the assessment to be saved, then try again.');
+    return;
+  }
+  setLoadingReport(true);
+  try {
+    const res = await fetchWithAuth('/api/generate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user?.id,
+        assessmentId,
+        answers: submittedAnswers,
+        rawScores: result.rawScores,
+        topClusters: result.top3,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setAiReport(data.report);
+      setReportGenerated(true);
+    } else {
+      alert('Failed to generate report: ' + (data.error || 'unknown error'));
     }
-  };
+  } catch (err) {
+    alert('Network error. Please try again.');
+  } finally {
+    setLoadingReport(false);
+  }
+};
 
   // ***** STYLING *****
   const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
