@@ -1,20 +1,48 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export function middleware(request: NextRequest) {
-  // Allow the login page itself
-  if (request.nextUrl.pathname === '/admin/login') {
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (
+    pathname.startsWith('/admin/login') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('favicon.ico')
+  ) {
     return NextResponse.next();
   }
 
-  // Protect all other /admin routes
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const adminAuth = request.cookies.get('admin_auth')?.value;
-    if (adminAuth !== 'true') {
-      const loginUrl = new URL('/admin/login', request.url);
-      return NextResponse.redirect(loginUrl);
+  const response = NextResponse.next();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookies) => {
+          cookies.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
     }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (pathname.startsWith('/admin') && !user) {
+    return NextResponse.redirect(
+      new URL('/admin/login', request.url)
+    );
   }
 
-  return NextResponse.next();
+  return response;
 }
+
+export const config = {
+  matcher: ['/admin/:path*'],
+};

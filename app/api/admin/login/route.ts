@@ -1,20 +1,37 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
-  const { password } = await request.json();
-  if (password === ADMIN_PASSWORD) {
-    const cookieStore = await cookies();
-    cookieStore.set('admin_auth', 'true', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 2,
-      path: '/',
+  try {
+    const { email, password } = await request.json();
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
-    return NextResponse.json({ success: true });
+
+    if (error || !data.session) {
+      return NextResponse.json(
+        { error: error?.message || 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+
+    // IMPORTANT: return session to frontend, DO NOT set cookies manually
+    return NextResponse.json({
+      user: data.user,
+      session: data.session,
+    });
+
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Server error' },
+      { status: 500 }
+    );
   }
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
