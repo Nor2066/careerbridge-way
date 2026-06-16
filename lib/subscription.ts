@@ -18,29 +18,26 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
     .eq('user_id', userId)
     .maybeSingle();
 
-  // If no row exists (new user, or row missing), auto-create one and return
-  // a default free subscription. This prevents the chicken-and-egg problem
-  // where a user can't purchase a plan because we can't find their subscription.
-  if (!data) {
-    console.warn(`No subscription row for user ${userId} — creating default free row`);
+  if (error) {
+    console.error(`Supabase error fetching subscription for ${userId}:`, error.message, 'code:', error.code);
+    throw new Error(`Database error fetching subscription: ${error.message}`);
+  }
 
-    const { data: newRow, error: insertError } = await supabaseServer
+  if (!data) {
+    // Row missing — try to create it (handles users who predate the signup trigger)
+    console.warn(`No subscription row for ${userId} — attempting upsert`);
+    const { data: created, error: upsertError } = await supabaseServer
       .from('subscriptions')
       .upsert(
-        {
-          user_id: userId,
-          plan: 'free',
-          main_attempts_remaining: 0,
-          current_attempt_status: 'none',
-        },
+        { user_id: userId, plan: 'free', main_attempts_remaining: 0 },
         { onConflict: 'user_id' }
       )
       .select()
       .single();
 
-    if (insertError || !newRow) {
-      // Last resort — return an in-memory default so the user isn't blocked
-      console.error(`Failed to create subscription row for ${userId}:`, insertError?.message);
+    if (upsertError || !created) {
+      console.error(`Upsert failed for ${userId}:`, upsertError?.message, 'code:', upsertError?.code);
+      // Return safe default so user isn't completely blocked
       return {
         user_id: userId,
         plan: 'free',
@@ -51,8 +48,7 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
         current_attempt_result_id: null,
       };
     }
-
-    return newRow as SubscriptionRow;
+    return created as SubscriptionRow;
   }
 
   return data as SubscriptionRow;
