@@ -303,7 +303,7 @@ export default function Home() {
         return;
       }
       try {
-        const res = await fetchWithAuth('/api/subscription-status', { credentials: 'include' });
+        const res = await fetch('/api/subscription-status', { credentials: 'include' });
         const data = await res.json();
         if (isMounted) {
           setSubStatus(data);
@@ -327,7 +327,7 @@ export default function Home() {
   const refetchSubStatus = async () => {
     if (!user) return;
     try {
-      const res = await fetchWithAuth('/api/subscription-status', { credentials: 'include' });
+      const res = await fetch('/api/subscription-status', { credentials: 'include' });
       const data = await res.json();
       setSubStatus(data);
       return data;
@@ -585,7 +585,7 @@ export default function Home() {
   const handleSkipFollowup = async () => {
     setSkipLoading(true);
     try {
-      const res = await fetchWithAuth('/api/skip-followup', {
+      const res = await fetch('/api/skip-followup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
