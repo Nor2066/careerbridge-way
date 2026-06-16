@@ -4,18 +4,25 @@ if (typeof window !== 'undefined') {
 
 import { createClient } from '@supabase/supabase-js';
 
-// NEXT_PUBLIC_SUPABASE_URL is used here intentionally — despite the NEXT_PUBLIC_
-// prefix, this file is server-only (guarded by the window check above).
-// SUPABASE_URL (without prefix) is not set in this project.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
-if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+// Log which keys are present at startup to help diagnose 403s
+// (only logs key presence, never the actual key value)
+if (!supabaseUrl) {
+  console.error('MISSING ENV: NEXT_PUBLIC_SUPABASE_URL is not set');
+}
+if (!serviceRoleKey) {
+  console.error('MISSING ENV: SUPABASE_SERVICE_ROLE_KEY is not set — falling back to anon key will cause 403s');
+}
 
-export const supabaseServer = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+export const supabaseServer = createClient(
+  supabaseUrl ?? '',
+  serviceRoleKey ?? '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);

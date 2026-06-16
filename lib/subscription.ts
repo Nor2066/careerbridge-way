@@ -16,10 +16,43 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    throw new Error(`Subscription not found for user ${userId}`);
+  // If no row exists (new user, or row missing), auto-create one and return
+  // a default free subscription. This prevents the chicken-and-egg problem
+  // where a user can't purchase a plan because we can't find their subscription.
+  if (!data) {
+    console.warn(`No subscription row for user ${userId} — creating default free row`);
+
+    const { data: newRow, error: insertError } = await supabaseServer
+      .from('subscriptions')
+      .upsert(
+        {
+          user_id: userId,
+          plan: 'free',
+          main_attempts_remaining: 0,
+          current_attempt_status: 'none',
+        },
+        { onConflict: 'user_id' }
+      )
+      .select()
+      .single();
+
+    if (insertError || !newRow) {
+      // Last resort — return an in-memory default so the user isn't blocked
+      console.error(`Failed to create subscription row for ${userId}:`, insertError?.message);
+      return {
+        user_id: userId,
+        plan: 'free',
+        main_attempts_remaining: 0,
+        followups_paid_count: 0,
+        bonus_attempt_granted: false,
+        current_attempt_status: 'none',
+        current_attempt_result_id: null,
+      };
+    }
+
+    return newRow as SubscriptionRow;
   }
 
   return data as SubscriptionRow;
