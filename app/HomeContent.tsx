@@ -450,34 +450,10 @@ export default function Home() {
       autoSavedRef.current = true;
       setSaveResultError(null);
       try {
-        // Save to assessments (feedback) — also runs the subscription check
-        const feedbackRes = await fetchWithAuth('/api/save-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            email: user.email,
-            feedbackRating: null,
-            feedbackComment: null,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
-            answers: submittedAnswers,
-          }),
-        });
-
-        if (!feedbackRes.ok) {
-          const errData = await feedbackRes.json().catch(() => ({}));
-          if (errData.code === 'SUBSCRIPTION_REQUIRED') {
-            setSaveResultError(errData.error || 'You need to purchase a plan to continue.');
-            await refetchSubStatus();
-            autoSavedRef.current = false; // allow retry after purchase
-            return;
-          }
-          console.error('save-result failed:', errData);
-        }
-
-        // Save to user_results and get the ID
-        const res = await fetchWithAuth('/api/save-results', {
+        // Step 1: Save to user_results — this is the primary save.
+        // Returns the result ID we need for the AI report.
+        // Also runs the subscription check and marks attempt as in_progress.
+        const res = await fetchWithAuth('/api/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -496,7 +472,8 @@ export default function Home() {
             autoSavedRef.current = false;
             return;
           }
-          console.error('save-results failed:', errData);
+          console.error('save-result failed:', errData);
+          autoSavedRef.current = false;
           return;
         }
 
@@ -505,7 +482,20 @@ export default function Home() {
           sessionStorage.setItem('lastAssessmentId', data.id);
         }
 
-        // Refresh subscription status — now current_attempt_status = 'in_progress'
+        // Step 2: Save feedback/assessment record (fire-and-forget — not critical
+        // for the AI report flow, so we don't block on it or show errors to user)
+        fetchWithAuth('/api/save-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          }),
+        }).catch(err => console.error('save-results (non-critical) failed:', err));
+
+        // Refresh subscription status
         await refetchSubStatus();
       } catch (err) {
         console.error('Auto-save failed:', err);
