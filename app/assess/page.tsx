@@ -2,9 +2,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import dynamic from 'next/dynamic';
-
-const HomeContent = dynamic(() => import('@/app/HomeContent'), { ssr: false });
+import AssessClient from './AssessClient';
 
 // Server component — redirects unauthenticated users to /login before
 // any page HTML is sent. Authenticated users see the real questionnaire.
@@ -31,7 +29,7 @@ export default async function AssessPage() {
       style={{ backgroundImage: `url('/images/bg-assess.jpg')` }}
     >
       <div className="w-full max-w-2xl mx-auto text-white">
-        <HomeContent />
+        <AssessClient />
       </div>
     </main>
   );
