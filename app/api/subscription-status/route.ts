@@ -33,7 +33,11 @@ export async function GET(request: Request) {
     });
   } catch (err: any) {
     Sentry.captureException(err);
-    console.error('SUBSCRIPTION STATUS ERROR:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const message = err?.message || String(err);
+    console.error('SUBSCRIPTION STATUS ERROR:', message);
+    const errorMsg = process.env.NODE_ENV === 'development'
+      ? message
+      : 'Internal server error';
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }

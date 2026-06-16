@@ -112,7 +112,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
     Sentry.captureException(err);
-    console.error('CHECKOUT ERROR:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Log the specific error message to help diagnose auth/subscription issues
+    const message = err?.message || String(err);
+    console.error('CHECKOUT ERROR:', message);
+    // Return the actual error message in development, generic in production
+    const errorMsg = process.env.NODE_ENV === 'development'
+      ? message
+      : 'Internal server error';
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }

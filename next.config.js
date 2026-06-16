@@ -22,11 +22,17 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://*.supabase.co https://api.openai.com",
+              // Added https://*.stripe.com for Stripe Checkout redirect
+              // Added https://o*.ingest.sentry.io for Sentry error reporting
+              "connect-src 'self' https://*.supabase.co https://api.openai.com https://*.stripe.com https://o*.ingest.sentry.io",
               "font-src 'self' data:",
               "frame-ancestors 'none'",
+              // Allow Stripe Checkout iframe and Sentry tunnel
+              "frame-src 'self' https://*.stripe.com",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://*.stripe.com",
+              // Allow blob: workers for Sentry
+              "worker-src 'self' blob:",
             ].join('; '),
           },
         ],
@@ -51,17 +57,8 @@ const nextConfig = {
 module.exports = withSentryConfig(nextConfig, {
   org: "careerbridge-way",
   project: "javascript-nextjs",
-
-  // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
-
-  // Upload source maps to Sentry for readable stack traces
-  // Maps are sent to Sentry only — not exposed publicly
   widenClientFileUpload: true,
-
-  // Route Sentry requests through your domain to avoid ad blockers
   tunnelRoute: "/monitoring",
-
-  // Automatically monitor Vercel Cron jobs
   automaticVercelMonitors: true,
 });
