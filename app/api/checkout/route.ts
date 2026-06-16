@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { STRIPE_PRICE_IDS, requiresResultId, type ProductType } from '@/lib/plans';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     const priceId = STRIPE_PRICE_IDS[productType as ProductType];
     const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://careerbridge-way.vercel.app';
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
