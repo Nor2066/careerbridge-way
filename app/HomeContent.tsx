@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/fetchWithAuth'; // ✅ new import
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import PricingContent from '@/components/PricingContent';
 
 type Answers = {
   subjects: string[];
@@ -204,6 +205,18 @@ const initialAnswers: Answers = {
   criticismHandling: '',
 };
 
+// ---------- Subscription status type ----------
+type SubscriptionStatus = {
+  plan: 'free' | 'basic' | 'full';
+  mainAttemptsRemaining: number;
+  followupsPaidCount: number;
+  bonusAttemptGranted: boolean;
+  currentAttemptStatus: 'none' | 'in_progress' | 'awaiting_followup_decision';
+  currentAttemptResultId: string | null;
+  canStartAssessment: boolean;
+  cannotStartReason: string | null;
+};
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -216,6 +229,17 @@ export default function Home() {
   const [aiReport, setAiReport] = useState('');
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
+
+  // ─── Subscription state ──────────────────────────────────────────────
+  const [subStatus, setSubStatus] = useState<SubscriptionStatus | null>(null);
+  const [subLoading, setSubLoading] = useState(true);
+  const [saveResultError, setSaveResultError] = useState<string | null>(null);
+  // After generate-report succeeds, this controls the decision UI
+  // (pay for followup / go to followup / skip)
+  const [awaitingFollowupDecision, setAwaitingFollowupDecision] = useState(false);
+  const [skipLoading, setSkipLoading] = useState(false);
+  // Controls the pricing modal overlay shown at the step-10 gate
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const loadedRef = useRef(false);
@@ -249,8 +273,68 @@ export default function Home() {
   const finalSubmitStep = pastConsiderationsStep + 1;
 
   const clampStep = (s: number) => Math.min(Math.max(s, 0), finalSubmitStep);
-  const nextStep = () => setStep(s => clampStep(s + 1));
   const prevStep = () => setStep(s => clampStep(s - 1));
+
+  // ─── Gated nextStep — paywall fires at step 9 → 10 ───────────────────
+  // Step index 9 = question 10 (0-based). Advancing past here requires
+  // a valid plan. Users already in_progress pass through freely.
+  const nextStep = () => {
+    if (
+      step === 9 &&
+      subStatus &&
+      !subStatus.canStartAssessment &&
+      subStatus.currentAttemptStatus !== 'in_progress'
+    ) {
+      setShowPricingModal(true);
+      return;
+    }
+    // If subscription status is still loading at this step, wait —
+    // don't let users advance before we know their status.
+    if (step === 9 && subLoading) return;
+    setStep(s => clampStep(s + 1));
+  };
+
+  // ---------- Fetch subscription status on mount ----------
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSubStatus = async () => {
+      if (!user) {
+        setSubLoading(false);
+        return;
+      }
+      try {
+        const res = await fetchWithAuth('/api/subscription-status', { credentials: 'include' });
+        const data = await res.json();
+        if (isMounted) {
+          setSubStatus(data);
+          // If user is mid-followup-decision (e.g. refreshed the page after
+          // generating a report), restore that screen
+          if (data.currentAttemptStatus === 'awaiting_followup_decision') {
+            setAwaitingFollowupDecision(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch subscription status:', err);
+      } finally {
+        if (isMounted) setSubLoading(false);
+      }
+    };
+    fetchSubStatus();
+    return () => { isMounted = false; };
+  }, [user]);
+
+  // Refetch subscription status (used after payments / state-changing actions)
+  const refetchSubStatus = async () => {
+    if (!user) return;
+    try {
+      const res = await fetchWithAuth('/api/subscription-status', { credentials: 'include' });
+      const data = await res.json();
+      setSubStatus(data);
+      return data;
+    } catch (err) {
+      console.error('Failed to refetch subscription status:', err);
+    }
+  };
 
   // ---------- Reset assessment function ----------
   const resetAssessment = async () => {
@@ -260,14 +344,15 @@ export default function Home() {
     setSubmittedAnswers(null);
     setAiReport('');
     setReportGenerated(false);
-    localStorage.removeItem('topClusters');
-    localStorage.removeItem('mainAnswers');
+    setAwaitingFollowupDecision(false);
+    sessionStorage.removeItem('topClusters');
+    sessionStorage.removeItem('mainAnswers');
     if (user) {
       await fetchWithAuth('/api/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ userId: user.id, answers: initialAnswers, step: 0 }),
+        body: JSON.stringify({ answers: initialAnswers, step: 0 }),
       });
     }
     loadedRef.current = false;
@@ -291,7 +376,7 @@ export default function Home() {
       if (!user) return;
       if (loadedRef.current) return;
       try {
-        const res = await fetchWithAuth(`/api/load-progress?userId=${user.id}`, {
+        const res = await fetchWithAuth('/api/load-progress', {
           credentials: 'include',
         });
         const data = await res.json();
@@ -309,7 +394,7 @@ export default function Home() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ userId: user.id, answers: mergedAnswers, step: loadedStep }),
+            body: JSON.stringify({ answers: mergedAnswers, step: loadedStep }),
           });
         }
         loadedRef.current = true;
@@ -330,7 +415,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ userId: user.id, answers: currentAnswers, step: currentStep }),
+        body: JSON.stringify({ answers: currentAnswers, step: currentStep }),
       });
     } catch (err) {}
   };
@@ -359,45 +444,74 @@ export default function Home() {
 
   // ---------- Auto-save results when they become available ----------
   useEffect(() => {
-const autoSaveResults = async () => {
-  if (!user || autoSavedRef.current) return;
-  if (!result || !submittedAnswers) return;
-  autoSavedRef.current = true;
-  try {
-    // Save to assessments (feedback)
-    await fetchWithAuth('/api/save-result', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: user.email,
-        userId: user.id,
-        feedbackRating: null,
-        feedbackComment: null,
-        topClusters: result.top3,
-        rawScores: result.rawScores,
-        answers: submittedAnswers,
-      }),
-    });
-    // Save to user_results and get the ID
-    const res = await fetchWithAuth('/api/save-results', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user.id,
-        topClusters: result.top3,
-        rawScores: result.rawScores,
-        answers: submittedAnswers,
-      }),
-    });
-    const data = await res.json();
-    if (data.id) {
-      localStorage.setItem('lastAssessmentId', data.id);
-    }
-    console.log('✅ Results auto‑saved');
-  } catch (err) {
-    console.error('Auto‑save failed:', err);
-  }
-};
+    const autoSaveResults = async () => {
+      if (!user || autoSavedRef.current) return;
+      if (!result || !submittedAnswers) return;
+      autoSavedRef.current = true;
+      setSaveResultError(null);
+      try {
+        // Save to assessments (feedback) — also runs the subscription check
+        const feedbackRes = await fetchWithAuth('/api/save-result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: user.email,
+            feedbackRating: null,
+            feedbackComment: null,
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          }),
+        });
+
+        if (!feedbackRes.ok) {
+          const errData = await feedbackRes.json().catch(() => ({}));
+          if (errData.code === 'SUBSCRIPTION_REQUIRED') {
+            setSaveResultError(errData.error || 'You need to purchase a plan to continue.');
+            await refetchSubStatus();
+            autoSavedRef.current = false; // allow retry after purchase
+            return;
+          }
+          console.error('save-result failed:', errData);
+        }
+
+        // Save to user_results and get the ID
+        const res = await fetchWithAuth('/api/save-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            topClusters: result.top3,
+            rawScores: result.rawScores,
+            answers: submittedAnswers,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.code === 'SUBSCRIPTION_REQUIRED') {
+            setSaveResultError(errData.error || 'You need to purchase a plan to continue.');
+            await refetchSubStatus();
+            autoSavedRef.current = false;
+            return;
+          }
+          console.error('save-results failed:', errData);
+          return;
+        }
+
+        const data = await res.json();
+        if (data.id) {
+          sessionStorage.setItem('lastAssessmentId', data.id);
+        }
+
+        // Refresh subscription status — now current_attempt_status = 'in_progress'
+        await refetchSubStatus();
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+        autoSavedRef.current = false;
+      }
+    };
     autoSaveResults();
   }, [user, result, submittedAnswers]);
 
@@ -413,7 +527,7 @@ const autoSaveResults = async () => {
     };
     delete (payload as any).careerContext;
     setSubmittedAnswers(payload);
-    localStorage.setItem('mainAnswers', JSON.stringify(payload));
+    sessionStorage.setItem('mainAnswers', JSON.stringify(payload));
     const res = await fetchWithAuth('/api/assess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -422,43 +536,71 @@ const autoSaveResults = async () => {
     });
     const data = await res.json();
     setResult(data);
-    localStorage.setItem('lastAssessmentId', data.id); // ✅ store assessment ID
     setLoading(false);
   };
 
-const generateAIReport = async () => {
-  if (!result) return;
-  const assessmentId = localStorage.getItem('lastAssessmentId');
-  if (!assessmentId) {
-    alert('Please wait a moment for the assessment to be saved, then try again.');
-    return;
-  }
-  setLoadingReport(true);
-  try {
-    const res = await fetchWithAuth('/api/generate-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user?.id,
-        assessmentId,
-        answers: submittedAnswers,
-        rawScores: result.rawScores,
-        topClusters: result.top3,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setAiReport(data.report);
-      setReportGenerated(true);
-    } else {
-      alert('Failed to generate report: ' + (data.error || 'unknown error'));
+  const generateAIReport = async () => {
+    if (!result) return;
+    const assessmentId = sessionStorage.getItem('lastAssessmentId');
+    if (!assessmentId) {
+      alert('Please wait a moment for the assessment to be saved, then try again.');
+      return;
     }
-  } catch (err) {
-    alert('Network error. Please try again.');
-  } finally {
-    setLoadingReport(false);
-  }
-};
+    setLoadingReport(true);
+    try {
+      const res = await fetchWithAuth('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          answers: submittedAnswers,
+          rawScores: result.rawScores,
+          topClusters: result.top3,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiReport(data.report);
+        setReportGenerated(true);
+        // The attempt has now been consumed — subscription status changes
+        // to 'awaiting_followup_decision'. Show the decision UI.
+        await refetchSubStatus();
+        setAwaitingFollowupDecision(true);
+      } else {
+        alert('Failed to generate report: ' + (data.error || 'unknown error'));
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  // ---------- Followup decision handlers ----------
+  const handleGoToFollowup = () => {
+    sessionStorage.setItem('topClusters', JSON.stringify(result.top3.map((item: any) => item.cluster)));
+    router.push('/followup');
+  };
+
+  const handleSkipFollowup = async () => {
+    setSkipLoading(true);
+    try {
+      const res = await fetchWithAuth('/api/skip-followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        router.push('/history');
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    } finally {
+      setSkipLoading(false);
+    }
+  };
 
   // ***** STYLING *****
   const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
@@ -467,8 +609,9 @@ const generateAIReport = async () => {
 
   // Helper components with glass-card class
   const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
-    <div className={containerClasses}>
-      <div className="w-full max-w-2xl">
+    <>
+      <PricingModal />
+      <div className={containerClasses}>      <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
             <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
@@ -490,6 +633,7 @@ const generateAIReport = async () => {
         </div>
       </div>
     </div>
+    </>
   );
 
   const CheckboxGroup = ({ options, selected, onChange, maxSelections }: any) => (
@@ -558,7 +702,169 @@ const generateAIReport = async () => {
     </div>
   );
 
-  // ---------- RESULTS DISPLAY ----------
+  // ---------- PRICING MODAL OVERLAY ----------
+  // Shown when user tries to advance past step 9 without a valid plan/attempts.
+  // Renders on top of the current step — user stays on step 9 underneath.
+  const PricingModal = () => {
+    if (!showPricingModal || !subStatus) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowPricingModal(false)}
+        />
+        {/* Modal panel */}
+        <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="glass-card">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Unlock the Full Assessment</h2>
+                <p className="text-sm text-gray-300 mt-1">
+                  You've answered 10 questions — purchase a plan to see your results and AI report.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPricingModal(false)}
+                className="text-gray-400 hover:text-white text-2xl leading-none ml-4 flex-shrink-0"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <PricingContent
+              compact
+              currentPlan={subStatus.plan}
+              onClose={() => setShowPricingModal(false)}
+            />
+            <p className="text-center text-xs text-gray-400 mt-4">
+              Your progress is saved. After payment you'll continue exactly where you left off.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ---------- SUBSCRIPTION GATE ----------
+  // While we're checking subscription status, show a loading state.
+  if (user && subLoading) {
+    return (
+      <div className={containerClasses}>
+        <div className="text-gray-300">Loading...</div>
+      </div>
+    );
+  }
+
+  // ---------- PAYWALL MODAL ----------
+  // Shown as an overlay when the user tries to advance past question 10
+  // (step index 9 -> 10) without an available attempt. Questions 0-9 are
+  // always previewable; this is the actual gate into the real assessment.
+  // If save-result returned SUBSCRIPTION_REQUIRED (edge case: ran out of
+  // attempts between starting and finishing the questionnaire — shouldn't
+  // normally happen since the question-10 gate already checks this, but
+  // covers race conditions like two tabs open at once)
+  if (saveResultError && subStatus) {
+    return (
+      <div
+        className="min-h-screen bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10">
+          <div className="max-w-2xl mx-auto pt-8 px-4">
+            <div className="p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100 text-center">
+              {saveResultError}
+            </div>
+          </div>
+          <PricingContent currentPlan={subStatus.plan} />
+        </div>
+      </div>
+    );
+  }
+
+
+  // ---------- FOLLOWUP DECISION SCREEN ----------
+  // Shown after generate-report succeeds. Report is visible immediately,
+  // decision buttons appear below it.
+  if (awaitingFollowupDecision && result) {
+    const plan = subStatus?.plan ?? 'free';
+    const resultId = sessionStorage.getItem('lastAssessmentId') || subStatus?.currentAttemptResultId || undefined;
+
+    return (
+      <div className={containerClasses}>
+        <div className="w-full max-w-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
+            <p className="text-gray-300">Your personalized career assessment results</p>
+          </div>
+
+          <div className="glass-card mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+            <ul className="space-y-4">
+              {result.top3.map((item: any, idx: number) => (
+                <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-white text-lg">{item.cluster}</span>
+                    <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-600 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* AI report shown immediately */}
+          <div className="glass-card mb-8">
+            <h3 className="text-xl font-bold text-white mb-3">Your Personalized Career Report</h3>
+            <p className="text-gray-200 whitespace-pre-wrap">{aiReport}</p>
+          </div>
+
+          {/* Decision buttons */}
+          <div className="glass-card">
+            {plan === 'full' ? (
+              <>
+                <h3 className="text-xl font-bold text-white mb-3 text-center">Ready for your detailed roadmap?</h3>
+                <p className="text-gray-300 mb-6 text-center">
+                  Your plan includes the followup questionnaire — answer a few more questions
+                  for an in-depth career roadmap.
+                </p>
+                <button onClick={handleGoToFollowup} className={buttonPrimaryClasses + ' w-full'}>
+                  📋 Continue to Followup Questionnaire
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-white mb-3 text-center">Want a more detailed roadmap?</h3>
+                <p className="text-gray-300 mb-6 text-center">
+                  Unlock the followup questionnaire and get a second, more detailed AI report
+                  with concrete job titles, courses, and a 3-month action plan — for €1.50.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <PricingContent
+                    compact
+                    currentPlan={plan}
+                    followupResultId={resultId}
+                  />
+                  <button
+                    onClick={handleSkipFollowup}
+                    disabled={skipLoading}
+                    className={buttonSecondaryClasses + ' w-full'}
+                  >
+                    {skipLoading ? 'Please wait...' : 'Not now — go to my history'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- RESULTS DISPLAY (before AI report generated) ----------
   if (result) {
     const FeedbackForm = () => {
       const [email, setEmail] = useState('');
@@ -575,7 +881,6 @@ const generateAIReport = async () => {
         try {
           const payload = {
             email: finalEmail,
-            userId: user?.id || null,
             feedbackRating,
             feedbackComment,
             topClusters: result.top3,
@@ -607,7 +912,6 @@ const generateAIReport = async () => {
               </svg>
             </div>
             <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
-            <button onClick={() => setResult(null)} className={buttonPrimaryClasses}>Take Assessment Again</button>
           </div>
         );
       }
@@ -671,7 +975,7 @@ const generateAIReport = async () => {
             <FeedbackForm />
           </div>
           <div className="mt-8">
-            {!reportGenerated ? (
+            {!reportGenerated && (
               <div>
                 <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
                   {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
@@ -682,23 +986,7 @@ const generateAIReport = async () => {
                   </p>
                 )}
               </div>
-            ) : (
-              <div className="mt-4 p-5 bg-white/20 backdrop-blur-md rounded-xl">
-                <h3 className="text-xl font-bold text-white mb-3">Your Personalized Career Report</h3>
-                <p className="text-gray-200 whitespace-pre-wrap">{aiReport}</p>
-              </div>
             )}
-          </div>
-          <div className="mt-6">
-            <button
-              onClick={() => {
-                localStorage.setItem('topClusters', JSON.stringify(result.top3.map((item: any) => item.cluster)));
-                router.push('/followup');
-              }}
-              className={buttonPrimaryClasses}
-            >
-              📋 Answer more questions for better advice
-            </button>
           </div>
         </div>
       </div>

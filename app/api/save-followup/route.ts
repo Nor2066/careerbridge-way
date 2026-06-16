@@ -1,33 +1,41 @@
+// app/api/save-followup/route.ts
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
+
+const SaveFollowupSchema = z.object({
+  answers: z.record(z.string(), z.unknown()),
+});
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await requireAuth();
+
+    const { success } = await saveResultLimiter.limit(getUserIdentifier(user.id));
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    const { data: { user }, error } = await supabaseServer.auth.getUser(token);
-    if (error || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { userId, answers } = await request.json();
-    if (!userId || userId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const body = await request.json();
+    const parsed = SaveFollowupSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid answers format' }, { status: 400 });
     }
 
     const { error: dbError } = await supabaseServer.from('followup_answers').insert({
-      user_id: userId,
-      answers,
+      user_id: user.id,
+      answers: parsed.data.answers,
     });
 
     if (dbError) throw dbError;
+
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
+    Sentry.captureException(err);
+    console.error('SAVE FOLLOWUP ERROR:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

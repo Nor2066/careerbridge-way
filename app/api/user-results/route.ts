@@ -1,17 +1,34 @@
+// app/api/user-results/route.ts
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function GET() {
+  try {
+    const user = await requireAuth();
 
-  const { data, error } = await supabaseServer
-    .from('user_results')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    const { success } = await readLimiter.limit(getUserIdentifier(user.id));
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+    const { data, error } = await supabaseServer
+      .from('user_results')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('USER RESULTS DB ERROR:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (err) {
+    Sentry.captureException(err);
+    console.error('USER RESULTS ERROR:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

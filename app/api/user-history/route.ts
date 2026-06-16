@@ -1,23 +1,19 @@
+// app/api/user-history/route.ts
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
+import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    // Get the Authorization header
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await requireAuth();
+
+    const { success } = await readLimiter.limit(getUserIdentifier(user.id));
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    // Verify the token and get the user
-    const { data: { user }, error: userError } = await supabaseServer.auth.getUser(token);
-    if (userError || !user) {
-      console.error('Token verification failed:', userError?.message);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Fetch user_results with AI reports
     const { data, error } = await supabaseServer
       .from('user_results')
       .select(`
@@ -31,11 +27,11 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
+      console.error('USER HISTORY DB ERROR:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    const history = data.map(item => ({
+    const history = data.map((item) => ({
       id: item.id,
       createdAt: item.created_at,
       topClusters: item.top_clusters,
@@ -45,7 +41,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json(history);
   } catch (err) {
-    console.error(err);
+    Sentry.captureException(err);
+    console.error('USER HISTORY ERROR:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

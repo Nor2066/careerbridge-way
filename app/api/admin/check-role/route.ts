@@ -1,35 +1,17 @@
+// app/api/admin/check-role/route.ts
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/auth';
 import { getUserRole, isAdmin, isSuperAdmin } from '@/lib/roles';
+import { adminReadLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const authHeader = request.headers.get('authorization');
+    const user = await requireAuth();
 
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Missing token' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
+    const { success } = await adminReadLimiter.limit(getUserIdentifier(user.id));
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const role = await getUserRole(user.id);
@@ -44,11 +26,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
+    Sentry.captureException(err);
     console.error('CHECK ROLE ERROR:', err);
-
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }
