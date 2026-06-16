@@ -20,7 +20,7 @@ const SaveResultSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await saveResultLimiter.limit(getUserIdentifier(user.id));
     if (!success) {

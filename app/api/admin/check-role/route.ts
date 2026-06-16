@@ -5,9 +5,9 @@ import { requireAuth } from '@/lib/auth';
 import { getUserRole, isAdmin, isSuperAdmin } from '@/lib/roles';
 import { adminReadLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await adminReadLimiter.limit(getUserIdentifier(user.id));
     if (!success) {

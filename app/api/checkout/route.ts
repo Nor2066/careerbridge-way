@@ -16,7 +16,7 @@ const CheckoutSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await readLimiter.limit(getUserIdentifier(user.id));
     if (!success) {

@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const body = await request.json();
     const parsed = GenerateReportSchema.safeParse(body);

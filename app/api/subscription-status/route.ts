@@ -9,9 +9,9 @@ import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 // - pricing page (plan === 'free')
 // - "start new assessment" button state (canStart)
 // - "finish your followup first" banner (current_attempt_status)
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await readLimiter.limit(getUserIdentifier(user.id));
     if (!success) {

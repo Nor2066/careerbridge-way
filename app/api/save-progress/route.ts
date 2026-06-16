@@ -13,7 +13,7 @@ const SaveProgressSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     // Use high-limit progress limiter — this is called on every question answer
     const { success } = await saveProgressLimiter.limit(getUserIdentifier(user.id));

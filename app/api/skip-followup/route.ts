@@ -11,7 +11,7 @@ import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 // history later and pay to unlock + complete the followup for this attempt.
 export async function POST() {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await readLimiter.limit(getUserIdentifier(user.id));
     if (!success) {

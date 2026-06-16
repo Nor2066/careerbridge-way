@@ -5,9 +5,9 @@ import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await readLimiter.limit(getUserIdentifier(user.id));
     if (!success) {

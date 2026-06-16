@@ -13,7 +13,7 @@ const supabaseAdmin = createClient(
 
 export async function GET(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
 
     const { success } = await adminReadLimiter.limit(getUserIdentifier(user.id));
     if (!success) {
