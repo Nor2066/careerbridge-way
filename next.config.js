@@ -4,7 +4,6 @@ const { withSentryConfig } = require("@sentry/nextjs");
 const nextConfig = {
   async headers() {
     return [
-      // ─── Security headers on every page ─────────────────────────────────
       {
         source: '/(.*)',
         headers: [
@@ -22,23 +21,20 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
-              // Added https://*.stripe.com for Stripe Checkout redirect
-              // Added https://o*.ingest.sentry.io for Sentry error reporting
-              "connect-src 'self' https://*.supabase.co https://api.openai.com https://*.stripe.com https://o*.ingest.sentry.io",
+              // Sentry uses /monitoring tunnel route (set in tunnelRoute above)
+              // so we don't need to allowlist sentry.io directly —
+              // requests go through our own domain. Stripe needs its own domain.
+              "connect-src 'self' https://*.supabase.co https://api.openai.com https://api.stripe.com",
               "font-src 'self' data:",
               "frame-ancestors 'none'",
-              // Allow Stripe Checkout iframe and Sentry tunnel
               "frame-src 'self' https://*.stripe.com",
               "base-uri 'self'",
               "form-action 'self' https://*.stripe.com",
-              // Allow blob: workers for Sentry
               "worker-src 'self' blob:",
             ].join('; '),
           },
         ],
       },
-
-      // ─── CORS lockdown on all API routes ────────────────────────────────
       {
         source: '/api/:path*',
         headers: [
