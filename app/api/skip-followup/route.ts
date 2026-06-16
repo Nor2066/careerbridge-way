@@ -9,7 +9,7 @@ import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 // do the followup right now. Frees them up to start a new assessment
 // (consuming another attempt, if available). They can still come back to
 // history later and pay to unlock + complete the followup for this attempt.
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
 
