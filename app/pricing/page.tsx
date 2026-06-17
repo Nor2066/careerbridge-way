@@ -20,7 +20,6 @@ export default async function PricingPage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect('/login');
 
   const sub = await getSubscription(user.id);
@@ -32,7 +31,11 @@ export default async function PricingPage() {
     >
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10">
-        <PricingContent currentPlan={sub.plan} />
+        <PricingContent
+          currentPlan={sub.plan}
+          followupsPaidCount={sub.followups_paid_count}
+          mainAttemptsRemaining={sub.main_attempts_remaining}
+        />
       </div>
     </div>
   );

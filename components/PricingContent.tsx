@@ -1,22 +1,18 @@
 'use client';
 
 // components/PricingContent.tsx
-// Reusable pricing display + checkout trigger. Used both as a full page
-// (/pricing) and as an overlay modal when a user hits a paywall.
 
 import { useState } from 'react';
 
 type ProductType = 'basic' | 'full' | 'topup' | 'followup_unlock';
 
 interface PricingContentProps {
-  // If true, renders compact (for modal use). If false, renders full page layout.
   compact?: boolean;
-  // Current plan — hides Basic/Full if user already purchased one
   currentPlan?: 'free' | 'basic' | 'full';
-  // For followup_unlock purchases — which result_id to unlock
   followupResultId?: string;
-  // Called when user closes the modal (only relevant when compact)
   onClose?: () => void;
+  followupsPaidCount?: number;
+  mainAttemptsRemaining?: number;
 }
 
 export default function PricingContent({
@@ -24,6 +20,8 @@ export default function PricingContent({
   currentPlan = 'free',
   followupResultId,
   onClose,
+  followupsPaidCount = 0,
+  mainAttemptsRemaining = 0,
 }: PricingContentProps) {
   const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
   const [error, setError] = useState('');
@@ -32,7 +30,6 @@ export default function PricingContent({
     setError('');
     setLoadingProduct(productType);
     try {
-      // Remember where to return the user after Stripe checkout completes
       sessionStorage.setItem('checkoutReturnPath', window.location.pathname);
 
       const res = await fetch('/api/checkout', {
@@ -55,7 +52,6 @@ export default function PricingContent({
         return;
       }
 
-      // Redirect to Stripe Checkout
       window.location.href = data.url;
     } catch (err) {
       setError('Network error. Please try again.');
@@ -64,6 +60,19 @@ export default function PricingContent({
   };
 
   const hasPlan = currentPlan !== 'free';
+
+  // Top-up only shown when attempts are exhausted AND:
+  // - Full plan user, OR
+  // - Basic plan user who has paid both followups (followupsPaidCount >= 2)
+  const showTopup =
+    hasPlan &&
+    mainAttemptsRemaining === 0 &&
+    (currentPlan === 'full' || (currentPlan === 'basic' && followupsPaidCount >= 2));
+
+  const showFollowupUnlock =
+    hasPlan &&
+    currentPlan === 'basic' &&
+    !!followupResultId;
 
   return (
     <div className={compact ? '' : 'min-h-screen px-4 py-12'}>
@@ -93,6 +102,7 @@ export default function PricingContent({
         )}
 
         <div className={`grid gap-4 ${compact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+
           {/* ─── Basic Plan ─────────────────────────────────────────────── */}
           {!hasPlan && (
             <div className="glass-card flex flex-col">
@@ -142,8 +152,8 @@ export default function PricingContent({
             </div>
           )}
 
-          {/* ─── Followup unlock (only relevant if a resultId is passed) ── */}
-          {hasPlan && currentPlan === 'basic' && followupResultId && (
+          {/* ─── Followup unlock ────────────────────────────────────────── */}
+          {showFollowupUnlock && (
             <div className="glass-card flex flex-col">
               <h3 className="text-xl font-bold text-white mb-1">Unlock Followup</h3>
               <p className="text-3xl font-bold text-white mb-4">
@@ -152,7 +162,11 @@ export default function PricingContent({
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
                 <li>✓ Unlock the followup questionnaire for this attempt</li>
                 <li>✓ Get your detailed career roadmap</li>
-                <li>✓ Unlocking both attempts' followups grants +1 bonus attempt</li>
+                {followupsPaidCount === 1 ? (
+                  <li>✓ This is your 2nd unlock — grants +1 bonus attempt!</li>
+                ) : (
+                  <li>✓ Unlock both followups to earn a bonus attempt</li>
+                )}
               </ul>
               <button
                 onClick={() => startCheckout('followup_unlock')}
@@ -164,8 +178,8 @@ export default function PricingContent({
             </div>
           )}
 
-          {/* ─── Top-up (shown once user has a plan) ───────────────────── */}
-          {hasPlan && (
+          {/* ─── Top-up ─────────────────────────────────────────────────── */}
+          {showTopup && (
             <div className="glass-card flex flex-col">
               <h3 className="text-xl font-bold text-white mb-1">Extra Attempt</h3>
               <p className="text-3xl font-bold text-white mb-4">
@@ -185,14 +199,26 @@ export default function PricingContent({
               </button>
             </div>
           )}
-        </div>
 
-        {hasPlan && currentPlan === 'basic' && !followupResultId && (
-          <p className="text-center text-gray-400 text-sm mt-6">
-            To unlock a followup roadmap for a specific attempt, go to your{' '}
-            <a href="/history" className="text-indigo-300 underline">history page</a>.
-          </p>
-        )}
+          {/* ─── Basic user with no resultId: direct to history ─────────── */}
+          {hasPlan && currentPlan === 'basic' && !followupResultId && !showTopup && (
+            <div className="glass-card flex flex-col items-center text-center">
+              <h3 className="text-xl font-bold text-white mb-2">Unlock a Followup</h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Go to your history page to unlock the followup questionnaire
+                for a specific attempt (€1.50 each).
+                {followupsPaidCount === 1 && (
+                  <span className="block mt-2 text-indigo-300">
+                    You have unlocked 1 of 2 — unlock the second to earn a bonus attempt!
+                  </span>
+                )}
+              </p>
+              <a href="/history" className="btn-primary">
+                Go to History Page
+              </a>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

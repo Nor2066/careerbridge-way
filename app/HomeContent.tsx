@@ -726,6 +726,8 @@ export default function Home() {
               compact
               currentPlan={subStatus.plan}
               onClose={() => setShowPricingModal(false)}
+              followupsPaidCount={subStatus.followupsPaidCount}
+              mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
             />
             <p className="text-center text-xs text-gray-400 mt-4">
               Your progress is saved. After payment you'll continue exactly where you left off.
@@ -767,7 +769,11 @@ export default function Home() {
               {saveResultError}
             </div>
           </div>
-          <PricingContent currentPlan={subStatus.plan} />
+          <PricingContent
+            currentPlan={subStatus.plan}
+            followupsPaidCount={subStatus.followupsPaidCount}
+            mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
+          />
         </div>
       </div>
     );
@@ -837,6 +843,8 @@ export default function Home() {
                     compact
                     currentPlan={plan}
                     followupResultId={resultId}
+                    followupsPaidCount={subStatus?.followupsPaidCount ?? 0}
+                    mainAttemptsRemaining={subStatus?.mainAttemptsRemaining ?? 0}
                   />
                   <button
                     onClick={handleSkipFollowup}
