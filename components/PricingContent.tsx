@@ -32,7 +32,12 @@ export default function PricingContent({
     setError('');
     setLoadingProduct(productType);
     try {
-      sessionStorage.setItem('checkoutReturnPath', window.location.pathname);
+      // For followup_unlock: redirect to /followup after payment so the user
+      // lands directly in the followup questionnaire, not back on the page
+      // they came from (history or assess). For all other products, return
+      // to wherever the user was (assess page, pricing page, etc.).
+      const returnPath = productType === 'followup_unlock' ? '/followup' : window.location.pathname;
+      sessionStorage.setItem('checkoutReturnPath', returnPath);
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
