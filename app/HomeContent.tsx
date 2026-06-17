@@ -91,7 +91,7 @@ const SKILL_NAMES = [
   { id: 'teamwork', label: 'Teamwork (working well with others)' },
   { id: 'criticalThinking', label: 'Critical Thinking (thinking carefully before deciding)' },
   { id: 'timeManagement', label: 'Time Management (planning your time, meeting deadlines)' },
-  { id: 'uncertaintyComfort', label: 'Uncertainty Comfort (being okay when you don’t know the answer)' },
+  { id: 'uncertaintyComfort', label: 'Uncertainty Comfort (being okay when you don\'t know the answer)' },
   { id: 'financialRiskComfort', label: 'Financial Risk Comfort (being okay with money risks, like investing)' },
   { id: 'pressureTolerance', label: 'Pressure Tolerance (handling stress and tight deadlines)' },
   { id: 'empathy', label: 'Empathy / Emotional Intelligence (understanding how others feel)' },
@@ -276,8 +276,6 @@ export default function Home() {
   const prevStep = () => setStep(s => clampStep(s - 1));
 
   // ─── Gated nextStep — paywall fires at step 9 → 10 ───────────────────
-  // Step index 9 = question 10 (0-based). Advancing past here requires
-  // a valid plan. Users already in_progress pass through freely.
   const nextStep = () => {
     if (
       step === 9 &&
@@ -288,8 +286,6 @@ export default function Home() {
       setShowPricingModal(true);
       return;
     }
-    // If subscription status is still loading at this step, wait —
-    // don't let users advance before we know their status.
     if (step === 9 && subLoading) return;
     setStep(s => clampStep(s + 1));
   };
@@ -307,8 +303,6 @@ export default function Home() {
         const data = await res.json();
         if (isMounted) {
           setSubStatus(data);
-          // If user is mid-followup-decision (e.g. refreshed the page after
-          // generating a report), restore that screen
           if (data.currentAttemptStatus === 'awaiting_followup_decision') {
             setAwaitingFollowupDecision(true);
           }
@@ -336,7 +330,45 @@ export default function Home() {
     }
   };
 
-  // ---------- Reset assessment function ----------
+  // ---------- Clear progress from DB and sessionStorage after report ----------
+  // Called after generate-report succeeds. Does NOT reset result/aiReport/
+  // awaitingFollowupDecision — those are still needed for the decision screen.
+  const clearProgressAfterReport = async () => {
+    // Clear sessionStorage questionnaire keys
+    sessionStorage.removeItem('mainAnswers');
+    sessionStorage.removeItem('topClusters');
+    // Note: lastAssessmentId is intentionally kept — needed for followup unlock flow
+
+    // Reset questionnaire state so next visit starts fresh
+    setStep(0);
+    setAnswers(initialAnswers);
+    setSubmittedAnswers(null);
+
+    // Reset load refs so progress is not re-loaded from DB on next visit
+    loadedRef.current = false;
+    isReadyRef.current = false;
+    autoSavedRef.current = false;
+
+    // Overwrite DB progress record with a clean slate (step 0, empty answers).
+    // Using upsert via the existing save-progress endpoint — this is the
+    // simplest approach and avoids needing a new DELETE endpoint.
+    if (user) {
+      try {
+        await fetchWithAuth('/api/save-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ answers: initialAnswers, step: 0 }),
+        });
+      } catch (err) {
+        // Non-critical — worst case user sees a completed questionnaire on
+        // next visit but can always reset via the reset param
+        console.error('Failed to clear progress after report:', err);
+      }
+    }
+  };
+
+  // ---------- Reset assessment function (full reset including UI) ----------
   const resetAssessment = async () => {
     setStep(0);
     setAnswers(initialAnswers);
@@ -450,9 +482,6 @@ export default function Home() {
       autoSavedRef.current = true;
       setSaveResultError(null);
       try {
-        // Step 1: Save to user_results — this is the primary save.
-        // Returns the result ID we need for the AI report.
-        // Also runs the subscription check and marks attempt as in_progress.
         const res = await fetchWithAuth('/api/save-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -482,8 +511,6 @@ export default function Home() {
           sessionStorage.setItem('lastAssessmentId', data.id);
         }
 
-        // Step 2: Save feedback/assessment record (fire-and-forget — not critical
-        // for the AI report flow, so we don't block on it or show errors to user)
         fetchWithAuth('/api/save-results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -495,7 +522,6 @@ export default function Home() {
           }),
         }).catch(err => console.error('save-results (non-critical) failed:', err));
 
-        // Refresh subscription status
         await refetchSubStatus();
       } catch (err) {
         console.error('Auto-save failed:', err);
@@ -552,8 +578,14 @@ export default function Home() {
       if (res.ok) {
         setAiReport(data.report);
         setReportGenerated(true);
-        // The attempt has now been consumed — subscription status changes
-        // to 'awaiting_followup_decision'. Show the decision UI.
+
+        // ── ISSUE #4 FIX ──────────────────────────────────────────────
+        // Clear the saved questionnaire progress from DB and sessionStorage
+        // so the next visit to /assess starts fresh instead of reloading
+        // the completed questionnaire state.
+        await clearProgressAfterReport();
+        // ─────────────────────────────────────────────────────────────
+
         await refetchSubStatus();
         setAwaitingFollowupDecision(true);
       } else {
@@ -597,7 +629,6 @@ export default function Home() {
   const buttonPrimaryClasses = "btn-primary";
   const buttonSecondaryClasses = "btn-secondary";
 
-  // Helper components with glass-card class
   const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
     <>
       <PricingModal />
@@ -693,18 +724,14 @@ export default function Home() {
   );
 
   // ---------- PRICING MODAL OVERLAY ----------
-  // Shown when user tries to advance past step 9 without a valid plan/attempts.
-  // Renders on top of the current step — user stays on step 9 underneath.
   const PricingModal = () => {
     if (!showPricingModal || !subStatus) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-        {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           onClick={() => setShowPricingModal(false)}
         />
-        {/* Modal panel */}
         <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <div className="glass-card">
             <div className="flex justify-between items-center mb-4">
@@ -728,6 +755,7 @@ export default function Home() {
               onClose={() => setShowPricingModal(false)}
               followupsPaidCount={subStatus.followupsPaidCount}
               mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
+              bonusAttemptGranted={subStatus.bonusAttemptGranted}
             />
             <p className="text-center text-xs text-gray-400 mt-4">
               Your progress is saved. After payment you'll continue exactly where you left off.
@@ -739,7 +767,6 @@ export default function Home() {
   };
 
   // ---------- SUBSCRIPTION GATE ----------
-  // While we're checking subscription status, show a loading state.
   if (user && subLoading) {
     return (
       <div className={containerClasses}>
@@ -748,14 +775,6 @@ export default function Home() {
     );
   }
 
-  // ---------- PAYWALL MODAL ----------
-  // Shown as an overlay when the user tries to advance past question 10
-  // (step index 9 -> 10) without an available attempt. Questions 0-9 are
-  // always previewable; this is the actual gate into the real assessment.
-  // If save-result returned SUBSCRIPTION_REQUIRED (edge case: ran out of
-  // attempts between starting and finishing the questionnaire — shouldn't
-  // normally happen since the question-10 gate already checks this, but
-  // covers race conditions like two tabs open at once)
   if (saveResultError && subStatus) {
     return (
       <div
@@ -773,16 +792,14 @@ export default function Home() {
             currentPlan={subStatus.plan}
             followupsPaidCount={subStatus.followupsPaidCount}
             mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
+            bonusAttemptGranted={subStatus.bonusAttemptGranted}
           />
         </div>
       </div>
     );
   }
 
-
   // ---------- FOLLOWUP DECISION SCREEN ----------
-  // Shown after generate-report succeeds. Report is visible immediately,
-  // decision buttons appear below it.
   if (awaitingFollowupDecision && result) {
     const plan = subStatus?.plan ?? 'free';
     const resultId = sessionStorage.getItem('lastAssessmentId') || subStatus?.currentAttemptResultId || undefined;
@@ -812,13 +829,11 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* AI report shown immediately */}
           <div className="glass-card mb-8">
             <h3 className="text-xl font-bold text-white mb-3">Your Personalized Career Report</h3>
             <p className="text-gray-200 whitespace-pre-wrap">{aiReport}</p>
           </div>
 
-          {/* Decision buttons */}
           <div className="glass-card">
             {plan === 'full' ? (
               <>
@@ -845,6 +860,7 @@ export default function Home() {
                     followupResultId={resultId}
                     followupsPaidCount={subStatus?.followupsPaidCount ?? 0}
                     mainAttemptsRemaining={subStatus?.mainAttemptsRemaining ?? 0}
+                    bonusAttemptGranted={subStatus?.bonusAttemptGranted ?? false}
                   />
                   <button
                     onClick={handleSkipFollowup}
@@ -991,7 +1007,7 @@ export default function Home() {
     );
   }
 
-  // ---------- STEP RENDERING (original steps up to dealbreaker) ----------
+  // ---------- STEP RENDERING ----------
   if (step === 0) {
     return (
       <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
@@ -1055,7 +1071,6 @@ export default function Home() {
   stepOffset++;
   if (step === stepOffset) return (<StepContainer title="Which job types interest you? (Choose as many as you want)"><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
 
-  // Dealbreaker step
   if (step === dealbreakerStep) {
     return (
       <div className={containerClasses}>
@@ -1081,7 +1096,6 @@ export default function Home() {
     );
   }
 
-  // Career context steps
   if (step === profileStep) {
     const profileDisplayMap: Record<string, string> = {
       high_school: 'High school student',

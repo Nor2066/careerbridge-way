@@ -13,6 +13,7 @@ interface PricingContentProps {
   onClose?: () => void;
   followupsPaidCount?: number;
   mainAttemptsRemaining?: number;
+  bonusAttemptGranted?: boolean;
 }
 
 export default function PricingContent({
@@ -22,6 +23,7 @@ export default function PricingContent({
   onClose,
   followupsPaidCount = 0,
   mainAttemptsRemaining = 0,
+  bonusAttemptGranted = false,
 }: PricingContentProps) {
   const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
   const [error, setError] = useState('');
@@ -61,13 +63,20 @@ export default function PricingContent({
 
   const hasPlan = currentPlan !== 'free';
 
-  // Top-up only shown when attempts are exhausted AND:
-  // - Full plan user, OR
-  // - Basic plan user who has paid both followups (followupsPaidCount >= 2)
+  // Top-up logic:
+  // Full plan:  attempts exhausted → show top-up (already working, unchanged)
+  // Basic plan: show top-up only after the user has truly exhausted everything —
+  //             meaning they paid both followups (followupsPaidCount >= 2),
+  //             the bonus attempt was granted AND used up (bonusAttemptGranted === true),
+  //             and no attempts remain.
+  //             Journey: Basic €3 (2 attempts) + followup ×2 €3 + bonus attempt used = €6 spent.
   const showTopup =
     hasPlan &&
     mainAttemptsRemaining === 0 &&
-    (currentPlan === 'full' || (currentPlan === 'basic' && followupsPaidCount >= 2));
+    (
+      currentPlan === 'full' ||
+      (currentPlan === 'basic' && followupsPaidCount >= 2 && bonusAttemptGranted)
+    );
 
   const showFollowupUnlock =
     hasPlan &&

@@ -12,13 +12,14 @@ type HistoryItem = {
   topClusters: { cluster: string; percentage: number }[];
   firstAIReport: string | null;
   detailedRoadmap: string | null;
-  followupUnlocked: boolean; // whether this attempt's followup has been paid for
+  followupUnlocked: boolean;
 };
 
 type SubStatus = {
   plan: 'free' | 'basic' | 'full';
   followupsPaidCount: number;
   mainAttemptsRemaining: number;
+  bonusAttemptGranted: boolean; // added — needed for top-up visibility in PricingContent
   currentAttemptStatus: string;
   currentAttemptResultId: string | null;
 };
@@ -29,13 +30,11 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const [subStatus, setSubStatus] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, { first: boolean; second: boolean }>>({});
-  // Which item's unlock modal is open (stores resultId or null)
   const [unlockModalResultId, setUnlockModalResultId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch history and subscription status in parallel
         const [historyRes, subRes] = await Promise.all([
           fetch('/api/user-history', { credentials: 'include' }),
           fetch('/api/subscription-status', { credentials: 'include' }),
@@ -67,7 +66,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
   };
 
   const handleStartFollowup = (item: HistoryItem) => {
-    // Store the top clusters so the followup page knows which clusters to ask about
     sessionStorage.setItem(
       'topClusters',
       JSON.stringify(item.topClusters.map(c => c.cluster))
@@ -93,6 +91,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const plan = subStatus?.plan ?? 'free';
   const followupsPaidCount = subStatus?.followupsPaidCount ?? 0;
   const mainAttemptsRemaining = subStatus?.mainAttemptsRemaining ?? 0;
+  const bonusAttemptGranted = subStatus?.bonusAttemptGranted ?? false;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -111,6 +110,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 followupResultId={unlockModalResultId}
                 followupsPaidCount={followupsPaidCount}
                 mainAttemptsRemaining={mainAttemptsRemaining}
+                bonusAttemptGranted={bonusAttemptGranted}
                 onClose={() => setUnlockModalResultId(null)}
               />
               <p className="text-center text-xs text-gray-400 mt-3">
@@ -153,9 +153,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
           const followupUnlocked = item.followupUnlocked;
           const hasFirstReport = !!item.firstAIReport;
 
-          // Determine what followup action to show for this item
-          // Full plan: always can do followup if no roadmap yet
-          // Basic plan: needs unlock first
           const showStartFollowup =
             hasFirstReport &&
             !hasRoadmap &&
@@ -221,14 +218,12 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 {expanded[item.id]?.second && (
                   <div className="mt-2 p-4 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap">
                     {item.detailedRoadmap || (
-                      <em className="text-gray-500">
-                        No detailed roadmap yet.
-                      </em>
+                      <em className="text-gray-500">No detailed roadmap yet.</em>
                     )}
                   </div>
                 )}
 
-                {/* Action buttons below the roadmap section */}
+                {/* Action buttons */}
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
                   {showStartFollowup && (
                     <button
@@ -238,7 +233,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
                       📋 Start Followup Questionnaire
                     </button>
                   )}
-
                   {showUnlockButton && (
                     <button
                       onClick={() => setUnlockModalResultId(item.id)}
