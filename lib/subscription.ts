@@ -7,6 +7,7 @@ export type SubscriptionRow = {
   main_attempts_remaining: number;
   followups_paid_count: number;
   bonus_attempt_granted: boolean;
+  topup_followup_credits: number; // incremented on topup purchase; consumed when followup is accessed
   current_attempt_status: 'none' | 'in_progress' | 'awaiting_followup_decision';
   current_attempt_result_id: string | null;
 };
@@ -24,12 +25,11 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
   }
 
   if (!data) {
-    // Row missing — try to create it (handles users who predate the signup trigger)
     console.warn(`No subscription row for ${userId} — attempting upsert`);
     const { data: created, error: upsertError } = await supabaseServer
       .from('subscriptions')
       .upsert(
-        { user_id: userId, plan: 'free', main_attempts_remaining: 0 },
+        { user_id: userId, plan: 'free', main_attempts_remaining: 0, topup_followup_credits: 0 },
         { onConflict: 'user_id' }
       )
       .select()
@@ -37,13 +37,13 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
 
     if (upsertError || !created) {
       console.error(`Upsert failed for ${userId}:`, upsertError?.message, 'code:', upsertError?.code);
-      // Return safe default so user isn't completely blocked
       return {
         user_id: userId,
         plan: 'free',
         main_attempts_remaining: 0,
         followups_paid_count: 0,
         bonus_attempt_granted: false,
+        topup_followup_credits: 0,
         current_attempt_status: 'none',
         current_attempt_result_id: null,
       };
@@ -55,11 +55,6 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
 }
 
 // ─── Can the user start a new main questionnaire? ───────────────────────
-// Rules:
-//   - 'in_progress'             -> YES, they're just continuing/restarting before AI report (free)
-//   - 'awaiting_followup_decision' -> NO, must finish current attempt first (handle followup via history)
-//   - 'none' + attempts > 0     -> YES, starting fresh consumes nothing yet (consumed at generate-report)
-//   - 'none' + attempts === 0   -> NO, must purchase
 export function canStartAssessment(sub: SubscriptionRow): { allowed: boolean; reason?: string } {
   if (sub.current_attempt_status === 'in_progress') {
     return { allowed: true };
@@ -72,7 +67,6 @@ export function canStartAssessment(sub: SubscriptionRow): { allowed: boolean; re
     };
   }
 
-  // status === 'none'
   if (sub.main_attempts_remaining > 0) {
     return { allowed: true };
   }
@@ -84,27 +78,70 @@ export function canStartAssessment(sub: SubscriptionRow): { allowed: boolean; re
 }
 
 // ─── Can the user generate the followup report for a given result? ──────
-// Full plan: always yes (included).
-// Basic plan: only if a followup_unlocks row exists for this result_id.
+// Priority order:
+//   1. Full plan              → always included, no cost
+//   2. topup_followup_credits → top-up purchased attempt; consume 1 credit
+//   3. followup_unlocks row   → Basic plan paid-per-attempt unlock
+//
+// Credits are consumed here (at report generation time) rather than at
+// followup questionnaire start, so a user who starts but doesn't finish
+// doesn't lose their credit.
 export async function canAccessFollowup(
   userId: string,
   resultId: string,
   plan: SubscriptionRow['plan']
 ): Promise<boolean> {
+  // Full plan: always included
   if (plan === 'full') return true;
 
-  const { data, error } = await supabaseServer
+  // Check for a pre-paid followup_unlocks row (Basic per-attempt unlock)
+  const { data: unlock, error: unlockError } = await supabaseServer
     .from('followup_unlocks')
     .select('id')
     .eq('user_id', userId)
     .eq('result_id', resultId)
     .maybeSingle();
 
-  if (error) throw error;
-  return !!data;
+  if (unlockError) throw unlockError;
+  if (unlock) return true;
+
+  // Check for a topup followup credit — these cover attempts started via
+  // a top-up purchase (which grants a full main + followup attempt).
+  // Consume 1 credit and insert a followup_unlocks row so subsequent calls
+  // (e.g. retries) don't double-consume.
+  const { data: sub, error: subError } = await supabaseServer
+    .from('subscriptions')
+    .select('topup_followup_credits')
+    .eq('user_id', userId)
+    .single();
+
+  if (subError) throw subError;
+
+  if (sub && sub.topup_followup_credits > 0) {
+    // Decrement the credit
+    const { error: decrementError } = await supabaseServer
+      .from('subscriptions')
+      .update({ topup_followup_credits: sub.topup_followup_credits - 1 })
+      .eq('user_id', userId);
+
+    if (decrementError) throw decrementError;
+
+    // Insert a followup_unlocks row so this result is permanently marked
+    // as unlocked — idempotent on retry due to the unique constraint
+    const { error: insertError } = await supabaseServer
+      .from('followup_unlocks')
+      .insert({ user_id: userId, result_id: resultId });
+
+    // 23505 = unique violation (already unlocked — safe to ignore)
+    if (insertError && insertError.code !== '23505') throw insertError;
+
+    return true;
+  }
+
+  return false;
 }
 
-// ─── Mark assessment as "in progress" (called from save-result) ─────────
+// ─── Mark assessment as "in progress" ───────────────────────────────────
 export async function markAssessmentInProgress(userId: string, resultId: string): Promise<void> {
   const { error } = await supabaseServer
     .from('subscriptions')
@@ -118,7 +155,6 @@ export async function markAssessmentInProgress(userId: string, resultId: string)
 }
 
 // ─── Consume an attempt + transition to awaiting_followup_decision ───────
-// Called from generate-report — this is the "point of no return".
 export async function consumeAttemptAndAwaitFollowup(
   userId: string,
   sub: SubscriptionRow
@@ -134,9 +170,7 @@ export async function consumeAttemptAndAwaitFollowup(
   if (error) throw error;
 }
 
-// ─── Reset to 'none' once the user moves on (finishes followup or skips it) ──
-// Called from generate-followup-report on success, or from a "skip followup"
-// action the frontend can call.
+// ─── Reset to 'none' once the user moves on ─────────────────────────────
 export async function finishCurrentAttempt(userId: string): Promise<void> {
   const { error } = await supabaseServer
     .from('subscriptions')
