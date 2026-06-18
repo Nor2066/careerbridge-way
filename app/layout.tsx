@@ -1,6 +1,5 @@
 import { AuthProvider } from '@/lib/AuthContext';
 import Navbar from '@/components/Navbar';
-import StyleEditorWrapper from '@/components/StyleEditorWrapper';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +9,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <Navbar />
           {children}
-          <StyleEditorWrapper />
         </AuthProvider>
       </body>
     </html>
