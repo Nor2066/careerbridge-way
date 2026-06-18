@@ -14,6 +14,10 @@ interface PricingContentProps {
   followupsPaidCount?: number;
   mainAttemptsRemaining?: number;
   bonusAttemptGranted?: boolean;
+  // Optional callback fired just before the Stripe redirect. Use it to
+  // persist any sessionStorage data that needs to survive the redirect
+  // (e.g. topClusters so the followup page can load after payment).
+  onBeforeCheckout?: (productType: ProductType) => void;
 }
 
 export default function PricingContent({
@@ -24,6 +28,7 @@ export default function PricingContent({
   followupsPaidCount = 0,
   mainAttemptsRemaining = 0,
   bonusAttemptGranted = false,
+  onBeforeCheckout,
 }: PricingContentProps) {
   const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
   const [error, setError] = useState('');
@@ -32,6 +37,10 @@ export default function PricingContent({
     setError('');
     setLoadingProduct(productType);
     try {
+      // Call the optional pre-checkout hook — lets the parent store any
+      // sessionStorage data needed after the Stripe redirect (e.g. topClusters).
+      onBeforeCheckout?.(productType);
+
       // For followup_unlock: redirect to /followup after payment so the user
       // lands directly in the followup questionnaire, not back on the page
       // they came from (history or assess). For all other products, return

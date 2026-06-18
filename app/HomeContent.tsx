@@ -861,6 +861,17 @@ export default function Home() {
                     followupsPaidCount={subStatus?.followupsPaidCount ?? 0}
                     mainAttemptsRemaining={subStatus?.mainAttemptsRemaining ?? 0}
                     bonusAttemptGranted={subStatus?.bonusAttemptGranted ?? false}
+                    onBeforeCheckout={(productType) => {
+                      // Before going to Stripe for a followup unlock, save
+                      // topClusters to sessionStorage so the followup page
+                      // can load correctly after the payment redirect.
+                      if (productType === 'followup_unlock' && result) {
+                        sessionStorage.setItem(
+                          'topClusters',
+                          JSON.stringify(result.top3.map((item: any) => item.cluster))
+                        );
+                      }
+                    }}
                   />
                   <button
                     onClick={handleSkipFollowup}
