@@ -13,26 +13,10 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAX_TEXT = 500;
 
 const FollowupReportSchema = z.object({
-  mainAnswers: z.object({
-    dreamJob: z.string().max(MAX_TEXT).optional(),
-    topValues: z.string().max(MAX_TEXT).optional(),
-    fulfillingProject: z.string().max(MAX_TEXT).optional(),
-    pastConsiderations: z.string().max(MAX_TEXT).optional(),
-    salaryAim: z.string().max(MAX_TEXT).optional(),
-    relocateWillingness: z.string().max(MAX_TEXT).optional(),
-    remoteWork: z.string().max(MAX_TEXT).optional(),
-    workSchedule: z.string().max(MAX_TEXT).optional(),
-    jobSecurity: z.string().max(MAX_TEXT).optional(),
-    travelPreference: z.string().max(MAX_TEXT).optional(),
-    teamEnvironment: z.string().max(MAX_TEXT).optional(),
-    criticismHandling: z.string().max(MAX_TEXT).optional(),
-  }),
-  topClusters: z.array(
-    z.object({
-      cluster: z.string().max(100),
-      percentage: z.number().min(0).max(100),
-    })
-  ).min(1).max(10),
+  // assessmentId sent by client — used to look up the correct user_result row.
+  // This replaces the old "fetch latest" approach which broke when a user did a
+  // followup on an older attempt from the history page.
+  assessmentId: z.string().uuid(),
   followupAnswers: z.record(
     z.string().max(100),
     z.record(z.coerce.number(), z.string().max(MAX_TEXT))
@@ -94,24 +78,36 @@ export async function POST(request: Request) {
       );
     }
 
-    const { mainAnswers, topClusters, followupAnswers } = parsed.data;
+    const { assessmentId, followupAnswers } = parsed.data;
 
-    const { data: latestResult, error: resultError } = await supabaseServer
+    // ─── Fetch the assessment from DB ──────────────────────────────────
+    // Verify it belongs to this user AND load mainAnswers + topClusters.
+    // This means the client never needs to send mainAnswers (which may have
+    // been cleared from sessionStorage) or topClusters. It also prevents a
+    // user from passing a different user's assessmentId.
+    const { data: resultRow, error: resultError } = await supabaseServer
       .from('user_results')
-      .select('id')
+      .select('id, answers, top_clusters')
+      .eq('id', assessmentId)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
       .single();
 
-    if (resultError || !latestResult) {
+    if (resultError || !resultRow) {
       return NextResponse.json(
-        { error: 'No assessment found. Please complete the main assessment first.' },
-        { status: 400 }
+        { error: 'Assessment not found. Please complete the main assessment first.' },
+        { status: 404 }
       );
     }
 
-    const assessmentId = latestResult.id;
+    const mainAnswers = resultRow.answers || {};
+    const topClusters: { cluster: string; percentage: number }[] = resultRow.top_clusters || [];
+
+    if (!topClusters.length) {
+      return NextResponse.json(
+        { error: 'Assessment data incomplete. Please contact support.' },
+        { status: 400 }
+      );
+    }
 
     // ─── Followup access check ─────────────────────────────────────────
     // Full plan: always allowed. Basic plan: requires a paid unlock for

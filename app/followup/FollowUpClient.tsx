@@ -2,11 +2,12 @@
 
 // app/followup/FollowUpClient.tsx
 // Auth is verified in the parent server component (page.tsx).
-// Key security fixes vs the original:
+// Key security fixes:
 //   - userId is NEVER sent in request bodies — API routes read it from the session
-//   - assessmentId is NEVER sent from the client — the API looks it up server-side
-//   - mainAnswers and topClusters still use sessionStorage (cleared when tab closes)
-//     rather than localStorage (persists forever). Use session-level storage only.
+//   - assessmentId is read from sessionStorage (set by the main flow or history page)
+//     and sent to the API, which verifies ownership server-side
+//   - mainAnswers and topClusters are fetched from the DB by the API using the
+//     assessmentId — the client never needs to store or resend them
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -192,6 +193,7 @@ const clusterNameMap: Record<string, string> = {
 export default function FollowUpClient() {
   const router = useRouter();
   const [clusters, setClusters] = useState<string[]>([]);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [clusterIndex, setClusterIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Record<number, string>>>({});
@@ -202,17 +204,25 @@ export default function FollowUpClient() {
   const [reportGenerated, setReportGenerated] = useState(false);
 
   useEffect(() => {
-    // Use sessionStorage instead of localStorage —
-    // sessionStorage is cleared when the tab closes, reducing exposure window
-    const stored = sessionStorage.getItem('topClusters');
-    if (stored) {
+    const storedClusters = sessionStorage.getItem('topClusters');
+    const storedAssessmentId = sessionStorage.getItem('lastAssessmentId');
+
+    if (storedClusters) {
       try {
-        const parsed = JSON.parse(stored);
+        const parsed = JSON.parse(storedClusters);
         const mapped = parsed.map((c: string) => clusterNameMap[c] || c);
         setClusters(mapped);
       } catch (e) {}
     } else {
       router.push('/');
+      return;
+    }
+
+    if (storedAssessmentId) {
+      setAssessmentId(storedAssessmentId);
+    } else {
+      // No assessmentId means we can't generate the report — redirect away
+      router.push('/history');
     }
   }, [router]);
 
@@ -268,7 +278,6 @@ export default function FollowUpClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        // userId is NOT sent — the API reads it from the session cookie
         body: JSON.stringify({ answers }),
       });
       if (res.ok) {
@@ -285,22 +294,21 @@ export default function FollowUpClient() {
   };
 
   const generateFollowupReport = async () => {
+    if (!assessmentId) {
+      alert('Assessment ID not found. Please return to history and try again.');
+      router.push('/history');
+      return;
+    }
     setLoadingReport(true);
     try {
-      // mainAnswers still read from sessionStorage (set by the main assessment flow)
-      // assessmentId is NOT sent — the API looks up the latest one server-side
-      const storedMain = sessionStorage.getItem('mainAnswers');
-      const mainAnswers = storedMain ? JSON.parse(storedMain) : null;
-      if (!mainAnswers) throw new Error('Main answers not found in session');
-
+      // Send assessmentId — the API fetches mainAnswers and topClusters from
+      // the DB using it, so the client never needs to store or resend them.
       const res = await fetch('/api/generate-followup-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        // userId and assessmentId are NOT sent — the API reads them from the session
         body: JSON.stringify({
-          mainAnswers,
-          topClusters: clusters.map(c => ({ cluster: c, percentage: 100 })),
+          assessmentId,
           followupAnswers: answers,
         }),
       });
@@ -309,9 +317,9 @@ export default function FollowUpClient() {
       if (res.ok) {
         setFollowupReport(data.report);
         setReportGenerated(true);
-        // Clean up sensitive session data now that we're done with it
-        sessionStorage.removeItem('mainAnswers');
+        // Clean up session data now that the report is generated
         sessionStorage.removeItem('topClusters');
+        sessionStorage.removeItem('lastAssessmentId');
       } else {
         alert('Failed to generate report: ' + (data.error || 'Unknown server error'));
       }
@@ -354,7 +362,9 @@ export default function FollowUpClient() {
               <div className="mt-4 p-4 bg-white/20 rounded-lg">
                 <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
                 <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
-                <button onClick={() => router.push('/')} className="btn-primary mt-4">Go to Home</button>
+                <button onClick={() => router.push('/history')} className="btn-primary mt-4">
+                  Go to History
+                </button>
               </div>
             )}
           </div>
