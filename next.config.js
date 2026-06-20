@@ -21,9 +21,6 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
-              // Sentry uses /monitoring tunnel route (set in tunnelRoute above)
-              // so we don't need to allowlist sentry.io directly —
-              // requests go through our own domain. Stripe needs its own domain.
               "connect-src 'self' https://*.supabase.co https://api.openai.com https://api.stripe.com",
               "font-src 'self' data:",
               "frame-ancestors 'none'",
@@ -55,6 +52,11 @@ module.exports = withSentryConfig(nextConfig, {
   project: "javascript-nextjs",
   silent: !process.env.CI,
   widenClientFileUpload: true,
+  // Prevents source maps from being served publicly alongside JS bundles.
+  // They are still uploaded to Sentry for error debugging, just not publicly accessible.
+  hideSourceMaps: true,
   tunnelRoute: "/monitoring",
-  automaticVercelMonitors: true,
+  webpack: {
+    automaticVercelMonitors: true,
+  },
 });
