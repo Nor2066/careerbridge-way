@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
 import { getSubscription, consumeAttemptAndAwaitFollowup } from '@/lib/subscription';
 import { supabaseServer } from '@/lib/supabase-server';
-import { generateReportLimiter, getIP, getUserIdentifier } from '@/lib/rate-limit';
+import { generateReportLimiter, getIP } from '@/lib/rate-limit';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -92,28 +92,48 @@ export async function POST(request: Request) {
 
     const { answers, topClusters } = parsed.data;
 
-    const { data: latestResult, error: resultError } = await supabaseServer
-      .from('user_results')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    // ─── Get subscription first ────────────────────────────────────────
+    // We read current_attempt_result_id from the subscription row — this is
+    // the authoritative source for which assessment is in progress.
+    // Using this instead of "fetch latest user_result by created_at" fixes
+    // a race condition where two tabs submitting simultaneously could cause
+    // two attempts to be consumed for the same user.
+    const sub = await getSubscription(user.id);
 
-    if (resultError || !latestResult) {
+    if (sub.current_attempt_status !== 'in_progress') {
+      return NextResponse.json(
+        { error: 'No assessment in progress. Please complete the questionnaire first.' },
+        { status: 400 }
+      );
+    }
+
+    const assessmentId = sub.current_attempt_result_id;
+
+    if (!assessmentId) {
       return NextResponse.json(
         { error: 'No assessment found. Please complete the main assessment first.' },
         { status: 400 }
       );
     }
 
-    const assessmentId = latestResult.id;
+    // Verify the result row actually belongs to this user — belt and suspenders
+    const { data: resultRow, error: resultError } = await supabaseServer
+      .from('user_results')
+      .select('id')
+      .eq('id', assessmentId)
+      .eq('user_id', user.id)
+      .single();
 
-    // ─── Consume the attempt now — this is the point of no return ─────
-    // After this, current_attempt_status becomes 'awaiting_followup_decision'
-    // and the user cannot start a new assessment until they finish this one
-    // (or skip the followup via the frontend).
-    const sub = await getSubscription(user.id);
+    if (resultError || !resultRow) {
+      return NextResponse.json(
+        { error: 'Assessment not found.' },
+        { status: 404 }
+      );
+    }
+
+    // ─── Consume the attempt — point of no return ──────────────────────
+    // After this, current_attempt_status becomes 'awaiting_followup_decision'.
+    // The user cannot start a new assessment until they finish or skip followup.
     await consumeAttemptAndAwaitFollowup(user.id, sub);
 
     const clusterSummary = topClusters

@@ -5,7 +5,6 @@ import { createServerClient } from '@supabase/ssr';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow the admin login page, all API routes, and static files through
   if (
     pathname.startsWith('/admin/login') ||
     pathname.startsWith('/api') ||
@@ -29,7 +28,7 @@ export async function proxy(request: NextRequest) {
               ...options,
               httpOnly: true,
               secure: isProd,
-              sameSite: 'lax',
+              sameSite: 'strict',  // upgraded from 'lax' — blocks all cross-site requests
               path: '/',
             });
           });
@@ -50,5 +49,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-// Next.js 16 proxy convention: flat array export named "matcher"
 export const matcher = ['/admin/:path*'];

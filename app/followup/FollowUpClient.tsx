@@ -202,6 +202,7 @@ export default function FollowUpClient() {
   const [followupReport, setFollowupReport] = useState('');
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
 
   useEffect(() => {
     const storedClusters = sessionStorage.getItem('topClusters');
@@ -320,6 +321,8 @@ export default function FollowUpClient() {
         // Clean up session data now that the report is generated
         sessionStorage.removeItem('topClusters');
         sessionStorage.removeItem('lastAssessmentId');
+        // Show feedback popup after a short delay
+        setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         alert('Failed to generate report: ' + (data.error || 'Unknown server error'));
       }
@@ -339,10 +342,86 @@ export default function FollowUpClient() {
   const progressPercent = totalQuestionsAll ? (answeredCount / totalQuestionsAll) * 100 : 0;
 
   if (submitted) {
+    const FeedbackPopup = () => {
+      const [feedbackRating, setFeedbackRating] = useState(0);
+      const [feedbackComment, setFeedbackComment] = useState('');
+      const [saved, setSaved] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [expanded, setExpanded] = useState(true);
+
+      const saveFeedback = async () => {
+        if (feedbackRating === 0) { alert('Please rate your experience'); return; }
+        setSaving(true);
+        try {
+          const res = await fetch('/api/save-results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ feedbackRating, feedbackComment }),
+          });
+          if (res.ok) setSaved(true);
+          else alert('Something went wrong. Please try again.');
+        } catch {
+          alert('Network error. Please try again.');
+        } finally {
+          setSaving(false);
+        }
+      };
+
+      if (!showFeedbackPopup) return null;
+
+      return (
+        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-stretch">
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2 py-6 rounded-l-lg shadow-lg transition-colors"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            aria-label="Toggle feedback"
+          >
+            {expanded ? '✕ Close' : '💬 Feedback'}
+          </button>
+          {expanded && (
+            <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-t border-b border-white/20 rounded-l-xl shadow-2xl p-5 flex flex-col gap-4">
+              {saved ? (
+                <div className="text-center py-4">
+                  <div className="text-3xl mb-2">🎉</div>
+                  <p className="text-green-400 font-semibold">Thank you for your feedback!</p>
+                  <button onClick={() => setShowFeedbackPopup(false)} className="mt-4 text-xs text-gray-400 hover:text-white">Close</button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <h3 className="text-white font-bold text-sm mb-1">Help us improve</h3>
+                    <p className="text-gray-400 text-xs">How useful was your career roadmap?</p>
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    {[1, 2, 3, 4, 5].map(r => (
+                      <button key={r} onClick={() => setFeedbackRating(r)}
+                        className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)}
+                    rows={3} placeholder="Any comments? (optional)"
+                    className="w-full p-2 text-sm border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                  <button onClick={saveFeedback} disabled={saving || feedbackRating === 0}
+                    className="btn-primary w-full text-sm py-2 disabled:opacity-50">
+                    {saving ? 'Saving...' : 'Submit Feedback'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
     return (
       <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
            style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
         <div className="absolute inset-0 bg-black/30 z-0" />
+        <FeedbackPopup />
         <div className="relative z-10 max-w-2xl w-full mx-auto">
           <div className="glass-card text-center">
             <h1 className="text-2xl font-bold text-white mb-4">Thank you!</h1>

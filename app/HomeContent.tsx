@@ -240,6 +240,8 @@ export default function Home() {
   const [skipLoading, setSkipLoading] = useState(false);
   // Controls the pricing modal overlay shown at the step-10 gate
   const [showPricingModal, setShowPricingModal] = useState(false);
+  // Controls the side feedback popup — shown after AI report is generated
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
 
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const loadedRef = useRef(false);
@@ -588,6 +590,9 @@ export default function Home() {
 
         await refetchSubStatus();
         setAwaitingFollowupDecision(true);
+        // Show the feedback popup after a short delay so it doesn't
+        // compete with the report appearing on screen
+        setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         alert('Failed to generate report: ' + (data.error || 'unknown error'));
       }
@@ -806,6 +811,7 @@ export default function Home() {
 
     return (
       <div className={containerClasses}>
+        <FeedbackPopup />
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
@@ -814,11 +820,6 @@ export default function Home() {
 
           <div className="glass-card mb-8">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
-            <ul className="space-y-4">
-              {result.top3.map((item: any, idx: number) => (
-                <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-white text-lg">{item.cluster}</span>
                     <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3">
@@ -889,89 +890,121 @@ export default function Home() {
     );
   }
 
-  // ---------- RESULTS DISPLAY (before AI report generated) ----------
-  if (result) {
-    const FeedbackForm = () => {
-      const [email, setEmail] = useState('');
-      const [feedbackRating, setFeedbackRating] = useState(0);
-      const [feedbackComment, setFeedbackComment] = useState('');
-      const [saved, setSaved] = useState(false);
-      const [saving, setSaving] = useState(false);
+  // ---------- SIDE FEEDBACK POPUP ----------
+  // Shown as a slide-in tab from the right after the AI report is generated.
+  // Does not block the page — user can dismiss it or ignore it entirely.
+  const FeedbackPopup = () => {
+    const [feedbackRating, setFeedbackRating] = useState(0);
+    const [feedbackComment, setFeedbackComment] = useState('');
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [expanded, setExpanded] = useState(true);
 
-      const saveFeedback = async () => {
-        const finalEmail = user ? user.email : email;
-        if (!finalEmail) { alert('Please enter your email'); return; }
-        if (feedbackRating === 0) { alert('Please rate your experience'); return; }
-        setSaving(true);
-        try {
-          const payload = {
-            email: finalEmail,
+    const saveFeedback = async () => {
+      if (feedbackRating === 0) { alert('Please rate your experience'); return; }
+      setSaving(true);
+      try {
+        const res = await fetchWithAuth('/api/save-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: user?.email,
             feedbackRating,
             feedbackComment,
-            topClusters: result.top3,
-            rawScores: result.rawScores,
+            topClusters: result?.top3,
+            rawScores: result?.rawScores,
             answers: submittedAnswers,
-          };
-          const res = await fetchWithAuth('/api/save-result', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(payload)
-          });
-          if (res.ok) {
-            setSaved(true);
-          } else {
-            const responseData = await res.json();
-            alert(`Something went wrong: ${responseData.error || 'Unknown error'}`);
-          }
-        } catch (err) { alert('Network error. Please try again.'); }
-        finally { setSaving(false); }
-      };
-
-      if (saved) {
-        return (
-          <div className="text-center py-8">
-            <div className="inline-block p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
-              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <p className="text-green-600 dark:text-green-400 font-semibold text-lg mb-4">Thank you for your feedback!</p>
-          </div>
-        );
+          }),
+        });
+        if (res.ok) {
+          setSaved(true);
+        } else {
+          alert('Something went wrong. Please try again.');
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      } finally {
+        setSaving(false);
       }
-
-      return (
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-2xl font-bold text-white mb-2 text-center">Help us improve</h3>
-          <p className="text-gray-300 mb-6 text-center">Your results have already been saved. Optionally leave a rating and comment.</p>
-          <div className="space-y-6">
-            {!user && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="you@example.com" required />
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3 text-center">How accurate were your results? *</label>
-              <div className="flex gap-3 justify-center">
-                {[1,2,3,4,5].map(r => (
-                  <button key={r} onClick={() => setFeedbackRating(r)} className={`w-12 h-12 rounded-full font-bold transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>{r}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Comments (optional)</label>
-              <textarea value={feedbackComment} onChange={(e) => setFeedbackComment(e.target.value)} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="What did you think? Any suggestions?" />
-            </div>
-            <button onClick={saveFeedback} disabled={saving} className={buttonPrimaryClasses + " w-full"}>{saving ? 'Saving...' : 'Submit Feedback'}</button>
-          </div>
-        </div>
-      );
     };
 
+    if (!showFeedbackPopup) return null;
+
+    return (
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-stretch">
+        {/* Toggle tab */}
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2 py-6 rounded-l-lg shadow-lg writing-mode-vertical flex items-center gap-2 transition-colors"
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          aria-label="Toggle feedback"
+        >
+          {expanded ? '✕ Close' : '💬 Feedback'}
+        </button>
+
+        {/* Panel */}
+        {expanded && (
+          <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-t border-b border-white/20 rounded-l-xl shadow-2xl p-5 flex flex-col gap-4">
+            {saved ? (
+              <div className="text-center py-4">
+                <div className="text-3xl mb-2">🎉</div>
+                <p className="text-green-400 font-semibold">Thank you for your feedback!</p>
+                <button
+                  onClick={() => setShowFeedbackPopup(false)}
+                  className="mt-4 text-xs text-gray-400 hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h3 className="text-white font-bold text-sm mb-1">Help us improve</h3>
+                  <p className="text-gray-400 text-xs">How accurate were your results?</p>
+                </div>
+                <div className="flex gap-2 justify-center">
+                  {[1, 2, 3, 4, 5].map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setFeedbackRating(r)}
+                      className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${
+                        feedbackRating === r
+                          ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={feedbackComment}
+                  onChange={e => setFeedbackComment(e.target.value)}
+                  rows={3}
+                  className="w-full p-2 text-sm border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  placeholder="Any comments? (optional)"
+                />
+                <button
+                  onClick={saveFeedback}
+                  disabled={saving || feedbackRating === 0}
+                  className="btn-primary w-full text-sm py-2 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Submit Feedback'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ---------- RESULTS DISPLAY (before AI report generated) ----------
+  if (result) {
     return (
       <div className={containerClasses}>
+        <FeedbackPopup />
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
@@ -995,9 +1028,6 @@ export default function Home() {
             {result.warningMessage && (
               <div className="mt-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100">⚠️ {result.warningMessage}</div>
             )}
-          </div>
-          <div className="glass-card">
-            <FeedbackForm />
           </div>
           <div className="mt-8">
             {!reportGenerated && (
