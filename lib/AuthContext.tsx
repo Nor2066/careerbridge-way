@@ -24,15 +24,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Use getUser() instead of getSession() — validates against the server
+        // so we never show a "logged in" state with an actually expired session.
+        const { data: { user }, error } = await supabase.auth.getUser();
         if (error) {
           console.error('Session error:', error);
-          if (error.message?.includes('Invalid Refresh Token') || error.status === 400) {
-            await supabase.auth.signOut();
-            if (isMounted) setUser(null);
-          }
+          await supabase.auth.signOut();
+          if (isMounted) setUser(null);
         } else {
-          if (isMounted) setUser(session?.user ?? null);
+          if (isMounted) setUser(user ?? null);
         }
       } catch (err) {
         console.error('Unexpected auth error:', err);
@@ -47,7 +47,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (isMounted) {
-        setUser(session?.user ?? null);
+        // On auth state change, validate the user server-side before trusting it
+        if (session) {
+          const { data: { user } } = await supabase.auth.getUser();
+          setUser(user ?? null);
+        } else {
+          setUser(null);
+        }
         setLoading(false);
       }
     });
@@ -80,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setUser(null);
   };
 
   return (
