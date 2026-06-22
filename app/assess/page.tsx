@@ -4,8 +4,6 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import AssessClient from './AssessClient';
 
-// Server component — redirects unauthenticated users to /login before
-// any page HTML is sent. Authenticated users see the real questionnaire.
 export default async function AssessPage() {
   const cookieStore = await cookies();
 
@@ -21,7 +19,8 @@ export default async function AssessPage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  // Pass returnTo so the user lands back on /assess after logging in
+  if (!user) redirect('/login?returnTo=/assess');
 
   return (
     <main

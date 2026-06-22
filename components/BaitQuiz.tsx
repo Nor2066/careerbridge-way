@@ -215,11 +215,11 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
             onClick={() => handleAnswer(opt)}
             onMouseEnter={() => setHoveredIndex(idx)}
             onMouseLeave={() => setHoveredIndex(null)}
-            className="relative w-full text-left p-4 border border-gray-700 rounded-lg overflow-hidden transition-all duration-300 hover:border-blue-500 group"
+            className="relative w-full text-left p-4 border border-gray-700 rounded-lg overflow-hidden hover:border-blue-500 group"
           >
             {hoverImage && hoveredIndex === idx && (
               <div
-                className="absolute inset-0 transition-opacity duration-300"
+                className="absolute inset-0"
                 style={{
                   backgroundImage: `url(${hoverImage})`,
                   backgroundSize: 'cover',

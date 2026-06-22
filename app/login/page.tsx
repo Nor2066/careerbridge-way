@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,8 +10,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();  // ← make sure signInWithGoogle is destructured
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read ?returnTo= so we can send the user back where they came from
+  const returnTo = searchParams.get('returnTo') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +23,7 @@ export default function LoginPage() {
     setMessage('');
     try {
       await signIn(email, password);
-      router.push('/');
+      router.push(returnTo);
     } catch (err) {
       setError('Invalid email or password');
     }

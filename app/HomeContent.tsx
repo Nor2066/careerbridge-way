@@ -1009,15 +1009,17 @@ export default function Home() {
             {result.warningMessage && (
               <div className="mt-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100">⚠️ {result.warningMessage}</div>
             )}
-          </div>
-          <div className="mt-8">
             {!reportGenerated && (
-              <div>
-                <button onClick={generateAIReport} disabled={loadingReport} className={buttonPrimaryClasses}>
-                  {loadingReport ? '✨ Generating your AI report...' : '🤖 Get AI-Powered Career Report'}
+              <div className="mt-8 text-center">
+                <button
+                  onClick={generateAIReport}
+                  disabled={loadingReport}
+                  className="w-full py-4 px-6 text-lg font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg hover:shadow-indigo-500/40 transition-all disabled:opacity-60"
+                >
+                  {loadingReport ? '✨ Generating your AI report...' : '🤖 Get Your AI-Powered Career Report'}
                 </button>
                 {loadingReport && (
-                  <p className="text-sm text-gray-400 mt-2">
+                  <p className="text-sm text-gray-400 mt-3">
                     We are processing your information and preparing your result. This may take a few seconds.
                   </p>
                 )}
