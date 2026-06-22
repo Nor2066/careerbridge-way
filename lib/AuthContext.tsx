@@ -47,13 +47,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (isMounted) {
-        // On auth state change, validate the user server-side before trusting it
-        if (session) {
-          const { data: { user } } = await supabase.auth.getUser();
-          setUser(user ?? null);
-        } else {
-          setUser(null);
-        }
+        // Use the session from the event directly — it's already validated by Supabase.
+        // Calling getUser() here caused an extra network call on every auth state
+        // change, creating an infinite re-render loop on protected pages.
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     });
