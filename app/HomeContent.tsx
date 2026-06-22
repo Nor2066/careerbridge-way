@@ -820,6 +820,11 @@ export default function Home() {
 
           <div className="glass-card mb-8">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+            <ul className="space-y-4">
+              {result.top3.map((item: any, idx: number) => (
+                <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-white text-lg">{item.cluster}</span>
                     <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3">
