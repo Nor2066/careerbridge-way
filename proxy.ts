@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
               ...options,
               httpOnly: true,
               secure: isProd,
-              sameSite: 'strict',  // upgraded from 'lax' — blocks all cross-site requests
+              sameSite: 'strict',
               path: '/',
             });
           });
@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/admin') || pathname === '/admin') {
     if (!user) return NextResponse.redirect(new URL('/admin/login', request.url));
 
     const isAdmin = user.app_metadata?.role === 'admin';
@@ -49,4 +49,5 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const matcher = ['/admin/:path*'];
+// Match both /admin exactly and all /admin/* sub-paths
+export const matcher = ['/admin', '/admin/:path*'];
