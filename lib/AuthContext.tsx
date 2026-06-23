@@ -24,19 +24,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initSession = async () => {
       try {
-        // Use getUser() instead of getSession() — validates against the server
-        // so we never show a "logged in" state with an actually expired session.
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Session error:', error);
-          await supabase.auth.signOut();
           if (isMounted) setUser(null);
         } else {
-          if (isMounted) setUser(user ?? null);
+          if (isMounted) setUser(session?.user ?? null);
         }
       } catch (err) {
         console.error('Unexpected auth error:', err);
-        await supabase.auth.signOut();
         if (isMounted) setUser(null);
       } finally {
         if (isMounted) setLoading(false);
