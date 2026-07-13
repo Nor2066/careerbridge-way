@@ -218,7 +218,7 @@ type SubscriptionStatus = {
 };
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
@@ -633,6 +633,26 @@ export default function Home() {
   const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
   const buttonPrimaryClasses = "btn-primary";
   const buttonSecondaryClasses = "btn-secondary";
+
+  // ---------- AUTH GUARD ----------
+  // Wait for AuthContext to finish initializing before rendering anything.
+  // Without this, fetchWithAuth calls fire before the session is ready,
+  // causing "Not authenticated" errors and broken questionnaire flows.
+
+  if (authLoading) {
+    return (
+      <div className={containerClasses}>
+        <div className="text-gray-300">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login?returnTo=/assess';
+    }
+    return null;
+  }
 
   const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
     <>
