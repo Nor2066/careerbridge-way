@@ -19,7 +19,7 @@ const questions: Question[] = [
       "Evening – I do my best work after 6 PM",
       "Flexible – I adapt to whatever schedule is needed",
     ],
-    hoverImages: ["morning.jpg", "afternoon.jpg", "evening.jpg", "flexible.jpg"],
+    hoverImages: ["morning.webp", "afternoon.webp", "evening.webp", "flexible.webp"],
   },
   {
     id: 2,
@@ -30,7 +30,7 @@ const questions: Question[] = [
       "Perfect recall – never forget important details",
       "Empathy – understand and connect with anyone",
     ],
-    hoverImages: ["focus.jpg", "speed.jpg", "recall.jpg", "empathy.jpg"],
+    hoverImages: ["focus.webp", "speed.webp", "recall.webp", "empathy.webp"],
   },
   {
     id: 3,
@@ -41,7 +41,7 @@ const questions: Question[] = [
       "Connecting with friends or family",
       "Exploring outdoors or trying new experiences",
     ],
-    hoverImages: ["learning.jpg", "creating.jpg", "connecting.jpg", "exploring.jpg"],
+    hoverImages: ["learning.webp", "creating.webp", "connecting.webp", "exploring.webp"],
   },
   {
     id: 4,
@@ -52,7 +52,7 @@ const questions: Question[] = [
       "Collaborative open-plan workspace",
       "Quiet space for deep focused work",
     ],
-    hoverImages: ["structured.jpg", "remote.jpg", "collaborative.jpg", "quiet.jpg"],
+    hoverImages: ["structured.webp", "remote.webp", "collaborative.webp", "quiet.webp"],
   },
   {
     id: 5,
@@ -63,7 +63,7 @@ const questions: Question[] = [
       "Experiment until I find what works",
       "Create a step-by-step structured plan",
     ],
-    hoverImages: ["research.jpg", "consult.jpg", "experiment.jpg", "plan.jpg"],
+    hoverImages: ["research.webp", "consult.webp", "experiment.webp", "plan.webp"],
   },
   {
     id: 6,
@@ -74,7 +74,7 @@ const questions: Question[] = [
       "Work-life balance and flexibility",
       "Recognition and career advancement",
     ],
-    hoverImages: ["impact.jpg", "growth.jpg", "balance.jpg", "recognition.jpg"],
+    hoverImages: ["impact.webp", "growth.webp", "balance.webp", "recognition.webp"],
   },
   {
     id: 7,
@@ -85,7 +85,7 @@ const questions: Question[] = [
       "Optimise processes and systems",
       "Lead and inspire teams",
     ],
-    hoverImages: ["build.jpg", "help.jpg", "optimize.jpg", "lead.jpg"],
+    hoverImages: ["build.webp", "help.webp", "optimize.webp", "lead.webp"],
   },
   {
     id: 8,
@@ -96,56 +96,56 @@ const questions: Question[] = [
       "Connector – relationships and communication",
       "Analyst – data and insights",
     ],
-    hoverImages: ["strategist.jpg", "creator.jpg", "connector.jpg", "analyst.jpg"],
+    hoverImages: ["strategist.webp", "creator.webp", "connector.webp", "analyst.webp"],
   },
 ];
 
 // Custom background positions for specific images
 const imagePositionMap: Record<string, string> = {
-  'morning.jpg': 'center 60%',
-  'afternoon.jpg': 'center 55%',
-  'evening.jpg': 'center 50%',
-  'flexible.jpg': 'center 52%',
-  'focus.jpg': 'center 37%',
-  'speed.jpg': 'center 82%',
-  'recall.jpg': 'center 45%',
-  'empathy.jpg': 'center 58%',
+  'morning.webp': 'center 60%',
+  'afternoon.webp': 'center 55%',
+  'evening.webp': 'center 50%',
+  'flexible.webp': 'center 52%',
+  'focus.webp': 'center 37%',
+  'speed.webp': 'center 82%',
+  'recall.webp': 'center 45%',
+  'empathy.webp': 'center 58%',
   // Add more entries as needed
  // Question 3 – add your desired positions
-  'learning.jpg': 'center 65%',
-  'creating.jpg': 'center 52%',
-  'connecting.jpg': 'center 61%',
-  'exploring.jpg': 'center 65%',
+  'learning.webp': 'center 65%',
+  'creating.webp': 'center 52%',
+  'connecting.webp': 'center 61%',
+  'exploring.webp': 'center 65%',
 
   // Question 4
-  'structured.jpg': 'center 53%',
-  'remote.jpg': 'center 45%',
-  'collaborative.jpg': 'center 73%',
-  'quiet.jpg': 'center 23%',
+  'structured.webp': 'center 53%',
+  'remote.webp': 'center 45%',
+  'collaborative.webp': 'center 73%',
+  'quiet.webp': 'center 23%',
 
   // Question 5
-  'research.jpg': 'center 34%',
-  'consult.jpg': 'center 51%',
-  'experiment.jpg': 'center 75%',
-  'plan.jpg': 'center 25%',
+  'research.webp': 'center 34%',
+  'consult.webp': 'center 51%',
+  'experiment.webp': 'center 75%',
+  'plan.webp': 'center 25%',
 
   // Question 6
-  'impact.jpg': 'center 78%',
-  'growth.jpg': 'center 45%',
-  'balance.jpg': 'center 38%',
-  'recognition.jpg': 'center 65%',
+  'impact.webp': 'center 78%',
+  'growth.webp': 'center 45%',
+  'balance.webp': 'center 38%',
+  'recognition.webp': 'center 65%',
 
   // Question 7
-  'build.jpg': 'center 79%',
-  'help.jpg': 'center 79%',
-  'optimize.jpg': 'center 30%',
-  'lead.jpg': 'center 16%',
+  'build.webp': 'center 79%',
+  'help.webp': 'center 79%',
+  'optimize.webp': 'center 30%',
+  'lead.webp': 'center 16%',
 
   // Question 8
-  'strategist.jpg': 'center 65%',
-  'creator.jpg': 'center 55%',
-  'connector.jpg': 'center 30%',
-  'analyst.jpg': 'center 60%',
+  'strategist.webp': 'center 65%',
+  'creator.webp': 'center 55%',
+  'connector.webp': 'center 30%',
+  'analyst.webp': 'center 60%',
 };
 
 function getBackgroundPosition(imagePath: string): string {
@@ -194,7 +194,7 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
   if (!q) {
     return <div className="p-6 text-white">Loading...</div>;
   }
-  const hoverImage = q.hoverImages && hoveredIndex !== null ? `/images/${q.hoverImages[hoveredIndex]}` : null;
+  const hoverImage = q.hoverImages && hoveredIndex !== null ? `/images/${q.hoverImages[hoveredIndex].replace('.webp', '.webp')}` : null;
 
   return (
     <div className="p-6 md:p-8">

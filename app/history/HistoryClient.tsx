@@ -66,11 +66,10 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const mainAttemptsRemaining = subStatus?.mainAttemptsRemaining ?? 0;
   const bonusAttemptGranted = subStatus?.bonusAttemptGranted ?? false;
 
-  // ── Shared page wrapper with background image ──────────────────────
   const PageWrapper = ({ children }: { children: React.ReactNode }) => (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat relative"
-      style={{ backgroundImage: "url('/images/bg-history.jpg')" }}
+      style={{ backgroundImage: "url('/images/bg-history.webp')" }}
     >
       <div className="absolute inset-0 bg-black/55" />
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-10">
@@ -103,7 +102,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
 
   return (
     <PageWrapper>
-      {/* Unlock modal overlay */}
       {unlockModalResultId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div
@@ -129,7 +127,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white drop-shadow-lg">Your Assessment History</h1>
         {mainAttemptsRemaining > 0 && (
@@ -139,7 +136,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
         )}
       </div>
 
-      {/* Subscription status banner */}
       {subStatus && (
         <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
           <p className="text-white text-sm">
@@ -156,27 +152,20 @@ export default function HistoryClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      {/* History cards */}
       <div className="space-y-6">
         {history.map((item) => {
           const hasRoadmap = !!item.detailedRoadmap;
           const followupUnlocked = item.followupUnlocked;
           const hasFirstReport = !!item.firstAIReport;
-
-          const showStartFollowup =
-            hasFirstReport && !hasRoadmap && (plan === 'full' || followupUnlocked);
-          const showUnlockButton =
-            hasFirstReport && !hasRoadmap && plan === 'basic' && !followupUnlocked;
+          const showStartFollowup = hasFirstReport && !hasRoadmap && (plan === 'full' || followupUnlocked);
+          const showUnlockButton = hasFirstReport && !hasRoadmap && plan === 'basic' && !followupUnlocked;
 
           return (
             <div key={item.id} className="glass-card">
-              {/* Date */}
               <p className="text-sm text-gray-300 mb-4">
                 {new Date(item.createdAt).toLocaleDateString()} at{' '}
                 {new Date(item.createdAt).toLocaleTimeString()}
               </p>
-
-              {/* Top clusters */}
               <h2 className="text-lg font-bold text-white mb-4">Your Top 3 Career Clusters</h2>
               <div className="space-y-3 mb-6">
                 {item.topClusters.map((cluster) => (
@@ -195,7 +184,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 ))}
               </div>
 
-              {/* First AI Report */}
               <div className="border-t border-white/20 pt-4 mb-4">
                 <button
                   onClick={() => toggleFirst(item.id)}
@@ -206,14 +194,11 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 </button>
                 {expanded[item.id]?.first && (
                   <div className="mt-3 p-4 bg-black/30 rounded-xl text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-                    {item.firstAIReport || (
-                      <em className="text-gray-400">No AI report was generated for this assessment.</em>
-                    )}
+                    {item.firstAIReport || <em className="text-gray-400">No AI report was generated for this assessment.</em>}
                   </div>
                 )}
               </div>
 
-              {/* Detailed Roadmap */}
               <div className="border-t border-white/20 pt-4">
                 <button
                   onClick={() => toggleSecond(item.id)}
@@ -224,13 +209,9 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 </button>
                 {expanded[item.id]?.second && (
                   <div className="mt-3 p-4 bg-black/30 rounded-xl text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-                    {item.detailedRoadmap || (
-                      <em className="text-gray-400">No detailed roadmap yet.</em>
-                    )}
+                    {item.detailedRoadmap || <em className="text-gray-400">No detailed roadmap yet.</em>}
                   </div>
                 )}
-
-                {/* Action buttons */}
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
                   {showStartFollowup && (
                     <button onClick={() => handleStartFollowup(item)} className="btn-primary">

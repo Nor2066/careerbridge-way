@@ -784,7 +784,7 @@ export default function Home() {
     return (
       <div
         className="min-h-screen bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}
+        style={{ backgroundImage: "url('/images/bg-assess.webp')" }}
       >
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10">
