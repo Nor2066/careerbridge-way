@@ -4,7 +4,26 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BaitQuiz from '@/components/BaitQuiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
-import JsonLd from '@/components/JsonLd';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'CareerBridge Way',
+  url: 'https://careerbridge-way.vercel.app',
+  description: 'AI-powered career assessment platform that helps students and graduates discover their ideal career path through personalised questionnaires and reports.',
+  applicationCategory: 'EducationalApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'EUR',
+    description: 'Free demo assessment available. Full assessment from €3.',
+  },
+  audience: {
+    '@type': 'Audience',
+    audienceType: 'Students and graduates seeking career guidance',
+  },
+};
 
 export default function LandingPage() {
   const [quizStarted, setQuizStarted] = useState(false);
@@ -23,7 +42,10 @@ export default function LandingPage() {
       className="relative min-h-screen bg-cover bg-center bg-no-repeat flex flex-col items-center justify-start px-4 py-12"
       style={{ backgroundImage: "url('/images/bg-landing.webp')" }}
     >
-      <JsonLd />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="absolute inset-0 bg-black/30 z-0" />
 
       <div className="relative z-10 w-full max-w-4xl mx-auto">
