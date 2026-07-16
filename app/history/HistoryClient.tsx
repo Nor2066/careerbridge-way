@@ -31,16 +31,25 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, { first: boolean; second: boolean }>>({});
   const [unlockModalResultId, setUnlockModalResultId] = useState<string | null>(null);
+  // Whether there's saved mid-questionnaire progress (step > 0) — tracked
+  // separately from currentAttemptStatus, which only flips to 'in_progress'
+  // AFTER the questionnaire is fully submitted, not while still answering.
+  const [hasSavedProgress, setHasSavedProgress] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [historyRes, subRes] = await Promise.all([
+        const [historyRes, subRes, progressRes] = await Promise.all([
           fetch('/api/user-history', { credentials: 'include' }),
           fetch('/api/subscription-status', { credentials: 'include' }),
+          fetch('/api/load-progress', { credentials: 'include' }),
         ]);
         if (historyRes.ok) setHistory(await historyRes.json());
         if (subRes.ok) setSubStatus(await subRes.json());
+        if (progressRes.ok) {
+          const progressData = await progressRes.json();
+          setHasSavedProgress(!!(progressData.step && progressData.step > 0));
+        }
       } catch (err) {
         console.error('History fetch error:', err);
       } finally {
@@ -129,9 +138,11 @@ export default function HistoryClient({ userId }: { userId: string }) {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white drop-shadow-lg">Your Assessment History</h1>
-        {(mainAttemptsRemaining > 0 || subStatus?.currentAttemptStatus === 'in_progress') && (
+        {(mainAttemptsRemaining > 0 || hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress') && (
           <button onClick={() => router.push('/assess')} className="btn-primary">
-            {subStatus?.currentAttemptStatus === 'in_progress' ? 'Continue Last Attempt' : 'Start New Assessment'}
+            {hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress'
+              ? 'Continue Last Attempt'
+              : 'Start New Assessment'}
           </button>
         )}
       </div>
