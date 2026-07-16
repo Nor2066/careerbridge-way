@@ -242,6 +242,11 @@ export default function Home() {
   const [showPricingModal, setShowPricingModal] = useState(false);
   // Controls the side feedback popup — shown after AI report is generated
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  // Shown when the user tries to access /assess with an unfinished
+  // attempt (current_attempt_status === 'awaiting_followup_decision')
+  // from a previous session — explains why they can't start fresh
+  // and offers a direct path to finish it.
+  const [showMustFinishModal, setShowMustFinishModal] = useState(false);
 
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
   const loadedRef = useRef(false);
@@ -308,16 +313,15 @@ export default function Home() {
           // Only show the inline "awaiting followup decision" screen if we
           // already have `result` data in memory from THIS session (i.e. we
           // just finished generateAIReport). On a fresh page load there is
-          // no `result` state to render the decision screen with — trying
-          // to show it anyway led to a dead-end paywall loop where the
-          // pricing modal rendered with no valid options. Redirect to
-          // /history instead, where the user can view/continue that
-          // specific attempt via the existing unlock/start-followup flow.
+          // no `result` state to render the decision screen with. Instead
+          // of silently redirecting, show a modal explaining why the user
+          // can't start a new assessment, with a button to go finish it.
           if (data.currentAttemptStatus === 'awaiting_followup_decision') {
             if (result) {
               setAwaitingFollowupDecision(true);
             } else {
-              router.replace('/history');
+              setShowMustFinishModal(true);
+              setSubLoading(false);
               return;
             }
           }
@@ -824,7 +828,44 @@ export default function Home() {
     );
   };
 
+  // ---------- MUST FINISH PREVIOUS ASSESSMENT MODAL ----------
+  // Shown when the user tries to access /assess while a previous attempt
+  // is still awaiting its followup decision. Explains why they can't start
+  // fresh and offers a direct path to their history page to finish it.
+  const MustFinishModal = () => {
+    if (!showMustFinishModal) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <div className="relative z-10 w-full max-w-md">
+          <div className="glass-card text-center">
+            <div className="text-4xl mb-3">📋</div>
+            <h2 className="text-xl font-bold text-white mb-3">Please Finish Your Current Assessment</h2>
+            <p className="text-gray-300 mb-6">
+              You have a previous assessment that's still waiting on the followup
+              questionnaire. Please complete or unlock it before starting a new one.
+            </p>
+            <button
+              onClick={() => router.push('/history')}
+              className="btn-primary w-full"
+            >
+              Go to My History
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ---------- SUBSCRIPTION GATE ----------
+  if (showMustFinishModal) {
+    return (
+      <div className={containerClasses}>
+        <MustFinishModal />
+      </div>
+    );
+  }
+
   if (user && subLoading) {
     return (
       <div className={containerClasses}>
