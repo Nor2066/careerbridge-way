@@ -417,8 +417,17 @@ export default function Home() {
   }, [searchParams, user, resetAssessment, router]);
 
   // ---------- Load saved progress ----------
+  // Fixed autosave data-loss bug: previously, if fetchWithAuth failed during
+  // a brief auth-initialization window (e.g. right after navigating back
+  // from /history), the catch block still marked the questionnaire "ready"
+  // to autosave — so the very next interaction would silently overwrite the
+  // user's real saved progress in the DB with blank/default state.
+  // Fix: wait for authLoading to resolve before attempting the load, and
+  // retry a few times on failure before ever allowing autosave to arm.
+  const loadRetryCount = useRef(0);
   useEffect(() => {
     let isMounted = true;
+    if (authLoading) return; // wait until auth session is confirmed ready
     const loadProgress = async () => {
       if (!user) return;
       if (loadedRef.current) return;
@@ -448,12 +457,23 @@ export default function Home() {
         isReadyRef.current = true;
       } catch (err) {
         console.error(err);
+        // Retry up to 3 times before giving up — covers the brief window
+        // where the session may not be fully ready yet. Only arm autosave
+        // (isReadyRef.current = true) after retries are exhausted, so a
+        // transient failure can't wipe existing saved progress.
+        if (loadRetryCount.current < 3 && isMounted) {
+          loadRetryCount.current += 1;
+          setTimeout(() => {
+            if (isMounted) loadProgress();
+          }, 800);
+          return;
+        }
         isReadyRef.current = true;
       }
     };
     loadProgress();
     return () => { isMounted = false; };
-  }, [user, finalSubmitStep]);
+  }, [user, authLoading, finalSubmitStep]);
 
   const autoSave = async (currentAnswers: Answers, currentStep: number) => {
     if (!user) return;
@@ -852,18 +872,18 @@ export default function Home() {
       if (feedbackRating === 0) { alert('Please rate your experience'); return; }
       setSaving(true);
       try {
+        // Only send rating + comment — the assessment data (topClusters,
+        // rawScores, answers) was already saved via /api/save-result at
+        // submission time. Resending it here broke validation: after the
+        // AI report generates, clearProgressAfterReport() sets
+        // submittedAnswers to null, and the backend schema only accepts
+        // undefined (not null) for optional fields, causing every feedback
+        // submission after the main questionnaire to fail silently.
         const res = await fetchWithAuth('/api/save-results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({
-            email: user?.email,
-            feedbackRating,
-            feedbackComment,
-            topClusters: result?.top3,
-            rawScores: result?.rawScores,
-            answers: submittedAnswers,
-          }),
+          body: JSON.stringify({ feedbackRating, feedbackComment }),
         });
         if (res.ok) setSaved(true);
         else alert('Something went wrong. Please try again.');
