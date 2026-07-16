@@ -2,9 +2,31 @@
 
 import { useAuth } from '@/lib/AuthContext';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
+  const [inProgress, setInProgress] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!user) {
+      setInProgress(false);
+      return;
+    }
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('/api/subscription-status', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isMounted) setInProgress(data.currentAttemptStatus === 'in_progress');
+      } catch {
+        // Non-critical — worst case the link just says "Full Assessment"
+      }
+    };
+    fetchStatus();
+    return () => { isMounted = false; };
+  }, [user]);
 
   return (
     <nav className="bg-gray-900/70 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
@@ -12,7 +34,7 @@ export default function Navbar() {
         <Link href="/" className="text-xl font-bold text-white">CareerBridge Way</Link>
         <div className="flex items-center gap-6">
           <Link href="/assess" className="text-gray-300 hover:text-white transition text-sm font-medium">
-            Full Assessment
+            {inProgress ? 'Continue Assessment' : 'Full Assessment'}
           </Link>
           {user ? (
             <>

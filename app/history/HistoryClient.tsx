@@ -129,9 +129,9 @@ export default function HistoryClient({ userId }: { userId: string }) {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white drop-shadow-lg">Your Assessment History</h1>
-        {mainAttemptsRemaining > 0 && (
+        {(mainAttemptsRemaining > 0 || subStatus?.currentAttemptStatus === 'in_progress') && (
           <button onClick={() => router.push('/assess')} className="btn-primary">
-            Start New Assessment
+            {subStatus?.currentAttemptStatus === 'in_progress' ? 'Continue Last Attempt' : 'Start New Assessment'}
           </button>
         )}
       </div>
