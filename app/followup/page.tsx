@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import FollowUpClient from './FollowUpClient';
 
-// Server component — verifies auth before any HTML is sent to the browser
 export default async function FollowUpPage() {
   const cookieStore = await cookies();
 
@@ -21,7 +20,10 @@ export default async function FollowUpPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login');
+  // Pass returnTo so a payment-triggered redirect to login lands the user
+  // back on /followup instead of the homepage — fixes the "dropped at main
+  // questionnaire after followup payment" bug.
+  if (!user) redirect('/login?returnTo=/followup');
 
   return <FollowUpClient />;
 }

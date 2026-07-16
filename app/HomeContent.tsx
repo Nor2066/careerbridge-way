@@ -305,8 +305,21 @@ export default function Home() {
         const data = await res.json();
         if (isMounted) {
           setSubStatus(data);
+          // Only show the inline "awaiting followup decision" screen if we
+          // already have `result` data in memory from THIS session (i.e. we
+          // just finished generateAIReport). On a fresh page load there is
+          // no `result` state to render the decision screen with — trying
+          // to show it anyway led to a dead-end paywall loop where the
+          // pricing modal rendered with no valid options. Redirect to
+          // /history instead, where the user can view/continue that
+          // specific attempt via the existing unlock/start-followup flow.
           if (data.currentAttemptStatus === 'awaiting_followup_decision') {
-            setAwaitingFollowupDecision(true);
+            if (result) {
+              setAwaitingFollowupDecision(true);
+            } else {
+              router.replace('/history');
+              return;
+            }
           }
         }
       } catch (err) {

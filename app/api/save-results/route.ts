@@ -6,6 +6,10 @@ import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
 import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
+// topClusters, rawScores, and answers are now optional — the feedback popup
+// on the followup page only sends feedbackRating + feedbackComment, with no
+// access to the original assessment data. Previously these were required,
+// which silently failed validation and broke the feedback popup entirely.
 const SaveResultsSchema = z.object({
   feedbackRating: z.number().int().min(1).max(5).optional(),
   feedbackComment: z.string().max(2000).optional(),
@@ -14,9 +18,9 @@ const SaveResultsSchema = z.object({
       cluster: z.string().max(100),
       percentage: z.number().min(0).max(100),
     })
-  ).min(1).max(10),
-  rawScores: z.record(z.string(), z.number()),
-  answers: z.record(z.string(), z.unknown()),
+  ).max(10).optional(),
+  rawScores: z.record(z.string(), z.number()).optional(),
+  answers: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function POST(request: Request) {
@@ -39,11 +43,11 @@ export async function POST(request: Request) {
     const { error: dbError } = await supabaseServer.from('assessments').insert([{
       email: user.email,
       user_id: user.id,
-      feedback_rating: feedbackRating,
-      feedback_comment: feedbackComment,
-      top_clusters: topClusters,
-      raw_scores: rawScores,
-      answers,
+      feedback_rating: feedbackRating ?? null,
+      feedback_comment: feedbackComment ?? null,
+      top_clusters: topClusters ?? null,
+      raw_scores: rawScores ?? null,
+      answers: answers ?? null,
     }]);
 
     if (dbError) throw dbError;

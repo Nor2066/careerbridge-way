@@ -9,8 +9,6 @@ export default function PaymentSuccessClient() {
   const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
-    // Give the Stripe webhook a moment to process before we let the user
-    // continue. The webhook usually fires within 1-2 seconds of checkout.
     const timer = setTimeout(() => setVerifying(false), 2000);
     return () => clearTimeout(timer);
   }, []);
@@ -24,7 +22,7 @@ export default function PaymentSuccessClient() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}
+      style={{ backgroundImage: "url('/images/bg-assess.webp')" }}
     >
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10 max-w-md w-full">

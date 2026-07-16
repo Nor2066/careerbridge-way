@@ -222,7 +222,6 @@ export default function FollowUpClient() {
     if (storedAssessmentId) {
       setAssessmentId(storedAssessmentId);
     } else {
-      // No assessmentId means we can't generate the report — redirect away
       router.push('/history');
     }
   }, [router]);
@@ -302,8 +301,6 @@ export default function FollowUpClient() {
     }
     setLoadingReport(true);
     try {
-      // Send assessmentId — the API fetches mainAnswers and topClusters from
-      // the DB using it, so the client never needs to store or resend them.
       const res = await fetch('/api/generate-followup-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -318,10 +315,8 @@ export default function FollowUpClient() {
       if (res.ok) {
         setFollowupReport(data.report);
         setReportGenerated(true);
-        // Clean up session data now that the report is generated
         sessionStorage.removeItem('topClusters');
         sessionStorage.removeItem('lastAssessmentId');
-        // Show feedback popup after a short delay
         setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         alert('Failed to generate report: ' + (data.error || 'Unknown server error'));
@@ -353,6 +348,9 @@ export default function FollowUpClient() {
         if (feedbackRating === 0) { alert('Please rate your experience'); return; }
         setSaving(true);
         try {
+          // Only feedbackRating/feedbackComment are sent — topClusters/rawScores/
+          // answers are now optional on the backend (see save-results route fix),
+          // since this popup has no access to the original assessment data.
           const res = await fetch('/api/save-results', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -419,7 +417,7 @@ export default function FollowUpClient() {
 
     return (
       <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
-           style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
+           style={{ backgroundImage: "url('/images/bg-assess.webp')" }}>
         <div className="absolute inset-0 bg-black/30 z-0" />
         <FeedbackPopup />
         <div className="relative z-10 max-w-2xl w-full mx-auto">
@@ -454,7 +452,7 @@ export default function FollowUpClient() {
 
   return (
     <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
-         style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
+         style={{ backgroundImage: "url('/images/bg-assess.webp')" }}>
       <div className="absolute inset-0 bg-black/30 z-0" />
       <div className="relative z-10 w-full max-w-2xl mx-auto">
         <div className="glass-card">
