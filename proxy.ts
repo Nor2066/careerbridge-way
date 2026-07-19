@@ -28,7 +28,13 @@ export async function proxy(request: NextRequest) {
               ...options,
               httpOnly: true,
               secure: isProd,
-              sameSite: 'strict',
+              // 'lax' (not 'strict') — strict blocks the cookie on legitimate
+              // top-level redirects back from external sites like Stripe
+              // checkout, which was causing users to be bounced to /login
+              // right after a successful payment. 'lax' still blocks
+              // cross-site POST/PUT/DELETE (the actual CSRF risk) while
+              // allowing normal top-level GET redirects.
+              sameSite: 'lax',
               path: '/',
             });
           });

@@ -223,6 +223,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
   const [submittedAnswers, setSubmittedAnswers] = useState<any>(null);
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
@@ -576,6 +577,7 @@ export default function Home() {
 
   const handleSubmit = async () => {
     setLoading(true);
+    setSubmitError(null);
     const payload = {
       ...answers,
       studyHours: answers.studyHours === 'YES',
@@ -585,11 +587,6 @@ export default function Home() {
     setSubmittedAnswers(payload);
     sessionStorage.setItem('mainAnswers', JSON.stringify(payload));
 
-    // Previously this fetchWithAuth call had no try/catch — if it threw
-    // 'Not authenticated' (a brief auth race condition), the error went
-    // uncaught, setLoading(false) never ran, and the button was stuck on
-    // "Calculating..." forever. Now it retries once before failing, and
-    // always resets loading state and shows a clear error if it still fails.
     const attemptSubmit = async (): Promise<any> => {
       const res = await fetchWithAuth('/api/assess', {
         method: 'POST',
@@ -600,23 +597,30 @@ export default function Home() {
       return res.json();
     };
 
-    try {
-      let data;
+    // Up to 3 attempts with increasing delay — covers slower session
+    // rehydration cases (e.g. right after logging back in). Uses an
+    // inline error UI with a manual retry button instead of alert(),
+    // which is both more reliable and more professional-looking than
+    // a blocking browser alert.
+    const delays = [500, 1500, 3000];
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
       try {
-        data = await attemptSubmit();
-      } catch (firstErr) {
-        // Brief retry — covers the case where the session was still
-        // initializing on the first attempt.
-        await new Promise(r => setTimeout(r, 1200));
-        data = await attemptSubmit();
+        const data = await attemptSubmit();
+        setResult(data);
+        setLoading(false);
+        return;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < delays.length) {
+          await new Promise(r => setTimeout(r, delays[attempt]));
+        }
       }
-      setResult(data);
-    } catch (err) {
-      console.error('Failed to calculate results:', err);
-      alert('Something went wrong while calculating your results. Please try again.');
-    } finally {
-      setLoading(false);
     }
+
+    console.error('Failed to calculate results:', lastErr);
+    setSubmitError('We had trouble calculating your results. This is usually temporary — please try again.');
+    setLoading(false);
   };
 
   const generateAIReport = async () => {
@@ -860,21 +864,27 @@ export default function Home() {
   const MustFinishModal = () => {
     if (!showMustFinishModal) return null;
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/bg-assess.webp')" }}
+      >
+        <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 w-full max-w-md">
           <div className="glass-card text-center">
-            <div className="text-4xl mb-3">📋</div>
-            <h2 className="text-xl font-bold text-white mb-3">Please Finish Your Current Assessment</h2>
-            <p className="text-gray-300 mb-6">
-              You have a previous assessment that's still waiting on the followup
-              questionnaire. Please complete or unlock it before starting a new one.
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-500/20 mb-4">
+              <span className="text-3xl">📋</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">One Attempt Left to Finish</h2>
+            <p className="text-gray-300 mb-8 leading-relaxed">
+              You have a previous assessment that's still waiting on its followup
+              questionnaire. Head to your history page to finish or unlock it —
+              then you'll be free to start a new assessment.
             </p>
             <button
               onClick={() => router.push('/history')}
-              className="btn-primary w-full"
+              className="btn-primary w-full py-3"
             >
-              Go to My History
+              Go to My History →
             </button>
           </div>
         </div>
@@ -884,11 +894,7 @@ export default function Home() {
 
   // ---------- SUBSCRIPTION GATE ----------
   if (showMustFinishModal) {
-    return (
-      <div className={containerClasses}>
-        <MustFinishModal />
-      </div>
-    );
+    return <MustFinishModal />;
   }
 
   if (user && subLoading) {
@@ -1491,10 +1497,15 @@ export default function Home() {
           </div>
           <div className="glass-card">
             <p className="text-center text-gray-200 mb-6">You've answered all questions.</p>
+            {submitError && (
+              <div className="mb-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100 text-center text-sm">
+                {submitError}
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
               <button onClick={handleSubmit} disabled={loading} className={buttonPrimaryClasses}>
-                {loading ? '✨ Calculating...' : '🚀 See My Results'}
+                {loading ? '✨ Calculating...' : submitError ? '🔄 Try Again' : '🚀 See My Results'}
               </button>
             </div>
           </div>
