@@ -461,15 +461,16 @@ export default function Home() {
         isReadyRef.current = true;
       } catch (err) {
         console.error(err);
-        // Retry up to 3 times before giving up — covers the brief window
-        // where the session may not be fully ready yet. Only arm autosave
+        // Retry up to 6 times (increased from 3 — a full external redirect
+        // back from Stripe checkout can take longer than expected for the
+        // browser's Supabase session to fully rehydrate). Only arm autosave
         // (isReadyRef.current = true) after retries are exhausted, so a
         // transient failure can't wipe existing saved progress.
-        if (loadRetryCount.current < 3 && isMounted) {
+        if (loadRetryCount.current < 6 && isMounted) {
           loadRetryCount.current += 1;
           setTimeout(() => {
             if (isMounted) loadProgress();
-          }, 800);
+          }, 1000);
           return;
         }
         isReadyRef.current = true;
@@ -583,15 +584,39 @@ export default function Home() {
     delete (payload as any).careerContext;
     setSubmittedAnswers(payload);
     sessionStorage.setItem('mainAnswers', JSON.stringify(payload));
-    const res = await fetchWithAuth('/api/assess', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    setResult(data);
-    setLoading(false);
+
+    // Previously this fetchWithAuth call had no try/catch — if it threw
+    // 'Not authenticated' (a brief auth race condition), the error went
+    // uncaught, setLoading(false) never ran, and the button was stuck on
+    // "Calculating..." forever. Now it retries once before failing, and
+    // always resets loading state and shows a clear error if it still fails.
+    const attemptSubmit = async (): Promise<any> => {
+      const res = await fetchWithAuth('/api/assess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      return res.json();
+    };
+
+    try {
+      let data;
+      try {
+        data = await attemptSubmit();
+      } catch (firstErr) {
+        // Brief retry — covers the case where the session was still
+        // initializing on the first attempt.
+        await new Promise(r => setTimeout(r, 1200));
+        data = await attemptSubmit();
+      }
+      setResult(data);
+    } catch (err) {
+      console.error('Failed to calculate results:', err);
+      alert('Something went wrong while calculating your results. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const generateAIReport = async () => {

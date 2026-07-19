@@ -2,13 +2,24 @@
 import { supabase } from './supabase';
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  let token: string | undefined;
+
   const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
+  token = session?.access_token;
+
+  // If no token on first check, wait briefly and retry once — this covers
+  // the common case where the Supabase client is still rehydrating its
+  // session right after a page load (e.g. returning from a Stripe checkout
+  // redirect). This single internal retry makes every fetchWithAuth call
+  // site more resilient without needing its own retry logic.
+  if (!token) {
+    await new Promise(r => setTimeout(r, 400));
+    const { data: { session: retrySession } } = await supabase.auth.getSession();
+    token = retrySession?.access_token;
+  }
 
   if (!token) {
     // Do NOT redirect here — callers decide how to handle missing auth.
-    // Redirecting here caused mid-questionnaire redirects when the session
-    // hadn't loaded yet, breaking the assessment flow.
     throw new Error('Not authenticated');
   }
 
