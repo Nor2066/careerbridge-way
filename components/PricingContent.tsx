@@ -9,25 +9,22 @@ type ProductType = 'basic' | 'full' | 'topup' | 'followup_unlock';
 interface PricingContentProps {
   compact?: boolean;
   currentPlan?: 'free' | 'basic' | 'full';
-  followupResultId?: string;
   onClose?: () => void;
-  followupsPaidCount?: number;
   mainAttemptsRemaining?: number;
   bonusAttemptGranted?: boolean;
-  // Optional callback fired just before the Stripe redirect. Use it to
-  // persist any sessionStorage data that needs to survive the redirect
-  // (e.g. topClusters so the followup page can load after payment).
+  // Whether the account-wide followup bundle has already been purchased.
+  // Replaces the old followupsPaidCount/followupResultId per-attempt model.
+  followupBundlePurchased?: boolean;
   onBeforeCheckout?: (productType: ProductType) => void;
 }
 
 export default function PricingContent({
   compact = false,
   currentPlan = 'free',
-  followupResultId,
   onClose,
-  followupsPaidCount = 0,
   mainAttemptsRemaining = 0,
   bonusAttemptGranted = false,
+  followupBundlePurchased = false,
   onBeforeCheckout,
 }: PricingContentProps) {
   const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
@@ -37,14 +34,8 @@ export default function PricingContent({
     setError('');
     setLoadingProduct(productType);
     try {
-      // Call the optional pre-checkout hook — lets the parent store any
-      // sessionStorage data needed after the Stripe redirect (e.g. topClusters).
       onBeforeCheckout?.(productType);
 
-      // For followup_unlock: redirect to /followup after payment so the user
-      // lands directly in the followup questionnaire, not back on the page
-      // they came from (history or assess). For all other products, return
-      // to wherever the user was (assess page, pricing page, etc.).
       const returnPath = productType === 'followup_unlock' ? '/followup' : window.location.pathname;
       sessionStorage.setItem('checkoutReturnPath', returnPath);
 
@@ -52,12 +43,7 @@ export default function PricingContent({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          productType,
-          ...(productType === 'followup_unlock' && followupResultId
-            ? { resultId: followupResultId }
-            : {}),
-        }),
+        body: JSON.stringify({ productType }),
       });
 
       const data = await res.json();
@@ -77,25 +63,20 @@ export default function PricingContent({
 
   const hasPlan = currentPlan !== 'free';
 
-  // Top-up logic:
-  // Full plan:  attempts exhausted → show top-up (already working, unchanged)
-  // Basic plan: show top-up only after the user has truly exhausted everything —
-  //             meaning they paid both followups (followupsPaidCount >= 2),
-  //             the bonus attempt was granted AND used up (bonusAttemptGranted === true),
-  //             and no attempts remain.
-  //             Journey: Basic €3 (2 attempts) + followup ×2 €3 + bonus attempt used = €6 spent.
+  // Top-up: shown once attempts are exhausted, for either plan.
+  // For Basic: also require the followup bundle to already be purchased,
+  // since a top-up attempt includes its own followup credit and shouldn't
+  // be offered as a workaround to skip the bundle purchase.
   const showTopup =
     hasPlan &&
     mainAttemptsRemaining === 0 &&
-    (
-      currentPlan === 'full' ||
-      (currentPlan === 'basic' && followupsPaidCount >= 2 && bonusAttemptGranted)
-    );
+    (currentPlan === 'full' || (currentPlan === 'basic' && bonusAttemptGranted));
 
-  const showFollowupUnlock =
+  // Followup bundle: Basic plan only, one-time account-wide purchase.
+  const showFollowupBundle =
     hasPlan &&
     currentPlan === 'basic' &&
-    !!followupResultId;
+    !followupBundlePurchased;
 
   return (
     <div className={compact ? '' : 'min-h-screen px-4 py-12'}>
@@ -136,8 +117,7 @@ export default function PricingContent({
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
                 <li>✓ 2 main assessment attempts</li>
                 <li>✓ AI career report for each attempt</li>
-                <li>✓ Unlock followup roadmap per attempt for €1.50</li>
-                <li>✓ Pay both followups (€6 total) → get +1 bonus attempt</li>
+                <li>✓ Unlock both followup roadmaps for €3.00</li>
               </ul>
               <button
                 onClick={() => startCheckout('basic')}
@@ -175,28 +155,24 @@ export default function PricingContent({
             </div>
           )}
 
-          {/* ─── Followup unlock ────────────────────────────────────────── */}
-          {showFollowupUnlock && (
+          {/* ─── Followup Bundle (account-wide) ────────────────────────── */}
+          {showFollowupBundle && (
             <div className="glass-card flex flex-col">
-              <h3 className="text-xl font-bold text-white mb-1">Unlock Followup</h3>
+              <h3 className="text-xl font-bold text-white mb-1">Unlock All Followups</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                €1.50 <span className="text-sm text-gray-400 font-normal">one-time</span>
+                €3.00 <span className="text-sm text-gray-400 font-normal">one-time</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
-                <li>✓ Unlock the followup questionnaire for this attempt</li>
-                <li>✓ Get your detailed career roadmap</li>
-                {followupsPaidCount === 1 ? (
-                  <li>✓ This is your 2nd unlock — grants +1 bonus attempt!</li>
-                ) : (
-                  <li>✓ Unlock both followups to earn a bonus attempt</li>
-                )}
+                <li>✓ Unlocks the followup questionnaire for both attempts</li>
+                <li>✓ Get your detailed career roadmap for each</li>
+                <li>✓ Includes +1 bonus attempt, instantly</li>
               </ul>
               <button
                 onClick={() => startCheckout('followup_unlock')}
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'followup_unlock' ? 'Redirecting...' : 'Unlock Followup — €1.50'}
+                {loadingProduct === 'followup_unlock' ? 'Redirecting...' : 'Unlock All Followups — €3.00'}
               </button>
             </div>
           )}
@@ -204,13 +180,13 @@ export default function PricingContent({
           {/* ─── Top-up ─────────────────────────────────────────────────── */}
           {showTopup && (
             <div className="glass-card flex flex-col">
-              <h3 className="text-xl font-bold text-white mb-1">Extra Attempt</h3>
+              <h3 className="text-xl font-bold text-white mb-1">3 Extra Attempts</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                €1.00 <span className="text-sm text-gray-400 font-normal">per attempt</span>
+                €3.00 <span className="text-sm text-gray-400 font-normal">one-time</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
-                <li>✓ +1 complete attempt (main + followup)</li>
-                <li>✓ Buy as many as you need</li>
+                <li>✓ +3 complete attempts (main + followup each)</li>
+                <li>✓ Buy as many packs as you need</li>
                 <li>✓ Use anytime, no expiry</li>
               </ul>
               <button
@@ -218,27 +194,8 @@ export default function PricingContent({
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'topup' ? 'Redirecting...' : 'Buy Extra Attempt — €1.00'}
+                {loadingProduct === 'topup' ? 'Redirecting...' : 'Buy 3 Attempts — €3.00'}
               </button>
-            </div>
-          )}
-
-          {/* ─── Basic user with no resultId: direct to history ─────────── */}
-          {hasPlan && currentPlan === 'basic' && !followupResultId && !showTopup && (
-            <div className="glass-card flex flex-col items-center text-center">
-              <h3 className="text-xl font-bold text-white mb-2">Unlock a Followup</h3>
-              <p className="text-gray-300 text-sm mb-4">
-                Go to your history page to unlock the followup questionnaire
-                for a specific attempt (€1.50 each).
-                {followupsPaidCount === 1 && (
-                  <span className="block mt-2 text-indigo-300">
-                    You have unlocked 1 of 2 — unlock the second to earn a bonus attempt!
-                  </span>
-                )}
-              </p>
-              <a href="/history" className="btn-primary">
-                Go to History Page
-              </a>
             </div>
           )}
         </div>

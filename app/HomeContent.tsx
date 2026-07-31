@@ -211,6 +211,7 @@ type SubscriptionStatus = {
   mainAttemptsRemaining: number;
   followupsPaidCount: number;
   bonusAttemptGranted: boolean;
+  followupBundlePurchased: boolean;
   currentAttemptStatus: 'none' | 'in_progress' | 'awaiting_followup_decision';
   currentAttemptResultId: string | null;
   canStartAssessment: boolean;
@@ -844,9 +845,9 @@ export default function Home() {
               compact
               currentPlan={subStatus.plan}
               onClose={() => setShowPricingModal(false)}
-              followupsPaidCount={subStatus.followupsPaidCount}
               mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
               bonusAttemptGranted={subStatus.bonusAttemptGranted}
+              followupBundlePurchased={subStatus.followupBundlePurchased}
             />
             <p className="text-center text-xs text-gray-400 mt-4">
               Your progress is saved. After payment you'll continue exactly where you left off.
@@ -920,9 +921,9 @@ export default function Home() {
           </div>
           <PricingContent
             currentPlan={subStatus.plan}
-            followupsPaidCount={subStatus.followupsPaidCount}
             mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
             bonusAttemptGranted={subStatus.bonusAttemptGranted}
+            followupBundlePurchased={subStatus.followupBundlePurchased}
           />
         </div>
       </div>
@@ -1052,12 +1053,13 @@ export default function Home() {
           </div>
 
           <div className="glass-card">
-            {plan === 'full' ? (
+            {plan === 'full' || subStatus?.followupBundlePurchased ? (
               <>
                 <h3 className="text-xl font-bold text-white mb-3 text-center">Ready for your detailed roadmap?</h3>
                 <p className="text-gray-300 mb-6 text-center">
-                  Your plan includes the followup questionnaire — answer a few more questions
-                  for an in-depth career roadmap.
+                  {plan === 'full'
+                    ? 'Your plan includes the followup questionnaire — answer a few more questions for an in-depth career roadmap.'
+                    : "You've already unlocked all followups — answer a few more questions for an in-depth career roadmap."}
                 </p>
                 <button onClick={handleGoToFollowup} className={buttonPrimaryClasses + ' w-full'}>
                   📋 Continue to Followup Questionnaire
@@ -1068,16 +1070,16 @@ export default function Home() {
                 <h3 className="text-xl font-bold text-white mb-3 text-center">Want a more detailed roadmap?</h3>
                 <p className="text-gray-300 mb-6 text-center">
                   Unlock the followup questionnaire and get a second, more detailed AI report
-                  with concrete job titles, courses, and a 3-month action plan — for €1.50.
+                  with concrete job titles, courses, and a 3-month action plan — one purchase
+                  covers both of your attempts, for €3.00.
                 </p>
                 <div className="flex flex-col gap-3">
                   <PricingContent
                     compact
                     currentPlan={plan}
-                    followupResultId={resultId}
-                    followupsPaidCount={subStatus?.followupsPaidCount ?? 0}
                     mainAttemptsRemaining={subStatus?.mainAttemptsRemaining ?? 0}
                     bonusAttemptGranted={subStatus?.bonusAttemptGranted ?? false}
+                    followupBundlePurchased={subStatus?.followupBundlePurchased ?? false}
                     onBeforeCheckout={(productType) => {
                       // Before going to Stripe for a followup unlock, save
                       // topClusters to sessionStorage so the followup page

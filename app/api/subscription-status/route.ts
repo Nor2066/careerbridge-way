@@ -5,10 +5,6 @@ import { requireAuth } from '@/lib/auth';
 import { getSubscription, canStartAssessment } from '@/lib/subscription';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
-// Frontend calls this to decide what UI to show:
-// - pricing page (plan === 'free')
-// - "start new assessment" button state (canStart)
-// - "finish your followup first" banner (current_attempt_status)
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
@@ -26,6 +22,7 @@ export async function GET(request: Request) {
       mainAttemptsRemaining: sub.main_attempts_remaining,
       followupsPaidCount: sub.followups_paid_count,
       bonusAttemptGranted: sub.bonus_attempt_granted,
+      followupBundlePurchased: sub.followup_bundle_purchased,
       currentAttemptStatus: sub.current_attempt_status,
       currentAttemptResultId: sub.current_attempt_result_id,
       canStartAssessment: startCheck.allowed,

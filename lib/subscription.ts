@@ -5,9 +5,10 @@ export type SubscriptionRow = {
   user_id: string;
   plan: 'free' | 'basic' | 'full';
   main_attempts_remaining: number;
-  followups_paid_count: number;
+  followups_paid_count: number; // legacy — no longer incremented, kept for old data
   bonus_attempt_granted: boolean;
-  topup_followup_credits: number; // incremented on topup purchase; consumed when followup is accessed
+  topup_followup_credits: number;
+  followup_bundle_purchased: boolean; // new — account-wide followup unlock
   current_attempt_status: 'none' | 'in_progress' | 'awaiting_followup_decision';
   current_attempt_result_id: string | null;
 };
@@ -29,7 +30,7 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
     const { data: created, error: upsertError } = await supabaseServer
       .from('subscriptions')
       .upsert(
-        { user_id: userId, plan: 'free', main_attempts_remaining: 0, topup_followup_credits: 0 },
+        { user_id: userId, plan: 'free', main_attempts_remaining: 0, topup_followup_credits: 0, followup_bundle_purchased: false },
         { onConflict: 'user_id' }
       )
       .select()
@@ -44,6 +45,7 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
         followups_paid_count: 0,
         bonus_attempt_granted: false,
         topup_followup_credits: 0,
+        followup_bundle_purchased: false,
         current_attempt_status: 'none',
         current_attempt_result_id: null,
       };
@@ -79,22 +81,28 @@ export function canStartAssessment(sub: SubscriptionRow): { allowed: boolean; re
 
 // ─── Can the user generate the followup report for a given result? ──────
 // Priority order:
-//   1. Full plan              → always included, no cost
-//   2. topup_followup_credits → top-up purchased attempt; consume 1 credit
-//   3. followup_unlocks row   → Basic plan paid-per-attempt unlock
-//
-// Credits are consumed here (at report generation time) rather than at
-// followup questionnaire start, so a user who starts but doesn't finish
-// doesn't lose their credit.
+//   1. Full plan                  → always included, no cost
+//   2. followup_bundle_purchased  → account-wide bundle covers all attempts
+//   3. Legacy followup_unlocks row → honors any pre-existing per-attempt
+//      unlocks purchased before the pricing model changed
+//   4. topup_followup_credits     → top-up purchased attempt; consume 1 credit
 export async function canAccessFollowup(
   userId: string,
   resultId: string,
   plan: SubscriptionRow['plan']
 ): Promise<boolean> {
-  // Full plan: always included
   if (plan === 'full') return true;
 
-  // Check for a pre-paid followup_unlocks row (Basic per-attempt unlock)
+  const { data: sub, error: subError } = await supabaseServer
+    .from('subscriptions')
+    .select('followup_bundle_purchased, topup_followup_credits')
+    .eq('user_id', userId)
+    .single();
+
+  if (subError) throw subError;
+
+  if (sub?.followup_bundle_purchased) return true;
+
   const { data: unlock, error: unlockError } = await supabaseServer
     .from('followup_unlocks')
     .select('id')
@@ -105,20 +113,7 @@ export async function canAccessFollowup(
   if (unlockError) throw unlockError;
   if (unlock) return true;
 
-  // Check for a topup followup credit — these cover attempts started via
-  // a top-up purchase (which grants a full main + followup attempt).
-  // Consume 1 credit and insert a followup_unlocks row so subsequent calls
-  // (e.g. retries) don't double-consume.
-  const { data: sub, error: subError } = await supabaseServer
-    .from('subscriptions')
-    .select('topup_followup_credits')
-    .eq('user_id', userId)
-    .single();
-
-  if (subError) throw subError;
-
   if (sub && sub.topup_followup_credits > 0) {
-    // Decrement the credit
     const { error: decrementError } = await supabaseServer
       .from('subscriptions')
       .update({ topup_followup_credits: sub.topup_followup_credits - 1 })
@@ -126,13 +121,10 @@ export async function canAccessFollowup(
 
     if (decrementError) throw decrementError;
 
-    // Insert a followup_unlocks row so this result is permanently marked
-    // as unlocked — idempotent on retry due to the unique constraint
     const { error: insertError } = await supabaseServer
       .from('followup_unlocks')
       .insert({ user_id: userId, result_id: resultId });
 
-    // 23505 = unique violation (already unlocked — safe to ignore)
     if (insertError && insertError.code !== '23505') throw insertError;
 
     return true;

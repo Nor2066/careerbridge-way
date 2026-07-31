@@ -15,16 +15,20 @@ export const STRIPE_PRICE_IDS: Record<ProductType, string> = {
 export const PRODUCT_AMOUNTS_CENTS: Record<ProductType, number> = {
   basic: 300,
   full: 450,
-  followup_unlock: 150,
-  topup: 100,
+  followup_unlock: 300, // was 150 — now ONE purchase that unlocks BOTH followups
+  topup: 300,           // was 100 — now a 3-pack of full attempts (main + followup)
 };
 
 // How many main-questionnaire attempts each product grants
 export const ATTEMPTS_GRANTED: Record<ProductType, number> = {
   basic: 2,
   full: 3,
-  followup_unlock: 0, // doesn't grant a new attempt directly (bonus logic handles this)
-  topup: 1,
+  followup_unlock: 0, // doesn't grant a main attempt directly — grants followup
+                       // access account-wide + an immediate bonus attempt
+                       // (handled in the webhook, replacing the old "2 unlocks
+                       // = bonus attempt" logic)
+  topup: 3,            // was 1 — now grants 3 full attempts (main + followup
+                        // each) per purchase
 };
 
 // Which plan a purchase sets the user to (only basic/full change the plan)
@@ -35,7 +39,9 @@ export const PLAN_FOR_PRODUCT: Record<ProductType, 'basic' | 'full' | null> = {
   topup: null,
 };
 
-// followup_unlock requires a result_id (which attempt's followup is being unlocked)
+// followup_unlock is now an account-wide bundle purchase (unlocks all
+// followups on the Basic plan) — it is no longer tied to a specific
+// result_id, so nothing requires one anymore.
 export function requiresResultId(productType: ProductType): boolean {
-  return productType === 'followup_unlock';
+  return false;
 }

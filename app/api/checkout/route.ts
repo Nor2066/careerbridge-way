@@ -5,12 +5,14 @@ import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
-import { STRIPE_PRICE_IDS, requiresResultId, type ProductType } from '@/lib/plans';
+import { STRIPE_PRICE_IDS, type ProductType } from '@/lib/plans';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
 const CheckoutSchema = z.object({
   productType: z.enum(['basic', 'full', 'followup_unlock', 'topup']),
-  // Required only for followup_unlock — which attempt's followup is being unlocked
+  // resultId is no longer used by followup_unlock (it's now an account-wide
+  // bundle purchase), but kept optional/accepted for backward compatibility
+  // in case any old client code still sends it — it's simply ignored.
   resultId: z.string().uuid().optional(),
 });
 
@@ -29,14 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    const { productType, resultId } = parsed.data;
-
-    if (requiresResultId(productType) && !resultId) {
-      return NextResponse.json(
-        { error: 'resultId is required for followup_unlock' },
-        { status: 400 }
-      );
-    }
+    const { productType } = parsed.data;
 
     // ─── Business rule checks ──────────────────────────────────────────
     const { data: sub, error: subError } = await supabaseServer
@@ -57,37 +52,36 @@ export async function POST(request: Request) {
       );
     }
 
-    // followup_unlock: verify the result belongs to this user and isn't already unlocked
-    if (productType === 'followup_unlock' && resultId) {
-      const { data: result, error: resultError } = await supabaseServer
-        .from('user_results')
-        .select('id, user_id')
-        .eq('id', resultId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (resultError || !result) {
-        return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
-      }
-
-      const { data: existingUnlock } = await supabaseServer
-        .from('followup_unlocks')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('result_id', resultId)
-        .maybeSingle();
-
-      if (existingUnlock) {
-        return NextResponse.json({ error: 'Followup already unlocked for this attempt' }, { status: 400 });
-      }
-
-      // Full plan users get followups included — no need to pay
+    // followup_unlock: account-wide bundle, Basic plan only, one-time purchase.
+    // Full plan already includes followups, and Free plan has no attempts to
+    // use it on.
+    if (productType === 'followup_unlock') {
       if (sub.plan === 'full') {
         return NextResponse.json(
           { error: 'Your plan already includes followups' },
           { status: 400 }
         );
       }
+      if (sub.plan === 'free') {
+        return NextResponse.json(
+          { error: 'Please purchase a plan first' },
+          { status: 400 }
+        );
+      }
+      if (sub.followup_bundle_purchased) {
+        return NextResponse.json(
+          { error: 'You have already unlocked all followups' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // topup requires an existing base plan
+    if (productType === 'topup' && sub.plan === 'free') {
+      return NextResponse.json(
+        { error: 'Please purchase a plan first' },
+        { status: 400 }
+      );
     }
 
     // ─── Create Stripe Checkout Session ────────────────────────────────
@@ -102,7 +96,6 @@ export async function POST(request: Request) {
       metadata: {
         userId: user.id,
         productType,
-        ...(resultId ? { resultId } : {}),
       },
       success_url: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/payment/cancelled`,
@@ -112,10 +105,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
     Sentry.captureException(err);
-    // Log the specific error message to help diagnose auth/subscription issues
     const message = err?.message || String(err);
     console.error('CHECKOUT ERROR:', message);
-    // Return the actual error message in development, generic in production
     const errorMsg = process.env.NODE_ENV === 'development'
       ? message
       : 'Internal server error';

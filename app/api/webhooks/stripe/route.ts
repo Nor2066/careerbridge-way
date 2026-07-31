@@ -44,7 +44,6 @@ export async function POST(request: Request) {
 
   const userId = session.metadata?.userId;
   const productType = session.metadata?.productType as ProductType | undefined;
-  const resultId = session.metadata?.resultId as string | undefined;
   const sessionId = session.id as string;
   const paymentIntentId = session.payment_intent as string | undefined;
 
@@ -62,7 +61,6 @@ export async function POST(request: Request) {
       product_type: productType,
       amount_cents: PRODUCT_AMOUNTS_CENTS[productType],
       currency: 'eur',
-      result_id: resultId || null,
       status: 'completed',
     });
 
@@ -74,7 +72,7 @@ export async function POST(request: Request) {
       throw paymentInsertError;
     }
 
-    await grantPurchase(userId, productType, resultId);
+    await grantPurchase(userId, productType);
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
@@ -84,7 +82,7 @@ export async function POST(request: Request) {
   }
 }
 
-async function grantPurchase(userId: string, productType: ProductType, resultId?: string) {
+async function grantPurchase(userId: string, productType: ProductType) {
   const { data: sub, error: subError } = await supabaseAdmin
     .from('subscriptions')
     .select('*')
@@ -114,14 +112,14 @@ async function grantPurchase(userId: string, productType: ProductType, resultId?
     }
 
     case 'topup': {
+      // Now a 3-pack: grants 3 full attempts (main + followup each) per
+      // purchase — both numbers driven by ATTEMPTS_GRANTED.topup so they
+      // always stay in sync with plans.ts.
       const { error } = await supabaseAdmin
         .from('subscriptions')
         .update({
           main_attempts_remaining: sub.main_attempts_remaining + ATTEMPTS_GRANTED.topup,
-          // Top-up grants a full attempt (main + followup), so credit 1 followup.
-          // canAccessFollowup() in subscription.ts will consume this credit when
-          // the user generates their followup report.
-          topup_followup_credits: (sub.topup_followup_credits ?? 0) + 1,
+          topup_followup_credits: (sub.topup_followup_credits ?? 0) + ATTEMPTS_GRANTED.topup,
         })
         .eq('user_id', userId);
 
@@ -130,21 +128,15 @@ async function grantPurchase(userId: string, productType: ProductType, resultId?
     }
 
     case 'followup_unlock': {
-      if (!resultId) throw new Error('followup_unlock requires resultId');
+      // Now a single account-wide bundle purchase (was: pay per-attempt
+      // €1.50 x2). Unlocks followup access for ALL of this Basic-plan
+      // account's attempts, and immediately grants the bonus attempt that
+      // used to require two separate unlock purchases.
+      const updates: Record<string, unknown> = {
+        followup_bundle_purchased: true,
+      };
 
-      const { error: unlockError } = await supabaseAdmin.from('followup_unlocks').insert({
-        user_id: userId,
-        result_id: resultId,
-      });
-
-      if (unlockError && unlockError.code !== '23505') {
-        throw unlockError;
-      }
-
-      const newPaidCount = sub.followups_paid_count + 1;
-      const updates: Record<string, unknown> = { followups_paid_count: newPaidCount };
-
-      if (newPaidCount >= 2 && !sub.bonus_attempt_granted) {
+      if (!sub.bonus_attempt_granted) {
         updates.main_attempts_remaining = sub.main_attempts_remaining + 1;
         updates.bonus_attempt_granted = true;
       }

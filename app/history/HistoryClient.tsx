@@ -20,6 +20,7 @@ type SubStatus = {
   followupsPaidCount: number;
   mainAttemptsRemaining: number;
   bonusAttemptGranted: boolean;
+  followupBundlePurchased: boolean;
   currentAttemptStatus: string;
   currentAttemptResultId: string | null;
 };
@@ -30,10 +31,8 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const [subStatus, setSubStatus] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, { first: boolean; second: boolean }>>({});
-  const [unlockModalResultId, setUnlockModalResultId] = useState<string | null>(null);
-  // Whether there's saved mid-questionnaire progress (step > 0) — tracked
-  // separately from currentAttemptStatus, which only flips to 'in_progress'
-  // AFTER the questionnaire is fully submitted, not while still answering.
+  // Account-wide bundle purchase modal — no longer tied to a specific item
+  const [showBundleModal, setShowBundleModal] = useState(false);
   const [hasSavedProgress, setHasSavedProgress] = useState(false);
 
   useEffect(() => {
@@ -71,9 +70,9 @@ export default function HistoryClient({ userId }: { userId: string }) {
   };
 
   const plan = subStatus?.plan ?? 'free';
-  const followupsPaidCount = subStatus?.followupsPaidCount ?? 0;
   const mainAttemptsRemaining = subStatus?.mainAttemptsRemaining ?? 0;
   const bonusAttemptGranted = subStatus?.bonusAttemptGranted ?? false;
+  const followupBundlePurchased = subStatus?.followupBundlePurchased ?? false;
 
   const PageWrapper = ({ children }: { children: React.ReactNode }) => (
     <div
@@ -109,24 +108,30 @@ export default function HistoryClient({ userId }: { userId: string }) {
     );
   }
 
+  // Does any item need a followup unlock (has first report, no roadmap yet,
+  // Basic plan, bundle not yet purchased)?
+  const hasItemNeedingBundle = history.some(
+    item => !!item.firstAIReport && !item.detailedRoadmap
+  );
+
   return (
     <PageWrapper>
-      {unlockModalResultId && (
+      {/* Followup bundle purchase modal — account-wide, not tied to one item */}
+      {showBundleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setUnlockModalResultId(null)}
+            onClick={() => setShowBundleModal(false)}
           />
           <div className="relative z-10 w-full max-w-md">
             <div className="glass-card">
               <PricingContent
                 compact
                 currentPlan={plan}
-                followupResultId={unlockModalResultId}
-                followupsPaidCount={followupsPaidCount}
                 mainAttemptsRemaining={mainAttemptsRemaining}
                 bonusAttemptGranted={bonusAttemptGranted}
-                onClose={() => setUnlockModalResultId(null)}
+                followupBundlePurchased={followupBundlePurchased}
+                onClose={() => setShowBundleModal(false)}
               />
               <p className="text-center text-xs text-gray-400 mt-3">
                 After payment you'll be brought back here automatically.
@@ -147,6 +152,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
         )}
       </div>
 
+      {/* Subscription status banner */}
       {subStatus && (
         <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
           <p className="text-white text-sm">
@@ -155,21 +161,37 @@ export default function HistoryClient({ userId }: { userId: string }) {
             <span>{mainAttemptsRemaining} attempt{mainAttemptsRemaining !== 1 ? 's' : ''} remaining</span>
             {plan === 'basic' && (
               <span className="text-gray-300">
-                {' · '}Followups unlocked: {followupsPaidCount}/2
-                {followupsPaidCount < 2 && ' (unlock both for a bonus attempt)'}
+                {' · '}Followups: {followupBundlePurchased ? 'unlocked ✓' : 'not yet unlocked'}
               </span>
             )}
           </p>
         </div>
       )}
 
+      {/* Account-wide bundle CTA banner — shown once, not per item */}
+      {plan === 'basic' && !followupBundlePurchased && hasItemNeedingBundle && (
+        <div className="mb-6 p-5 bg-indigo-900/40 border border-indigo-400/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="text-white font-semibold">Unlock your detailed career roadmaps</p>
+            <p className="text-gray-300 text-sm mt-1">
+              One purchase unlocks the followup questionnaire for both of your attempts,
+              plus an instant bonus attempt.
+            </p>
+          </div>
+          <button onClick={() => setShowBundleModal(true)} className="btn-primary whitespace-nowrap">
+            Unlock All Followups — €3.00
+          </button>
+        </div>
+      )}
+
+      {/* History cards */}
       <div className="space-y-6">
         {history.map((item) => {
           const hasRoadmap = !!item.detailedRoadmap;
-          const followupUnlocked = item.followupUnlocked;
           const hasFirstReport = !!item.firstAIReport;
-          const showStartFollowup = hasFirstReport && !hasRoadmap && (plan === 'full' || followupUnlocked);
-          const showUnlockButton = hasFirstReport && !hasRoadmap && plan === 'basic' && !followupUnlocked;
+
+          const showStartFollowup =
+            hasFirstReport && !hasRoadmap && (plan === 'full' || followupBundlePurchased);
 
           return (
             <div key={item.id} className="glass-card">
@@ -227,11 +249,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
                   {showStartFollowup && (
                     <button onClick={() => handleStartFollowup(item)} className="btn-primary">
                       📋 Start Followup Questionnaire
-                    </button>
-                  )}
-                  {showUnlockButton && (
-                    <button onClick={() => setUnlockModalResultId(item.id)} className="btn-primary">
-                      🔓 Unlock Followup — €1.50
                     </button>
                   )}
                 </div>
