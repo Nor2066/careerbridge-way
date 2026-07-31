@@ -27,14 +27,15 @@ export default async function PricingPage() {
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}
+      style={{ backgroundImage: "url('/images/bg-assess.webp')" }}
     >
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10">
         <PricingContent
           currentPlan={sub.plan}
-          followupsPaidCount={sub.followups_paid_count}
           mainAttemptsRemaining={sub.main_attempts_remaining}
+          bonusAttemptGranted={sub.bonus_attempt_granted}
+          followupBundlePurchased={sub.followup_bundle_purchased}
         />
       </div>
     </div>
