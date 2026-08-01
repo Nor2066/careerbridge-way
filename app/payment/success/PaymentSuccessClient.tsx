@@ -16,7 +16,12 @@ export default function PaymentSuccessClient() {
   const handleContinue = () => {
     const returnPath = sessionStorage.getItem('checkoutReturnPath') || '/assess';
     sessionStorage.removeItem('checkoutReturnPath');
-    router.push(returnPath);
+    // Full browser navigation (not router.push) — a client-side transition
+    // was occasionally landing users on /login right after a successful
+    // payment, since the server component's auth check could run before
+    // the session cookie was fully ready. A full navigation always sends
+    // the current, complete set of cookies with the request.
+    window.location.href = returnPath;
   };
 
   return (

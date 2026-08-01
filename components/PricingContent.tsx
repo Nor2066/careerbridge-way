@@ -16,6 +16,11 @@ interface PricingContentProps {
   // Replaces the old followupsPaidCount/followupResultId per-attempt model.
   followupBundlePurchased?: boolean;
   onBeforeCheckout?: (productType: ProductType) => void;
+  // When true, only Basic/Full plan cards are ever shown — never the
+  // followup bundle or top-up. Used for the "start a new assessment" gate,
+  // which should always be a simple purchase-a-plan-to-continue prompt,
+  // never a confusing upsell for something unrelated to starting.
+  showOnlyBasePlans?: boolean;
 }
 
 export default function PricingContent({
@@ -26,6 +31,7 @@ export default function PricingContent({
   bonusAttemptGranted = false,
   followupBundlePurchased = false,
   onBeforeCheckout,
+  showOnlyBasePlans = false,
 }: PricingContentProps) {
   const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
   const [error, setError] = useState('');
@@ -34,10 +40,12 @@ export default function PricingContent({
     setError('');
     setLoadingProduct(productType);
     try {
+      // Default: return to wherever this button was clicked from. Callers
+      // (like the decision screen) can override this via onBeforeCheckout,
+      // which runs AFTER this default is set — e.g. forcing '/followup'
+      // when purchasing the bundle right after finishing an assessment.
+      sessionStorage.setItem('checkoutReturnPath', window.location.pathname);
       onBeforeCheckout?.(productType);
-
-      const returnPath = productType === 'followup_unlock' ? '/followup' : window.location.pathname;
-      sessionStorage.setItem('checkoutReturnPath', returnPath);
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -64,16 +72,19 @@ export default function PricingContent({
   const hasPlan = currentPlan !== 'free';
 
   // Top-up: shown once attempts are exhausted, for either plan.
-  // For Basic: also require the followup bundle to already be purchased,
-  // since a top-up attempt includes its own followup credit and shouldn't
-  // be offered as a workaround to skip the bundle purchase.
   const showTopup =
+    !showOnlyBasePlans &&
     hasPlan &&
     mainAttemptsRemaining === 0 &&
     (currentPlan === 'full' || (currentPlan === 'basic' && bonusAttemptGranted));
 
   // Followup bundle: Basic plan only, one-time account-wide purchase.
+  // Never shown when showOnlyBasePlans is set (the step-9 "start a new
+  // assessment" gate should only ever offer Basic/Full — never the
+  // followup bundle, which caused confusing "pay again" prompts right
+  // after buying Basic if subscription data hadn't fully refreshed yet).
   const showFollowupBundle =
+    !showOnlyBasePlans &&
     hasPlan &&
     currentPlan === 'basic' &&
     !followupBundlePurchased;
@@ -196,6 +207,19 @@ export default function PricingContent({
               >
                 {loadingProduct === 'topup' ? 'Redirecting...' : 'Buy 3 Attempts — €3.00'}
               </button>
+            </div>
+          )}
+
+          {/* Edge case: gate mode active but the account already has a plan
+              (e.g. subscription data hasn't finished refreshing yet right
+              after a purchase). Show a calm message instead of an empty
+              grid or an unrelated upsell card. */}
+          {showOnlyBasePlans && hasPlan && (
+            <div className="glass-card text-center py-8 sm:col-span-2">
+              <p className="text-white font-medium mb-1">Your plan is active.</p>
+              <p className="text-gray-300 text-sm">
+                Just a moment — refreshing your account, then you can continue.
+              </p>
             </div>
           )}
         </div>

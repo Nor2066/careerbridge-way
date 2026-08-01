@@ -109,10 +109,14 @@ export default function HistoryClient({ userId }: { userId: string }) {
   }
 
   // Does any item need a followup unlock (has first report, no roadmap yet,
-  // Basic plan, bundle not yet purchased)?
-  const hasItemNeedingBundle = history.some(
-    item => !!item.firstAIReport && !item.detailedRoadmap
-  );
+  // Basic plan, bundle not yet purchased)? Only offered here once BOTH
+  // main attempts are completed (history.length >= 2) — per design, the
+  // followup bundle upsell only appears on the decision screen right after
+  // an assessment, or here in history once both attempts are done, not
+  // immediately after just the first one.
+  const hasItemNeedingBundle =
+    history.length >= 2 &&
+    history.some(item => !!item.firstAIReport && !item.detailedRoadmap);
 
   return (
     <PageWrapper>

@@ -58,47 +58,84 @@ function LoginForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 mt-20">
-      <h1 className="text-2xl font-bold">Login</h1>
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-        <input type="email" id="email" name="email" placeholder="Email"
-          value={email} onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded" required />
-        <input type="password" id="password" name="password" placeholder="Password"
-          value={password} onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded" required />
-        {error && <p className="text-red-500">{error}</p>}
-        {message && <p className="text-green-600">{message}</p>}
-        <button type="submit" className="w-full p-2 bg-blue-600 text-white rounded">
-          Login with Password
-        </button>
-      </form>
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or</span>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/images/bg-assess.webp')" }}
+    >
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-card">
+          <h1 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h1>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {message && <p className="text-green-400 text-sm">{message}</p>}
+            <button type="submit" className="btn-primary w-full">
+              Login with Password
+            </button>
+          </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-transparent text-gray-400" style={{ backgroundColor: 'rgba(17, 24, 39, 0.6)' }}>Or</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleMagicLink}
+            disabled={loading}
+            className="w-full p-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Sending...' : 'Send Magic Link'}
+          </button>
+
+          <button
+            onClick={handleGoogleSignIn}
+            className="w-full p-3 mt-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors"
+          >
+            Sign in with Google
+          </button>
+
+          <p className="mt-6 text-center text-gray-300 text-sm">
+            Don't have an account?{' '}
+            <a href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">Sign up</a>
+          </p>
         </div>
       </div>
-      <button onClick={handleMagicLink} disabled={loading}
-        className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">
-        {loading ? 'Sending...' : 'Send Magic Link'}
-      </button>
-      <button onClick={handleGoogleSignIn}
-        className="w-full p-2 mt-2 bg-red-600 text-white rounded hover:bg-red-700">
-        Sign in with Google
-      </button>
-      <p className="mt-4 text-center">
-        Don't have an account? <a href="/signup" className="text-blue-600">Sign up</a>
-      </p>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="max-w-md mx-auto p-6 mt-20 text-center">Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-300">
+        Loading...
+      </div>
+    }>
       <LoginForm />
     </Suspense>
   );

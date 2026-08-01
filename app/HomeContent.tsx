@@ -588,22 +588,28 @@ export default function Home() {
     setSubmittedAnswers(payload);
     sessionStorage.setItem('mainAnswers', JSON.stringify(payload));
 
+    // ROOT FIX for "Not authenticated" errors on Calculate:
+    // /api/assess is a stateless scoring function that was always designed
+    // to need no authentication (only IP rate limiting) — it doesn't save
+    // anything or touch user data, that happens separately in save-result.
+    // The previous code went through fetchWithAuth anyway, meaning any
+    // client-side session hiccup blocked this call before it ever reached
+    // the server, even though the server never needed a token at all.
+    // Using plain fetch here removes that entire class of failure.
     const attemptSubmit = async (): Promise<any> => {
-      const res = await fetchWithAuth('/api/assess', {
+      const res = await fetch('/api/assess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload),
       });
+      if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
       return res.json();
     };
 
-    // Up to 3 attempts with increasing delay — covers slower session
-    // rehydration cases (e.g. right after logging back in). Uses an
-    // inline error UI with a manual retry button instead of alert(),
-    // which is both more reliable and more professional-looking than
-    // a blocking browser alert.
-    const delays = [500, 1500, 3000];
+    // A couple of retries remain as a safety net for genuine transient
+    // network issues (not auth-related anymore).
+    const delays = [800, 2000];
     let lastErr: unknown = null;
     for (let attempt = 0; attempt <= delays.length; attempt++) {
       try {
@@ -848,6 +854,7 @@ export default function Home() {
               mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
               bonusAttemptGranted={subStatus.bonusAttemptGranted}
               followupBundlePurchased={subStatus.followupBundlePurchased}
+              showOnlyBasePlans
             />
             <p className="text-center text-xs text-gray-400 mt-4">
               Your progress is saved. After payment you'll continue exactly where you left off.
@@ -1084,11 +1091,16 @@ export default function Home() {
                       // Before going to Stripe for a followup unlock, save
                       // topClusters to sessionStorage so the followup page
                       // can load correctly after the payment redirect.
+                      // Also explicitly override the default return path
+                      // (which would otherwise be the current page) to
+                      // /followup, since the user is continuing straight
+                      // into the followup questionnaire for THIS attempt.
                       if (productType === 'followup_unlock' && result) {
                         sessionStorage.setItem(
                           'topClusters',
                           JSON.stringify(result.top3.map((item: any) => item.cluster))
                         );
+                        sessionStorage.setItem('checkoutReturnPath', '/followup');
                       }
                     }}
                   />
