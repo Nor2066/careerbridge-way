@@ -824,7 +824,7 @@ export default function Home() {
           className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           onClick={() => setShowPricingModal(false)}
         />
-        <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div className="glass-card">
             <div className="flex justify-between items-center mb-4">
               <div>

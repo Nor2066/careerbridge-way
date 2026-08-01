@@ -105,7 +105,7 @@ export default function PricingContent({
           </div>
         )}
 
-        <div className={`grid gap-4 ${compact ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+        <div className={`grid gap-4 ${compact ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
 
           {/* ─── Basic Plan ─────────────────────────────────────────────── */}
           {!hasPlan && (
