@@ -25,6 +25,87 @@ const jsonLd = {
   },
 };
 
+// ── Signature icon set ──────────────────────────────────────────────────
+// The page's background is already a night sky (stars, moon, distant
+// mountains) built around the idea of navigating toward a destination.
+// These three icons and the small bullet mark below extend that same
+// visual language instead of dropping in unrelated emoji: a constellation
+// you build point by point, a guiding star/sparkle for the AI step, and a
+// waypointed trail leading to a destination for the roadmap step. The same
+// sparkle glyph reappears as the list bullets further down, so it reads as
+// one deliberate motif rather than decoration.
+
+const ConstellationIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
+    <path
+      d="M8 30L17 15L24 21L32 9"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      className="text-indigo-300"
+      opacity="0.5"
+    />
+    <circle cx="8" cy="30" r="2" fill="currentColor" className="text-indigo-300" />
+    <circle cx="17" cy="15" r="2" fill="currentColor" className="text-indigo-300" />
+    <circle cx="32" cy="9" r="2" fill="currentColor" className="text-indigo-300" />
+    <circle cx="24" cy="21" r="2.5" fill="currentColor" className="text-purple-300" />
+  </svg>
+);
+
+const GuidingStarIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
+    <circle
+      cx="20" cy="20" r="14"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeDasharray="2 3"
+      className="text-indigo-300"
+      opacity="0.35"
+    />
+    <path
+      d="M20 8L22.5 17.5L32 20L22.5 22.5L20 32L17.5 22.5L8 20L17.5 17.5Z"
+      fill="currentColor"
+      className="text-purple-300"
+    />
+  </svg>
+);
+
+const TrailIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
+    <path
+      d="M6 32C6 32 14 30 18 24C21 19.5 23 15 24 12"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeDasharray="0.5 4.5"
+      className="text-indigo-300"
+      opacity="0.7"
+    />
+    <circle cx="6" cy="32" r="1.8" fill="currentColor" className="text-indigo-300" />
+    <circle cx="18" cy="24" r="1.8" fill="currentColor" className="text-indigo-300" />
+    <path
+      d="M28 7L29.5 11L34 12.5L29.5 14L28 18L26.5 14L22 12.5L26.5 11Z"
+      fill="currentColor"
+      className="text-purple-300"
+    />
+  </svg>
+);
+
+const StepBadge = ({ children }: { children: React.ReactNode }) => (
+  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-indigo-500/15 to-purple-500/10 border border-indigo-400/25 flex items-center justify-center">
+    {children}
+  </div>
+);
+
+const Spark = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 20 20" fill="none" className={className}>
+    <path
+      d="M10 3L11.5 8.5L17 10L11.5 11.5L10 17L8.5 11.5L3 10L8.5 8.5Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export default function LandingPage() {
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
@@ -54,7 +135,6 @@ export default function LandingPage() {
         <div className="text-center mb-16">
           <GlassTextLogo />
           <div className="mt-8 space-y-4">
-            {/* Primary H1 — keyword rich for Google */}
             <h1 className="text-3xl md:text-4xl font-bold text-white">
               Free Career Assessment Test for Students & Graduates
             </h1>
@@ -141,22 +221,22 @@ export default function LandingPage() {
           <>
             {/* How it works */}
             <div className="glass-card mb-12">
-              <h2 className="text-2xl font-bold text-white mb-6 text-center">
+              <h2 className="text-2xl font-bold text-white mb-8 text-center">
                 How the Career Assessment Works
               </h2>
-              <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div className="grid md:grid-cols-3 gap-8 text-center">
                 <div>
-                  <div className="text-4xl mb-3">📝</div>
+                  <StepBadge><ConstellationIcon /></StepBadge>
                   <h3 className="text-white font-semibold mb-2">1. Answer Questions</h3>
                   <p className="text-gray-300 text-sm">46 questions covering your skills, interests, work preferences, and values.</p>
                 </div>
                 <div>
-                  <div className="text-4xl mb-3">🤖</div>
+                  <StepBadge><GuidingStarIcon /></StepBadge>
                   <h3 className="text-white font-semibold mb-2">2. Get Your AI Report</h3>
                   <p className="text-gray-300 text-sm">Our AI matches your profile to 15+ career clusters and explains why each fits you.</p>
                 </div>
                 <div>
-                  <div className="text-4xl mb-3">🚀</div>
+                  <StepBadge><TrailIcon /></StepBadge>
                   <h3 className="text-white font-semibold mb-2">3. Get Your Roadmap</h3>
                   <p className="text-gray-300 text-sm">Unlock a detailed career roadmap with job titles, courses, and a 3-month action plan.</p>
                 </div>
@@ -181,23 +261,38 @@ export default function LandingPage() {
               </h2>
               <div className="grid md:grid-cols-2 gap-6 text-gray-200">
                 <div>
-                  <p className="font-semibold text-indigo-300">✓ A Clear Career Roadmap, Not Just Advice</p>
+                  <p className="font-semibold text-indigo-300 flex items-center gap-2">
+                    <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
+                    A Clear Career Roadmap, Not Just Advice
+                  </p>
                   <p className="text-sm mt-1">Instead of vague suggestions, you get a structured, step-by-step plan tailored to your unique goals and situation.</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-indigo-300">✓ Turn Uncertainty into a Concrete Plan</p>
+                  <p className="font-semibold text-indigo-300 flex items-center gap-2">
+                    <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
+                    Turn Uncertainty into a Concrete Plan
+                  </p>
                   <p className="text-sm mt-1">We capture your interests and build a complete blueprint so you know exactly what to do next.</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-indigo-300">✓ Eliminate Career Confusion and Self-Doubt</p>
+                  <p className="font-semibold text-indigo-300 flex items-center gap-2">
+                    <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
+                    Eliminate Career Confusion and Self-Doubt
+                  </p>
                   <p className="text-sm mt-1">The in-depth analysis removes guesswork, giving you confidence that every step is informed and intentional.</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-indigo-300">✓ Uncover Hidden Strengths & Opportunities</p>
+                  <p className="font-semibold text-indigo-300 flex items-center gap-2">
+                    <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
+                    Uncover Hidden Strengths & Opportunities
+                  </p>
                   <p className="text-sm mt-1">Go beyond surface-level thinking. Get a nuanced breakdown of your strengths and the career paths most people overlook.</p>
                 </div>
                 <div className="md:col-span-2">
-                  <p className="font-semibold text-indigo-300">✓ Stop Wasting Time on Trial & Error</p>
+                  <p className="font-semibold text-indigo-300 flex items-center gap-2">
+                    <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
+                    Stop Wasting Time on Trial & Error
+                  </p>
                   <p className="text-sm mt-1">With a personalised, AI-powered roadmap, you move faster, avoid common mistakes, and stay focused on what truly matters for your career.</p>
                 </div>
               </div>
