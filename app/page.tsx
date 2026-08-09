@@ -25,26 +25,10 @@ const jsonLd = {
   },
 };
 
-// ── Signature icon set ──────────────────────────────────────────────────
-// The page's background is already a night sky (stars, moon, distant
-// mountains) built around the idea of navigating toward a destination.
-// These three icons and the small bullet mark below extend that same
-// visual language instead of dropping in unrelated emoji: a constellation
-// you build point by point, a guiding star/sparkle for the AI step, and a
-// waypointed trail leading to a destination for the roadmap step. The same
-// sparkle glyph reappears as the list bullets further down, so it reads as
-// one deliberate motif rather than decoration.
-
+// ── Step icon set (unchanged from before) ───────────────────────────────
 const ConstellationIcon = () => (
   <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
-    <path
-      d="M8 30L17 15L24 21L32 9"
-      stroke="currentColor"
-      strokeWidth="1.2"
-      strokeLinecap="round"
-      className="text-indigo-300"
-      opacity="0.5"
-    />
+    <path d="M8 30L17 15L24 21L32 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-indigo-300" opacity="0.5" />
     <circle cx="8" cy="30" r="2" fill="currentColor" className="text-indigo-300" />
     <circle cx="17" cy="15" r="2" fill="currentColor" className="text-indigo-300" />
     <circle cx="32" cy="9" r="2" fill="currentColor" className="text-indigo-300" />
@@ -54,40 +38,17 @@ const ConstellationIcon = () => (
 
 const GuidingStarIcon = () => (
   <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
-    <circle
-      cx="20" cy="20" r="14"
-      stroke="currentColor"
-      strokeWidth="1"
-      strokeDasharray="2 3"
-      className="text-indigo-300"
-      opacity="0.35"
-    />
-    <path
-      d="M20 8L22.5 17.5L32 20L22.5 22.5L20 32L17.5 22.5L8 20L17.5 17.5Z"
-      fill="currentColor"
-      className="text-purple-300"
-    />
+    <circle cx="20" cy="20" r="14" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" className="text-indigo-300" opacity="0.35" />
+    <path d="M20 8L22.5 17.5L32 20L22.5 22.5L20 32L17.5 22.5L8 20L17.5 17.5Z" fill="currentColor" className="text-purple-300" />
   </svg>
 );
 
 const TrailIcon = () => (
   <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
-    <path
-      d="M6 32C6 32 14 30 18 24C21 19.5 23 15 24 12"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeDasharray="0.5 4.5"
-      className="text-indigo-300"
-      opacity="0.7"
-    />
+    <path d="M6 32C6 32 14 30 18 24C21 19.5 23 15 24 12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="0.5 4.5" className="text-indigo-300" opacity="0.7" />
     <circle cx="6" cy="32" r="1.8" fill="currentColor" className="text-indigo-300" />
     <circle cx="18" cy="24" r="1.8" fill="currentColor" className="text-indigo-300" />
-    <path
-      d="M28 7L29.5 11L34 12.5L29.5 14L28 18L26.5 14L22 12.5L26.5 11Z"
-      fill="currentColor"
-      className="text-purple-300"
-    />
+    <path d="M28 7L29.5 11L34 12.5L29.5 14L28 18L26.5 14L22 12.5L26.5 11Z" fill="currentColor" className="text-purple-300" />
   </svg>
 );
 
@@ -99,11 +60,56 @@ const StepBadge = ({ children }: { children: React.ReactNode }) => (
 
 const Spark = ({ className = '' }: { className?: string }) => (
   <svg viewBox="0 0 20 20" fill="none" className={className}>
-    <path
-      d="M10 3L11.5 8.5L17 10L11.5 11.5L10 17L8.5 11.5L3 10L8.5 8.5Z"
-      fill="currentColor"
-    />
+    <path d="M10 3L11.5 8.5L17 10L11.5 11.5L10 17L8.5 11.5L3 10L8.5 8.5Z" fill="currentColor" />
   </svg>
+);
+
+// ── Contact icon set ─────────────────────────────────────────────────────
+// Original minimal pictograms (camera, envelope, note, connected nodes) in
+// the site's own line-art style — not reproductions of the platforms'
+// actual trademarked logos.
+const InstagramIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-6 h-6">
+    <path d="M10 15h4l2-3h8l2 3h4a2 2 0 012 2v12a2 2 0 01-2 2H10a2 2 0 01-2-2V17a2 2 0 012-2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <circle cx="20" cy="23" r="5" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+const EmailIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-6 h-6">
+    <rect x="6" y="10" width="28" height="20" rx="3" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M7 12l13 10 13-10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const TikTokIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-6 h-6">
+    <circle cx="14" cy="28" r="4" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M18 28V9l12 3v5l-12-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const LinkedInIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" className="w-6 h-6">
+    <circle cx="12" cy="14" r="3" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="28" cy="14" r="3" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="20" cy="27" r="3" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M14.5 16.5L18 24.5M25.5 16.5L22 24.5" stroke="currentColor" strokeWidth="1.2" />
+  </svg>
+);
+
+const ContactLink = ({ href, label, children }: { href: string; label: string; children: React.ReactNode }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex flex-col items-center gap-2 group"
+  >
+    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500/15 to-purple-500/10 border border-indigo-400/25 flex items-center justify-center text-indigo-300 transition-all group-hover:border-purple-300/60 group-hover:text-purple-300 group-hover:-translate-y-1">
+      {children}
+    </div>
+    <span className="text-gray-300 text-sm group-hover:text-white transition-colors">{label}</span>
+  </a>
 );
 
 export default function LandingPage() {
@@ -144,7 +150,7 @@ export default function LandingPage() {
               values to real career paths.
             </p>
             <p className="text-indigo-300 font-medium">
-              Trusted by students exploring their future — takes under 15 minutes.
+              Trusted by students exploring their future. It takes under 15 minutes.
             </p>
 
             {!quizStarted && !quizCompleted && (
@@ -153,7 +159,7 @@ export default function LandingPage() {
                   onClick={handleStartQuiz}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-8 py-3 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  Try Free Demo →
+                  Try Our Demo Quiz For Free →
                 </button>
                 <button
                   onClick={handleFullAssessment}
@@ -201,8 +207,8 @@ export default function LandingPage() {
             <div className="glass-card text-center">
               <h2 className="text-2xl font-bold text-white mb-4">Great work! Ready for the real thing?</h2>
               <p className="text-gray-200 mb-6">
-                The demo gives you a taste — but our full career assessment goes
-                much deeper. It analyses your skills, learning style, values, and
+                The demo gives you a taste. Our full career assessment goes
+                much deeper: it analyses your skills, learning style, values, and
                 ambitions across 46 questions, then generates a personalised AI
                 career report with your top career clusters and why they fit you.
               </p>
@@ -247,10 +253,10 @@ export default function LandingPage() {
             <div className="glass-card mb-12">
               <h2 className="text-2xl font-bold text-white mb-6 text-center">Who We Are</h2>
               <div className="space-y-4 text-gray-200">
-                <p>• <strong className="text-white">We're students, just like you</strong> — currently at university. We've faced the same uncertainty, stress, and confusion about "what comes next."</p>
-                <p>• <strong className="text-white">Built from real, recent experience</strong> — this questionnaire comes directly from the struggles we wish we'd had help with. It's peer-driven, practical, and tested through our own career exploration.</p>
-                <p>• <strong className="text-white">Made by students, for students</strong> — no jargon, no judgment, and no "expert" distance. Just a clear, honest framework designed to help you avoid the trial-and-error we went through.</p>
-                <p>• <strong className="text-white">Our mission</strong> — to make it easier for students to find a future career that actually fits. We created this to save you time, reduce anxiety, and give you a plan you can believe in.</p>
+                <p><strong className="text-white">We're students, just like you</strong>, currently at university. We've faced the same uncertainty, stress, and confusion about what comes next.</p>
+                <p>This questionnaire is <strong className="text-white">built from real, recent experience</strong>. It comes directly from the struggles we wish we'd had help with, and it's peer-driven, practical, and tested through our own career exploration.</p>
+                <p>It's <strong className="text-white">made by students, for students</strong>: no jargon, no judgment, and no expert distance. Just a clear, honest framework designed to help you avoid the trial-and-error we went through.</p>
+                <p><strong className="text-white">Our mission</strong> is simple: make it easier for students to find a future career that actually fits. We built this hoping it would save you time, reduce anxiety, and give you a plan you can believe in.</p>
               </div>
             </div>
 
@@ -315,18 +321,38 @@ export default function LandingPage() {
             </div>
 
             {/* Contact */}
-            <div className="glass-card">
+            <div className="glass-card mb-12">
               <h2 className="text-2xl font-bold text-white mb-4 text-center">Still Feeling Unsure? We're Here to Help</h2>
               <p className="text-gray-200 text-center mb-6">
-                Every journey is different — your situation might have unique challenges the questionnaire couldn't fully capture.
-                That's exactly why we've left the door open to talk.
+                Every journey is different, and your situation might have unique challenges the questionnaire couldn't fully capture.
+                That's exactly why we've left the door open to talk. Reach out through any of the channels below and mention
+                that you took the questionnaire, so we have a little context.
               </p>
-              <p className="text-gray-200 text-center">
-                <strong className="text-white">How to reach us:</strong> [Insert your contact details]. Just send a message saying you took the questionnaire and need a little more guidance.
+              <p className="text-gray-200 text-center italic">
+                We genuinely want to help. This project came from our own struggles, and if it helps even one student feel
+                more confident about their future, it was worth it.
               </p>
-              <p className="text-gray-200 text-center mt-4 italic">
-                We genuinely want to help — this project came from our own struggles. If we can help even one student feel more confident about their future, it was worth it.
-              </p>
+            </div>
+
+            {/* Reach Us Anywhere */}
+            <div className="glass-card">
+              <h2 className="text-2xl font-bold text-white mb-2 text-center">Reach Us Anywhere</h2>
+              <p className="text-gray-300 text-center mb-8 text-sm">Say hello, ask a question, or just follow along.</p>
+              <div className="flex flex-wrap justify-center gap-8">
+                <ContactLink href="https://www.instagram.com/careerbridgeway/" label="Instagram">
+                  <InstagramIcon />
+                </ContactLink>
+                {/* Placeholder links — replace with your real handles/address */}
+                <ContactLink href="mailto:hello@careerbridgeway.com" label="Email">
+                  <EmailIcon />
+                </ContactLink>
+                <ContactLink href="https://www.tiktok.com/@careerbridgeway" label="TikTok">
+                  <TikTokIcon />
+                </ContactLink>
+                <ContactLink href="https://www.linkedin.com/company/careerbridgeway" label="LinkedIn">
+                  <LinkedInIcon />
+                </ContactLink>
+              </div>
             </div>
           </>
         )}
