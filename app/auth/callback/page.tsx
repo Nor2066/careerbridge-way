@@ -1,11 +1,31 @@
 // app/auth/callback/page.tsx
-// Replaces the old app/auth/callback/route.ts — delete that file, since a
-// route.ts and page.tsx cannot coexist at the same path in Next.js.
+// Replaces app/auth/callback/route.ts — delete that file, since a route.ts
+// and page.tsx cannot coexist at the same path in Next.js.
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+
+// After establishing a session client-side, hand the tokens to a server
+// endpoint that re-writes them as httpOnly cookies. This closes the brief
+// window where the session cookie was only readable by client-side JS
+// (an unavoidable consequence of completing auth in the browser) back down
+// to essentially nothing.
+async function hardenSession(access_token: string, refresh_token: string) {
+  try {
+    await fetch('/api/auth/sync-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ access_token, refresh_token }),
+    });
+  } catch (err) {
+    // Non-critical — the client-side session still works even if this
+    // hardening step fails; don't block sign-in on it.
+    console.warn('Session hardening failed (non-critical):', err);
+  }
+}
 
 function CallbackHandler() {
   const router = useRouter();
@@ -17,22 +37,19 @@ function CallbackHandler() {
       try {
         const code = searchParams.get('code');
 
-        // ── Google OAuth (and PKCE-style magic links) ──────────────────
-        // Google's flow delivers a ?code= query param, which this client
-        // page can read directly from searchParams.
+        // ── Google OAuth (PKCE) ─────────────────────────────────────────
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
+
+          if (data.session) {
+            await hardenSession(data.session.access_token, data.session.refresh_token);
+          }
           router.push('/');
           return;
         }
 
         // ── Magic link (hash-fragment style) ────────────────────────────
-        // Supabase's email magic link delivers the session as
-        // #access_token=...&refresh_token=... in the URL fragment. Only
-        // the browser can ever see this — a server route redirect happens
-        // before any client JS runs, so the fragment is silently lost.
-        // This is why the callback must be a page, not a route handler.
         if (typeof window !== 'undefined' && window.location.hash) {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const access_token = hashParams.get('access_token');
@@ -44,6 +61,8 @@ function CallbackHandler() {
               refresh_token,
             });
             if (setSessionError) throw setSessionError;
+
+            await hardenSession(access_token, refresh_token);
             router.push('/');
             return;
           }
