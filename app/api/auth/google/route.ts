@@ -1,59 +1,39 @@
 // app/api/auth/google/route.ts
-// Initiates Google OAuth from the server instead of the browser. This lets
-// the PKCE code verifier be written as a real httpOnly cookie via an HTTP
-// Set-Cookie header, committed atomically BEFORE the browser navigates to
-// Google — eliminating the race where a client-side document.cookie write
-// could lose to browser privacy features (e.g. Chrome's bounce-tracking
-// mitigation) during the redirect.
+// Manually implements the PKCE handshake using Supabase's REST API
+// directly, rather than the SDK's signInWithOAuth(). This removes any
+// dependency on exactly how the SDK's cookie adapter behaves when called
+// server-side (which we couldn't fully verify was working), in favor of
+// a fully explicit, debuggable implementation we control end to end.
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import crypto from 'crypto';
+
+function base64url(input: Buffer): string {
+  return input.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const cookieStore = await cookies();
   const isProd = process.env.NODE_ENV === 'production';
 
-  let capturedCookies: { name: string; value: string; options: any }[] = [];
+  const codeVerifier = base64url(crypto.randomBytes(32));
+  const codeChallenge = base64url(crypto.createHash('sha256').update(codeVerifier).digest());
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
-          capturedCookies = cookiesToSet;
-        },
-      },
-    }
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const redirectTo = `${requestUrl.origin}/api/auth/callback-exchange`;
 
-  // skipBrowserRedirect: true — we're server-side, there's no window to
-  // redirect. This just gets us Google's auth URL back as a string, while
-  // the verifier is still generated and captured via setAll above.
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${requestUrl.origin}/api/auth/callback-exchange`,
-      skipBrowserRedirect: true,
-    },
-  });
+  const authorizeUrl = new URL(`${supabaseUrl}/auth/v1/authorize`);
+  authorizeUrl.searchParams.set('provider', 'google');
+  authorizeUrl.searchParams.set('redirect_to', redirectTo);
+  authorizeUrl.searchParams.set('code_challenge', codeChallenge);
+  authorizeUrl.searchParams.set('code_challenge_method', 's256');
 
-  if (error || !data.url) {
-    console.error('Google sign-in initiation failed:', error?.message);
-    return NextResponse.redirect(new URL('/login?error=oauth_init_failed', requestUrl.origin));
-  }
-
-  const response = NextResponse.redirect(data.url);
-  capturedCookies.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, {
-      ...options,
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/',
-    });
+  const response = NextResponse.redirect(authorizeUrl.toString());
+  response.cookies.set('oauth_code_verifier', codeVerifier, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10, // 10 minutes is plenty to complete the round trip
   });
 
   return response;
