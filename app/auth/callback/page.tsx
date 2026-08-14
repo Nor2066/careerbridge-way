@@ -1,17 +1,14 @@
 // app/auth/callback/page.tsx
-// Replaces app/auth/callback/route.ts — delete that file, since a route.ts
-// and page.tsx cannot coexist at the same path in Next.js.
+// Now only handles the magic-link hash-fragment flow. Google OAuth no
+// longer routes through here at all — it completes entirely server-side
+// via /api/auth/callback-exchange, since only a server can read the
+// httpOnly PKCE verifier cookie set by /api/auth/google.
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-// After establishing a session client-side, hand the tokens to a server
-// endpoint that re-writes them as httpOnly cookies. This closes the brief
-// window where the session cookie was only readable by client-side JS
-// (an unavoidable consequence of completing auth in the browser) back down
-// to essentially nothing.
 async function hardenSession(access_token: string, refresh_token: string) {
   try {
     await fetch('/api/auth/sync-session', {
@@ -21,35 +18,23 @@ async function hardenSession(access_token: string, refresh_token: string) {
       body: JSON.stringify({ access_token, refresh_token }),
     });
   } catch (err) {
-    // Non-critical — the client-side session still works even if this
-    // hardening step fails; don't block sign-in on it.
     console.warn('Session hardening failed (non-critical):', err);
   }
 }
 
-function CallbackHandler() {
+export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Cancellation guard — prevents a stale error/timeout from an earlier
+    // failed attempt firing after a later successful one already
+    // navigated away, which was causing "logged in but bounced back to
+    // login with an error" on repeat sign-in attempts.
+    let cancelled = false;
+
     const completeSignIn = async () => {
       try {
-        const code = searchParams.get('code');
-
-        // ── Google OAuth (PKCE) ─────────────────────────────────────────
-        if (code) {
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
-
-          if (data.session) {
-            await hardenSession(data.session.access_token, data.session.refresh_token);
-          }
-          router.push('/');
-          return;
-        }
-
-        // ── Magic link (hash-fragment style) ────────────────────────────
         if (typeof window !== 'undefined' && window.location.hash) {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const access_token = hashParams.get('access_token');
@@ -61,24 +46,31 @@ function CallbackHandler() {
               refresh_token,
             });
             if (setSessionError) throw setSessionError;
+            if (cancelled) return;
 
             await hardenSession(access_token, refresh_token);
+            if (cancelled) return;
             router.push('/');
             return;
           }
         }
 
-        setError('This sign-in link is invalid or has expired. Please try again.');
-        setTimeout(() => router.push('/login'), 2500);
+        if (!cancelled) {
+          setError('This sign-in link is invalid or has expired. Please try again.');
+          setTimeout(() => { if (!cancelled) router.push('/login'); }, 2500);
+        }
       } catch (err) {
         console.error('Auth callback error:', err);
-        setError('Something went wrong signing you in. Please try again.');
-        setTimeout(() => router.push('/login'), 2500);
+        if (!cancelled) {
+          setError('Something went wrong signing you in. Please try again.');
+          setTimeout(() => { if (!cancelled) router.push('/login'); }, 2500);
+        }
       }
     };
 
     completeSignIn();
-  }, [router, searchParams]);
+    return () => { cancelled = true; };
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white px-4">
@@ -86,17 +78,5 @@ function CallbackHandler() {
         <p className="text-lg">{error || 'Signing you in...'}</p>
       </div>
     </div>
-  );
-}
-
-export default function AuthCallbackPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-300">
-        Loading...
-      </div>
-    }>
-      <CallbackHandler />
-    </Suspense>
   );
 }

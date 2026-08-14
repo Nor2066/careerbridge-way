@@ -68,13 +68,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) throw error;
+    // Initiate OAuth via a server route instead of the client SDK. The
+    // PKCE verifier then gets written as a real httpOnly cookie via an
+    // HTTP Set-Cookie header, committed atomically before the browser
+    // navigates to Google — this removes the race between a client-side
+    // document.cookie write and browser privacy features (e.g. Chrome's
+    // bounce-tracking mitigation) that was losing the verifier during
+    // the redirect chain.
+    window.location.href = '/api/auth/google';
   };
 
   const signOut = async () => {

@@ -1,8 +1,14 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  oauth_init_failed: 'Could not start Google sign-in. Please try again.',
+  oauth_failed: 'Google sign-in did not complete. Please try again.',
+  missing_code: 'Google sign-in did not complete. Please try again.',
+};
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -15,6 +21,16 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   const returnTo = searchParams.get('returnTo') || '/';
+
+  // Surface errors from the server-side OAuth routes (e.g. /api/auth/google,
+  // /api/auth/callback-exchange), which redirect back here with ?error=...
+  // on failure since they can't show inline UI themselves.
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+      setError(OAUTH_ERROR_MESSAGES[oauthError] || 'Sign-in failed. Please try again.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
