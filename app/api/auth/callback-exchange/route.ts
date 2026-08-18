@@ -1,9 +1,16 @@
 // app/api/auth/callback-exchange/route.ts
-// Manually exchanges the OAuth code for tokens via Supabase's REST API
-// directly, using our own explicitly-stored verifier cookie — bypassing
-// exchangeCodeForSession()'s internal (unverifiable) storage lookup.
-// Once we have raw tokens, setSession() takes over for the final cookie
-// write, since that step needs no verifier at all — just valid tokens.
+// Completes Google OAuth server-side, reading the httpOnly verifier
+// cookie set by /api/auth/google and exchanging it via Supabase's REST
+// API directly.
+//
+// IMPORTANT: the resulting session cookies are intentionally NOT
+// httpOnly. The app's entire client-side auth architecture (AuthContext,
+// fetchWithAuth, etc.) depends on being able to read the session cookie
+// via document.cookie to know the user is logged in — that's how
+// password login and magic link already work. Making these cookies
+// httpOnly broke that: the server-side exchange succeeded and set valid
+// cookies, but the client had no way to ever see them, so the UI kept
+// showing "logged out" even though authentication had actually worked.
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
@@ -59,7 +66,7 @@ export async function GET(request: Request) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, {
             ...options,
-            httpOnly: true,
+            // NOT httpOnly — see note at top of file.
             secure: isProd,
             sameSite: 'lax',
             path: '/',
@@ -75,7 +82,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=oauth_failed', requestUrl.origin));
   }
 
-  // Clean up the verifier cookie now that we're done with it
+  // Clean up the verifier cookie now that we're done with it — this one
+  // stays httpOnly the whole time, since only our own server ever reads it.
   response.cookies.set('oauth_code_verifier', '', { maxAge: 0, path: '/' });
 
   return response;

@@ -1,36 +1,25 @@
 // app/auth/callback/page.tsx
-// Now only handles the magic-link hash-fragment flow. Google OAuth no
-// longer routes through here at all — it completes entirely server-side
-// via /api/auth/callback-exchange, since only a server can read the
-// httpOnly PKCE verifier cookie set by /api/auth/google.
+// Handles the magic-link hash-fragment flow. Google OAuth no longer
+// routes through here at all — it completes entirely server-side via
+// /api/auth/callback-exchange.
+//
+// This page uses supabase.auth.setSession() via the BROWSER client,
+// which writes a normal, client-readable session cookie — exactly what
+// AuthContext and the rest of the app expect. There is intentionally no
+// "harden to httpOnly" step afterward anymore: that upgrade broke the
+// client's ability to ever see its own session again on the next page
+// load, since httpOnly cookies are invisible to JavaScript by design.
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-async function hardenSession(access_token: string, refresh_token: string) {
-  try {
-    await fetch('/api/auth/sync-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ access_token, refresh_token }),
-    });
-  } catch (err) {
-    console.warn('Session hardening failed (non-critical):', err);
-  }
-}
-
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Cancellation guard — prevents a stale error/timeout from an earlier
-    // failed attempt firing after a later successful one already
-    // navigated away, which was causing "logged in but bounced back to
-    // login with an error" on repeat sign-in attempts.
     let cancelled = false;
 
     const completeSignIn = async () => {
@@ -48,8 +37,6 @@ export default function AuthCallbackPage() {
             if (setSessionError) throw setSessionError;
             if (cancelled) return;
 
-            await hardenSession(access_token, refresh_token);
-            if (cancelled) return;
             router.push('/');
             return;
           }
