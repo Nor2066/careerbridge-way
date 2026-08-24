@@ -80,19 +80,41 @@ export function createBufferedServerClient(getRequestCookies: () => { name: stri
  */
 const VERIFIER_MAX_AGE_SECONDS = 60 * 10;
 
+/**
+ * The PKCE verifier has to survive a round trip through Supabase and Google
+ * and come back on a cross-site navigation. SameSite=Lax is *supposed* to be
+ * sent on a top-level GET, but browsers with strict tracking protection don't
+ * reliably deliver it at the end of a multi-hop redirect chain — and a missing
+ * verifier is precisely what makes the exchange fail. SameSite=None removes
+ * that variable.
+ *
+ * Safe for this cookie specifically, unlike the session: it lives 10 minutes,
+ * is HttpOnly, and on its own grants nothing — it's only useful alongside the
+ * matching one-time auth code, which Supabase hands to our origin.
+ *
+ * Production only: SameSite=None requires Secure, and a Secure cookie is
+ * dropped outright over plain http, which would break local development.
+ */
+function isVerifier(name: string) {
+  return name.endsWith('-code-verifier');
+}
+
 /** Flush buffered cookie writes onto a response under our single policy. */
 export function applyCookies(response: NextResponse, pending: PendingCookie[]) {
   for (const { name, value, options } of pending) {
     // Deletions arrive as value:'' with maxAge:0 — preserve that, since
     // AUTH_COOKIE_FLAGS deliberately says nothing about maxAge.
     let maxAge = options?.maxAge;
-    if (name.endsWith('-code-verifier') && maxAge !== undefined && maxAge > VERIFIER_MAX_AGE_SECONDS) {
+    if (isVerifier(name) && maxAge !== undefined && maxAge > VERIFIER_MAX_AGE_SECONDS) {
       maxAge = VERIFIER_MAX_AGE_SECONDS;
     }
+
+    const crossSiteVerifier = isVerifier(name) && isProd;
 
     response.cookies.set(name, value, {
       ...options,
       ...AUTH_COOKIE_FLAGS,
+      ...(crossSiteVerifier ? { sameSite: 'none' as const, secure: true } : {}),
       ...(maxAge !== undefined ? { maxAge } : {}),
     });
   }

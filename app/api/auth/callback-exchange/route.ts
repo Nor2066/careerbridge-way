@@ -4,15 +4,15 @@
 // registered in the Supabase dashboard's redirect allow-list, and Supabase
 // refuses to redirect anywhere else.
 //
-// Previously this route re-implemented the token exchange against Supabase's
-// REST API and then called setSession() to persist it. That did two network
-// round trips (exchange, then a /user lookup inside setSession) and, if the
-// second one hiccuped, it bailed out to /login with the single-use OAuth code
-// already spent — so the retry always needed a fresh trip through Google.
-// exchangeCodeForSession() does the whole thing in one call and reads the
-// verifier cookie the SDK itself wrote in /api/auth/google.
+// Every failure here reports a DISTINCT ?error= code. They all used to
+// collapse into a single "oauth_failed", which meant a failed sign-in gave no
+// clue whether the browser withheld the verifier cookie, Supabase rejected the
+// code, or the provider itself errored — three unrelated problems with three
+// unrelated fixes. The codes are coarse operational categories, not internal
+// details; the specifics go to the server log.
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import {
   createBufferedServerClient,
   applyCookies,
@@ -29,10 +29,12 @@ export async function GET(request: Request) {
   const origin = siteOrigin(request);
   const code = requestUrl.searchParams.get('code');
 
-  const fail = (reason: string, detail?: string) => {
-    // Log the real reason server-side; show the user something generic.
-    console.error(`OAuth callback failed (${reason})`, detail ?? '');
-    return NextResponse.redirect(new URL(`/login?error=oauth_failed`, origin), {
+  const cookieStore = await cookies();
+  const returnTo = safeReturnTo(cookieStore.get('oauth_return_to')?.value);
+
+  const fail = (errorCode: string, logReason: string, detail?: string) => {
+    console.error(`[oauth] ${errorCode}: ${logReason}`, detail ?? '');
+    return NextResponse.redirect(new URL(`/login?error=${errorCode}`, origin), {
       headers: NO_STORE_HEADERS,
     });
   };
@@ -41,23 +43,44 @@ export async function GET(request: Request) {
   // misconfiguration) as query params rather than a non-2xx status.
   const providerError =
     requestUrl.searchParams.get('error_description') ?? requestUrl.searchParams.get('error');
-  if (providerError) return fail('provider returned an error', providerError);
+  if (providerError) return fail('oauth_provider', 'provider returned an error', providerError);
 
-  if (!code) return fail('no authorization code in callback URL');
+  if (!code) return fail('oauth_no_code', 'no authorization code in callback URL');
 
-  const cookieStore = await cookies();
-  const returnTo = safeReturnTo(cookieStore.get('oauth_return_to')?.value);
+  // Did the PKCE verifier cookie survive the round trip through Google?
+  // Checking this separately is the whole point: without it, a browser that
+  // dropped the cookie and a Supabase that rejected the code look identical.
+  const verifierCookie = cookieStore
+    .getAll()
+    .find((c) => c.name.endsWith('-code-verifier') && c.value);
+
+  if (!verifierCookie) {
+    return fail(
+      'oauth_no_verifier',
+      'the PKCE verifier cookie did not come back with the callback request',
+      `cookies present: ${cookieStore.getAll().map((c) => c.name).join(', ') || '(none)'}`
+    );
+  }
 
   const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return fail('code exchange rejected', error.message);
+
+  if (error) {
+    // A single-use code that's already been spent lands here. If the earlier
+    // attempt actually succeeded, the session cookie is already in the browser
+    // — bouncing to /login would then log out someone who is legitimately
+    // signed in, which looks exactly like the bug we're chasing.
+    const existing = await getExistingUser(cookieStore.getAll());
+    if (existing) {
+      console.warn('[oauth] code exchange failed but a valid session already exists — continuing');
+      return NextResponse.redirect(new URL(returnTo, origin), { headers: NO_STORE_HEADERS });
+    }
+    return fail('oauth_exchange', 'Supabase rejected the code exchange', error.message);
+  }
 
   if (pending.length === 0) {
-    // Exchange succeeded but nothing asked to be persisted — returning here
-    // would send the user to a page with no session, which is exactly the
-    // silent failure this route used to produce. Surface it instead.
-    return fail('exchange succeeded but no session cookies were produced');
+    return fail('oauth_no_session', 'exchange succeeded but produced no session cookies');
   }
 
   const response = NextResponse.redirect(new URL(returnTo, origin), {
@@ -71,4 +94,21 @@ export async function GET(request: Request) {
   response.cookies.set('oauth_code_verifier', '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
 
   return response;
+}
+
+/** Is there already a valid session on this request? */
+async function getExistingUser(requestCookies: { name: string; value: string }[]) {
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: { getAll: () => requestCookies, setAll: () => {} },
+      }
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
 }

@@ -4,8 +4,18 @@ import { Suspense, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+// Each code names a different failure, so the message can actually tell the
+// person something useful — and so the code in the address bar says which
+// branch of the callback failed.
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   oauth_init_failed: 'Could not start Google sign-in. Please try again.',
+  oauth_provider: 'Google could not complete the sign-in. Please try again.',
+  oauth_no_code: 'Google sign-in did not complete. Please try again.',
+  oauth_no_verifier:
+    'Your browser blocked a cookie needed to finish signing in. Turn off tracker/cookie blocking for this site, or try a normal (non-private) window.',
+  oauth_exchange: 'Google sign-in could not be verified. Please try again.',
+  oauth_no_session: 'Signed in with Google, but the session could not be saved. Please try again.',
+  // Kept so links from the previous build still show something sensible.
   oauth_failed: 'Google sign-in did not complete. Please try again.',
   missing_code: 'Google sign-in did not complete. Please try again.',
 };
