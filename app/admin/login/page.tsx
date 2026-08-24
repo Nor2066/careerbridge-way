@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -9,19 +8,31 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Goes through /api/admin/login rather than the browser SDK, so the session
+  // is written as an httpOnly cookie (and rate limiting actually applies).
   const handleLogin = async () => {
     setError('');
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(typeof body?.error === 'string' ? body.error : 'Invalid credentials');
         return;
       }
+
       // Full navigation instead of router.push + router.refresh() —
       // ensures the auth cookie is fully set before the server component
       // runs its auth check, preventing the redirect loop.
       window.location.href = '/admin';
+    } catch {
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }

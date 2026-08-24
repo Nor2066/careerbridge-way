@@ -1,90 +1,74 @@
 // app/api/auth/callback-exchange/route.ts
-// Completes Google OAuth server-side, reading the httpOnly verifier
-// cookie set by /api/auth/google and exchanging it via Supabase's REST
-// API directly.
 //
-// IMPORTANT: the resulting session cookies are intentionally NOT
-// httpOnly. The app's entire client-side auth architecture (AuthContext,
-// fetchWithAuth, etc.) depends on being able to read the session cookie
-// via document.cookie to know the user is logged in — that's how
-// password login and magic link already work. Making these cookies
-// httpOnly broke that: the server-side exchange succeeded and set valid
-// cookies, but the client had no way to ever see them, so the UI kept
-// showing "logged out" even though authentication had actually worked.
+// Completes Google sign-in. The path is kept as-is on purpose — it's the URL
+// registered in the Supabase dashboard's redirect allow-list, and Supabase
+// refuses to redirect anywhere else.
+//
+// Previously this route re-implemented the token exchange against Supabase's
+// REST API and then called setSession() to persist it. That did two network
+// round trips (exchange, then a /user lookup inside setSession) and, if the
+// second one hiccuped, it bailed out to /login with the single-use OAuth code
+// already spent — so the retry always needed a fresh trip through Google.
+// exchangeCodeForSession() does the whole thing in one call and reads the
+// verifier cookie the SDK itself wrote in /api/auth/google.
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import {
+  createBufferedServerClient,
+  applyCookies,
+  siteOrigin,
+  safeReturnTo,
+  AUTH_COOKIE_FLAGS,
+  NO_STORE_HEADERS,
+} from '@/lib/auth-cookies';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
+  const origin = siteOrigin(request);
   const code = requestUrl.searchParams.get('code');
-  const cookieStore = await cookies();
-  const isProd = process.env.NODE_ENV === 'production';
 
-  const codeVerifier = cookieStore.get('oauth_code_verifier')?.value;
-
-  if (!code || !codeVerifier) {
-    console.error('OAuth callback missing code or verifier', {
-      hasCode: !!code,
-      hasVerifier: !!codeVerifier,
+  const fail = (reason: string, detail?: string) => {
+    // Log the real reason server-side; show the user something generic.
+    console.error(`OAuth callback failed (${reason})`, detail ?? '');
+    return NextResponse.redirect(new URL(`/login?error=oauth_failed`, origin), {
+      headers: NO_STORE_HEADERS,
     });
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', requestUrl.origin));
+  };
+
+  // Google/Supabase report user-facing failures (consent denied, provider
+  // misconfiguration) as query params rather than a non-2xx status.
+  const providerError =
+    requestUrl.searchParams.get('error_description') ?? requestUrl.searchParams.get('error');
+  if (providerError) return fail('provider returned an error', providerError);
+
+  if (!code) return fail('no authorization code in callback URL');
+
+  const cookieStore = await cookies();
+  const returnTo = safeReturnTo(cookieStore.get('oauth_return_to')?.value);
+
+  const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) return fail('code exchange rejected', error.message);
+
+  if (pending.length === 0) {
+    // Exchange succeeded but nothing asked to be persisted — returning here
+    // would send the user to a page with no session, which is exactly the
+    // silent failure this route used to produce. Surface it instead.
+    return fail('exchange succeeded but no session cookies were produced');
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: anonKey,
-    },
-    body: JSON.stringify({ auth_code: code, code_verifier: codeVerifier }),
+  const response = NextResponse.redirect(new URL(returnTo, origin), {
+    headers: NO_STORE_HEADERS,
   });
 
-  if (!tokenRes.ok) {
-    const errBody = await tokenRes.text().catch(() => '');
-    console.error('OAuth token exchange failed:', tokenRes.status, errBody);
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', requestUrl.origin));
-  }
+  applyCookies(response, pending);
 
-  const tokenData = await tokenRes.json();
-  const { access_token, refresh_token } = tokenData;
-
-  if (!access_token || !refresh_token) {
-    console.error('OAuth token exchange returned no tokens:', tokenData);
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', requestUrl.origin));
-  }
-
-  const response = NextResponse.redirect(new URL('/', requestUrl.origin));
-
-  const supabase = createServerClient(supabaseUrl, anonKey, {
-    cookies: {
-      getAll: () => cookieStore.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, {
-            ...options,
-            // NOT httpOnly — see note at top of file.
-            secure: isProd,
-            sameSite: 'lax',
-            path: '/',
-          });
-        });
-      },
-    },
-  });
-
-  const { error: setSessionError } = await supabase.auth.setSession({ access_token, refresh_token });
-  if (setSessionError) {
-    console.error('setSession failed after manual token exchange:', setSessionError.message);
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', requestUrl.origin));
-  }
-
-  // Clean up the verifier cookie now that we're done with it — this one
-  // stays httpOnly the whole time, since only our own server ever reads it.
-  response.cookies.set('oauth_code_verifier', '', { maxAge: 0, path: '/' });
+  // Clean up our own short-lived cookies.
+  response.cookies.set('oauth_return_to', '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
+  response.cookies.set('oauth_code_verifier', '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
 
   return response;
 }

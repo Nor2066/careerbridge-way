@@ -3,11 +3,16 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-// Accepts EITHER a cookie-based session OR a Bearer token from the
-// Authorization header. This makes routes work whether called from
-// server components (cookies) or client components (fetchWithAuth with token).
+// Accepts EITHER a Bearer token from the Authorization header OR the session
+// cookie. The cookie is now the normal path for everything in the browser:
+// since the session is httpOnly, client code has no token to send and relies
+// on `credentials: 'include'` instead. The Bearer branch is kept for
+// server-to-server callers that hold a token of their own.
+//
+// Both branches verify the token with Supabase rather than decoding it
+// locally, so neither a forged cookie nor a forged header gets through.
 export async function requireAuth(request?: Request) {
-  // ── Try Bearer token first (from fetchWithAuth) ──────────────────────
+  // ── Try Bearer token first ───────────────────────────────────────────
   if (request) {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '').trim();

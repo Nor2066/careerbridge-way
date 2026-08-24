@@ -1,12 +1,16 @@
 // app/api/admin/login/route.ts
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { createBufferedServerClient, applyCookies, NO_STORE_HEADERS } from '@/lib/auth-cookies';
+import { getUserRole, isAdmin } from '@/lib/roles';
 import { adminLoginLimiter, getIP } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 const LoginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().max(320),
   password: z.string().min(1).max(256),
 });
 
@@ -17,34 +21,60 @@ export async function POST(request: Request) {
   if (!success) {
     return NextResponse.json(
       { error: 'Too many login attempts. Please try again later.' },
-      { status: 429 }
+      { status: 429, headers: NO_STORE_HEADERS }
     );
   }
 
   try {
-    const body = await request.json();
-    const result = LoginSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
+    const parsed = LoginSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 400, headers: NO_STORE_HEADERS }
+      );
     }
 
-    const { email, password } = result.data;
+    const cookieStore = await cookies();
+    const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
+
+    if (error || !data.session || !data.user) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401, headers: NO_STORE_HEADERS }
+      );
+    }
+
+    // Check the role before handing out a session for the admin area, so a
+    // non-admin gets a plain rejection rather than a working session plus a
+    // redirect they might be able to poke at.
+    const role = await getUserRole(data.user.id);
+    if (!isAdmin(role)) {
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401, headers: NO_STORE_HEADERS }
+      );
+    }
+
+    // The response body used to contain `session`, i.e. the access token AND
+    // the long-lived refresh token, in readable JSON. Anything that could see
+    // a network response — a browser extension, an injected script, a logging
+    // proxy — could lift a full account takeover out of it. The session now
+    // travels only as httpOnly cookies.
+    const response = NextResponse.json(
+      { user: { id: data.user.id, email: data.user.email ?? null }, role },
+      { headers: NO_STORE_HEADERS }
     );
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error || !data.session) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
-
-    return NextResponse.json({ user: data.user, session: data.session });
+    applyCookies(response, pending);
+    return response;
   } catch (err) {
     Sentry.captureException(err);
     console.error('ADMIN LOGIN ERROR:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: NO_STORE_HEADERS }
+    );
   }
 }

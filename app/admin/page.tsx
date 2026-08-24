@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { getUserRole, isAdmin } from '@/lib/roles';
 import AdminDashboard from './AdminDashboard';
 
 // Server component — verifies auth AND admin role before rendering anything.
@@ -24,8 +25,11 @@ export default async function AdminPage() {
 
   if (!user) redirect('/admin/login');
 
-  const isAdmin = user.app_metadata?.role === 'admin';
-  if (!isAdmin) redirect('/');
+  // Same source of truth as proxy.ts and the /api/admin/* routes: the
+  // profiles table. Reading app_metadata.role here meant a 'superadmin' was
+  // turned away from a dashboard whose own API routes would have served them.
+  const role = await getUserRole(user.id);
+  if (!isAdmin(role)) redirect('/');
 
   return <AdminDashboard />;
 }

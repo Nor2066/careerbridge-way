@@ -1,90 +1,155 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from './supabase';
-import { User } from '@supabase/supabase-js';
+// lib/AuthContext.tsx
+//
+// The session now lives in httpOnly cookies, so this context can't (and must
+// not) read tokens out of the browser. It asks the server who the visitor is
+// via GET /api/auth/me and routes every sign-in / sign-out through our own
+// API, which is the only place that writes auth cookies.
+//
+// The upside beyond security: there is exactly one writer of the session
+// cookie now. The old split — browser SDK for password login, server route for
+// Google, proxy rewriting both — is what made Google sign-in depend on which
+// request happened to land last.
+
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+
+/** Everything the UI actually needs. Deliberately no tokens. */
+export type SessionUser = {
+  id: string;
+  email: string | null;
+};
 
 type AuthContextType = {
-  user: User | null;
+  user: SessionUser | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (returnTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function readError(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    return typeof body?.error === 'string' ? body.error : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+      const data = await res.json();
+      setUser(data.user ?? null);
+    } catch (err) {
+      console.error('Could not determine auth state:', err);
+      setUser(null);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
-    const initSession = async () => {
+    (async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Session error:', error);
-          if (isMounted) setUser(null);
-        } else {
-          if (isMounted) setUser(session?.user ?? null);
-        }
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const data = res.ok ? await res.json() : { user: null };
+        if (isMounted) setUser(data.user ?? null);
       } catch (err) {
-        console.error('Unexpected auth error:', err);
+        console.error('Could not determine auth state:', err);
         if (isMounted) setUser(null);
       } finally {
         if (isMounted) setLoading(false);
       }
-    };
+    })();
 
-    initSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (isMounted) {
-        // Use the session from the event directly — it's already validated by Supabase.
-        // Calling getUser() here caused an extra network call on every auth state
-        // change, creating an infinite re-render loop on protected pages.
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    });
+    // Another tab signing in or out should be reflected here. The old
+    // implementation got this from the SDK's onAuthStateChange; with the
+    // session server-side we re-check when the tab regains focus instead.
+    const onFocus = () => { void refresh(); };
+    window.addEventListener('focus', onFocus);
 
     return () => {
       isMounted = false;
-      listener?.subscription.unsubscribe();
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
-
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-  };
+  }, [refresh]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) throw new Error(await readError(res, 'Invalid email or password'));
+
+    const data = await res.json();
+    setUser(data.user ?? null);
+    setLoading(false);
   };
 
-  const signInWithGoogle = async () => {
-    // Initiate OAuth via a server route instead of the client SDK. The
-    // PKCE verifier then gets written as a real httpOnly cookie via an
-    // HTTP Set-Cookie header, committed atomically before the browser
-    // navigates to Google — this removes the race between a client-side
-    // document.cookie write and browser privacy features (e.g. Chrome's
-    // bounce-tracking mitigation) that was losing the verifier during
-    // the redirect chain.
-    window.location.href = '/api/auth/google';
+  const signUp = async (email: string, password: string) => {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) throw new Error(await readError(res, 'Signup failed. Please try again.'));
+
+    const data = await res.json();
+    // When email confirmation is off, Supabase signs the user straight in.
+    if (!data.needsConfirmation) await refresh();
+    return { needsConfirmation: Boolean(data.needsConfirmation) };
+  };
+
+  const signInWithGoogle = async (returnTo?: string) => {
+    // A full navigation, not fetch(): the server needs to set the PKCE
+    // verifier cookie via a real Set-Cookie header that is committed before
+    // the browser leaves for Google.
+    const target = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')
+      ? `/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`
+      : '/api/auth/google';
+    window.location.href = target;
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signUp, signIn, signInWithGoogle, signOut, refresh }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -20,7 +20,14 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const returnTo = searchParams.get('returnTo') || '/';
+  // Only same-site paths. Without this check, /login?returnTo=https://evil.com
+  // turned this page into an open redirect that an attacker could use to make
+  // a phishing link look like it came from us.
+  const rawReturnTo = searchParams.get('returnTo');
+  const returnTo =
+    rawReturnTo && rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')
+      ? rawReturnTo
+      : '/';
 
   // Surface errors from the server-side OAuth routes (e.g. /api/auth/google,
   // /api/auth/callback-exchange), which redirect back here with ?error=...
@@ -39,8 +46,9 @@ function LoginForm() {
     try {
       await signIn(email, password);
       router.push(returnTo);
-    } catch {
-      setError('Invalid email or password');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password');
     }
   };
 
@@ -70,7 +78,7 @@ function LoginForm() {
   };
 
   const handleGoogleSignIn = () => {
-    signInWithGoogle().catch(() => setError('Google sign-in failed. Please try again.'));
+    signInWithGoogle(returnTo).catch(() => setError('Google sign-in failed. Please try again.'));
   };
 
   return (

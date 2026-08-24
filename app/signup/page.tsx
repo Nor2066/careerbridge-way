@@ -18,18 +18,24 @@ export default function SignupPage() {
     setError('');
     setMessage('');
     try {
-      await signUp(email, password);
-      setMessage('Check your email for confirmation!');
-      setTimeout(() => router.push('/login'), 3000);
+      const { needsConfirmation } = await signUp(email, password);
+      if (needsConfirmation) {
+        setMessage('Check your email for confirmation!');
+        setTimeout(() => router.push('/login'), 3000);
+      } else {
+        // Email confirmation is off — Supabase signed them straight in.
+        router.push('/');
+        router.refresh();
+      }
     } catch (err) {
-      setError('Signup failed. Email might already exist.');
+      setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
     }
   };
 
   const handleGoogleSignUp = async () => {
     try {
       await signInWithGoogle();
-    } catch (err) {
+    } catch {
       setError('Google sign-up failed. Please try again.');
     }
   };

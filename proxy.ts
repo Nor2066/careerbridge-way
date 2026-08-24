@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { AUTH_COOKIE_FLAGS } from '@/lib/auth-cookies';
+import { getUserRole, isAdmin } from '@/lib/roles';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (
-    pathname.startsWith('/admin/login') ||
-    pathname.startsWith('/api') ||
-    pathname.includes('favicon.ico')
-  ) {
-    return NextResponse.next();
-  }
+  // /admin/login must stay reachable while signed out, or the redirect below
+  // would bounce forever.
+  if (pathname.startsWith('/admin/login')) return NextResponse.next();
 
-  const response = NextResponse.next();
-  const isProd = process.env.NODE_ENV === 'production';
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,19 +20,18 @@ export async function proxy(request: NextRequest) {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
+          // Two steps, and both matter. Writing only to the response means a
+          // token refreshed here isn't visible to the page that renders in
+          // this same request, so the page renders logged-out and the user
+          // sees a redirect to /login for no reason. Writing only to the
+          // request means the browser never receives the refreshed cookie.
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, {
               ...options,
-              httpOnly: true,
-              secure: isProd,
-              // 'lax' (not 'strict') — strict blocks the cookie on legitimate
-              // top-level redirects back from external sites like Stripe
-              // checkout, which was causing users to be bounced to /login
-              // right after a successful payment. 'lax' still blocks
-              // cross-site POST/PUT/DELETE (the actual CSRF risk) while
-              // allowing normal top-level GET redirects.
-              sameSite: 'lax',
-              path: '/',
+              ...AUTH_COOKIE_FLAGS,
+              ...(options?.maxAge !== undefined ? { maxAge: options.maxAge } : {}),
             });
           });
         },
@@ -45,15 +41,33 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (pathname.startsWith('/admin') || pathname === '/admin') {
-    if (!user) return NextResponse.redirect(new URL('/admin/login', request.url));
+  if (!user) {
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
 
-    const isAdmin = user.app_metadata?.role === 'admin';
-    if (!isAdmin) return NextResponse.redirect(new URL('/', request.url));
+  // Role comes from the profiles table, matching lib/roles.ts and the
+  // /api/admin/* routes. This used to read user.app_metadata.role and accept
+  // only the exact string 'admin', which disagreed with the rest of the app in
+  // both directions: a 'superadmin' was locked out of the dashboard even
+  // though every admin API route accepted them, and the two sources of truth
+  // could drift apart silently.
+  const role = await getUserRole(user.id);
+  if (!isAdmin(role)) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return response;
 }
 
-// Match both /admin exactly and all /admin/* sub-paths
-export const matcher = ['/admin', '/admin/:path*'];
+// Next.js reads the matcher from a `config` export — see
+// node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md.
+//
+// This was previously `export const matcher = [...]`, which Next.js ignores
+// entirely. With no matcher, the proxy ran on EVERY page request instead of
+// just /admin. That meant a Supabase client called getUser() on every
+// navigation and prefetch, and each of those could rewrite — or, when the
+// token looked invalid, delete — the session cookies that the sign-in routes
+// had just written. Restoring the matcher confines this to /admin.
+export const config = {
+  matcher: ['/admin', '/admin/:path*'],
+};
