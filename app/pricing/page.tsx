@@ -20,7 +20,7 @@ export default async function PricingPage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/login?returnTo=/pricing');
 
   const sub = await getSubscription(user.id);
 
@@ -36,6 +36,8 @@ export default async function PricingPage() {
           mainAttemptsRemaining={sub.main_attempts_remaining}
           bonusAttemptGranted={sub.bonus_attempt_granted}
           followupBundlePurchased={sub.followup_bundle_purchased}
+          currentAttemptStatus={sub.current_attempt_status}
+          showReasonNotice
         />
       </div>
     </div>

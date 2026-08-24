@@ -194,6 +194,7 @@ export default function FollowUpClient() {
   const router = useRouter();
   const [clusters, setClusters] = useState<string[]>([]);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
+  const [booting, setBooting] = useState(true);
   const [clusterIndex, setClusterIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Record<number, string>>>({});
@@ -204,29 +205,113 @@ export default function FollowUpClient() {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
 
+  // Which attempt we're answering for, and its clusters, normally come from
+  // sessionStorage. That is not always available: a customer who paid for the
+  // followup bundle and came back from Stripe may land in a fresh tab (some
+  // in-app browsers do exactly this), and a fresh tab has empty sessionStorage.
+  // Bouncing them to the homepage right after they paid is the worst possible
+  // outcome, so when the keys are missing we rebuild them from the account.
   useEffect(() => {
-    const storedClusters = sessionStorage.getItem('topClusters');
-    const storedAssessmentId = sessionStorage.getItem('lastAssessmentId');
+    let cancelled = false;
 
-    if (storedClusters) {
+    const readStored = () => {
       try {
-        const parsed = JSON.parse(storedClusters);
-        const mapped = parsed.map((c: string) => clusterNameMap[c] || c);
-        setClusters(mapped);
-      } catch (e) {}
-    } else {
-      router.push('/');
-      return;
+        return {
+          storedClusters: sessionStorage.getItem('topClusters'),
+          storedAssessmentId: sessionStorage.getItem('lastAssessmentId'),
+        };
+      } catch {
+        return { storedClusters: null, storedAssessmentId: null };
+      }
+    };
+
+    const applyClusters = (raw: string[]) => {
+      setClusters(raw.map((c: string) => clusterNameMap[c] || c));
+    };
+
+    const { storedClusters, storedAssessmentId } = readStored();
+
+    if (storedClusters && storedAssessmentId) {
+      try {
+        applyClusters(JSON.parse(storedClusters));
+        setAssessmentId(storedAssessmentId);
+        setBooting(false);
+        return;
+      } catch {
+        /* corrupt value — fall through to server recovery */
+      }
     }
 
-    if (storedAssessmentId) {
-      setAssessmentId(storedAssessmentId);
-    } else {
-      router.push('/history');
-    }
+    const recover = async () => {
+      try {
+        const [subRes, histRes] = await Promise.all([
+          fetch('/api/subscription-status', { credentials: 'include' }),
+          fetch('/api/user-history', { credentials: 'include' }),
+        ]);
+
+        if (!histRes.ok) throw new Error('history unavailable');
+
+        const history: {
+          id: string;
+          topClusters: { cluster: string; percentage: number }[];
+          firstAIReport: string | null;
+          detailedRoadmap: string | null;
+          followupUnlocked: boolean;
+        }[] = await histRes.json();
+
+        let pendingId: string | null = null;
+        let planUnlocksFollowups = false;
+        if (subRes.ok) {
+          const sub = await subRes.json();
+          planUnlocksFollowups = sub.plan === 'full' || !!sub.followupBundlePurchased;
+          if (sub.currentAttemptStatus === 'awaiting_followup_decision') {
+            pendingId = sub.currentAttemptResultId ?? null;
+          }
+        }
+
+        // Prefer the attempt the account says is mid-flight; otherwise the
+        // most recent attempt that has a first report but no roadmap yet.
+        const target =
+          (pendingId && history.find((h) => h.id === pendingId)) ||
+          history.find((h) => !!h.firstAIReport && !h.detailedRoadmap) ||
+          null;
+
+        if (cancelled) return;
+
+        if (!target || !target.topClusters?.length) {
+          router.push('/history');
+          return;
+        }
+
+        // Never drop someone into 20+ questions they aren't allowed to save.
+        // The history page is where the unlock lives, so send them there.
+        if (!planUnlocksFollowups && !target.followupUnlocked) {
+          router.push('/history');
+          return;
+        }
+
+        const clusterNames = target.topClusters.map((c) => c.cluster);
+        try {
+          sessionStorage.setItem('topClusters', JSON.stringify(clusterNames));
+          sessionStorage.setItem('lastAssessmentId', target.id);
+        } catch {
+          /* private mode — component state is enough for this session */
+        }
+        applyClusters(clusterNames);
+        setAssessmentId(target.id);
+        setBooting(false);
+      } catch {
+        if (!cancelled) router.push('/history');
+      }
+    };
+
+    recover();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
-  if (!clusters.length) return <div className="p-6 text-center">Loading...</div>;
+  if (booting || !clusters.length) return <div className="p-6 text-center">Loading...</div>;
 
   const currentCluster = clusters[clusterIndex];
   const questions = clusterQuestions[currentCluster];
@@ -278,12 +363,22 @@ export default function FollowUpClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ answers }),
+        // Send the attempt these answers belong to. Without it the server
+        // fell back to the "current" attempt, which is wrong (and a 403)
+        // for a followup started from the history page.
+        body: JSON.stringify({ answers, ...(assessmentId ? { assessmentId } : {}) }),
       });
       if (res.ok) {
         setSubmitted(true);
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (data.code === 'FOLLOWUP_LOCKED') {
+          alert(
+            'Your followup access for this attempt is not unlocked. Unlock it from your history page — your answers will still be here.'
+          );
+          router.push('/history');
+          return;
+        }
         alert('Failed to save answers: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {

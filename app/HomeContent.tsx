@@ -702,6 +702,32 @@ export default function Home() {
     }
   };
 
+  // Escape hatch for the "you must finish your last followup" gate.
+  // Without it that gate is a loop: /assess sends the user to /history,
+  // and /history's "Start New Assessment" button sends them right back to
+  // /assess. Skipping only clears the pending followup decision — the
+  // attempt stays in history and can still be completed later.
+  const handleSkipFromGate = async () => {
+    setSkipLoading(true);
+    try {
+      const res = await fetch('/api/skip-followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setShowMustFinishModal(false);
+        await refetchSubStatus();
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    } finally {
+      setSkipLoading(false);
+    }
+  };
+
   // ***** STYLING *****
   const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
   const buttonPrimaryClasses = "btn-primary";
@@ -824,6 +850,24 @@ export default function Home() {
   // ---------- PRICING MODAL OVERLAY ----------
   const PricingModal = () => {
     if (!showPricingModal || !subStatus) return null;
+
+    // The heading has to match the actual reason the customer is blocked.
+    // "Purchase a plan to see your results" is right for a first-timer and
+    // plainly wrong for someone on their fourth questionnaire who already
+    // paid — they ran out of attempts, which is a different problem with a
+    // different answer.
+    const outOfAttempts = subStatus.mainAttemptsRemaining <= 0;
+    const heading =
+      subStatus.plan === 'free'
+        ? 'Unlock the Full Assessment'
+        : outOfAttempts
+        ? 'No attempts left on your account'
+        : 'One more step before you continue';
+    const subheading =
+      subStatus.plan === 'free'
+        ? "You've answered 10 questions — purchase a plan to see your results and AI report."
+        : "Here's exactly what's blocking this attempt, and what unblocks it.";
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
         <div
@@ -834,10 +878,8 @@ export default function Home() {
           <div className="glass-card">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-xl font-bold text-white">Unlock the Full Assessment</h2>
-                <p className="text-sm text-gray-300 mt-1">
-                  You've answered 10 questions — purchase a plan to see your results and AI report.
-                </p>
+                <h2 className="text-xl font-bold text-white">{heading}</h2>
+                <p className="text-sm text-gray-300 mt-1">{subheading}</p>
               </div>
               <button
                 onClick={() => setShowPricingModal(false)}
@@ -854,8 +896,17 @@ export default function Home() {
               mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
               bonusAttemptGranted={subStatus.bonusAttemptGranted}
               followupBundlePurchased={subStatus.followupBundlePurchased}
-              showOnlyBasePlans
+              currentAttemptStatus={subStatus.currentAttemptStatus}
+              showReasonNotice
             />
+            <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <button
+                onClick={() => router.push('/history')}
+                className="text-sm text-indigo-300 hover:text-white underline"
+              >
+                See my attempts and followups
+              </button>
+            </div>
             <p className="text-center text-xs text-gray-400 mt-4">
               Your progress is saved. After payment you'll continue exactly where you left off.
             </p>
@@ -871,6 +922,12 @@ export default function Home() {
   // fresh and offers a direct path to their history page to finish it.
   const MustFinishModal = () => {
     if (!showMustFinishModal) return null;
+
+    const followupsUnlocked =
+      subStatus?.plan === 'full' ||
+      subStatus?.followupBundlePurchased ||
+      subStatus?.bonusAttemptGranted;
+
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
@@ -883,16 +940,27 @@ export default function Home() {
               <span className="text-3xl">📋</span>
             </div>
             <h2 className="text-2xl font-bold text-white mb-3">One Attempt Left to Finish</h2>
+            <p className="text-gray-300 mb-4 leading-relaxed">
+              {subStatus?.cannotStartReason ||
+                "You have a previous assessment that's still waiting on its followup questionnaire."}
+            </p>
             <p className="text-gray-300 mb-8 leading-relaxed">
-              You have a previous assessment that's still waiting on its followup
-              questionnaire. Head to your history page to finish or unlock it —
-              then you'll be free to start a new assessment.
+              {followupsUnlocked
+                ? 'Open it from your history page and finish the followup — then you’re free to start a new assessment. Or skip it below if you’d rather move on; you can always come back to it later.'
+                : 'Your followups aren’t unlocked yet, so you can finish this attempt by unlocking them from your history page — or skip the followup below and start fresh. Skipping loses nothing: the attempt stays in your history.'}
             </p>
             <button
               onClick={() => router.push('/history')}
               className="btn-primary w-full py-3"
             >
               Go to My History →
+            </button>
+            <button
+              onClick={handleSkipFromGate}
+              disabled={skipLoading}
+              className="mt-3 w-full text-sm text-gray-300 hover:text-white underline disabled:opacity-50"
+            >
+              {skipLoading ? 'Please wait...' : 'Skip that followup and start a new assessment'}
             </button>
           </div>
         </div>
@@ -931,6 +999,8 @@ export default function Home() {
             mainAttemptsRemaining={subStatus.mainAttemptsRemaining}
             bonusAttemptGranted={subStatus.bonusAttemptGranted}
             followupBundlePurchased={subStatus.followupBundlePurchased}
+            currentAttemptStatus={subStatus.currentAttemptStatus}
+            showReasonNotice
           />
         </div>
       </div>

@@ -34,6 +34,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
   // Account-wide bundle purchase modal — no longer tied to a specific item
   const [showBundleModal, setShowBundleModal] = useState(false);
   const [hasSavedProgress, setHasSavedProgress] = useState(false);
+  const [skipping, setSkipping] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,6 +68,27 @@ export default function HistoryClient({ userId }: { userId: string }) {
     sessionStorage.setItem('topClusters', JSON.stringify(item.topClusters.map(c => c.cluster)));
     sessionStorage.setItem('lastAssessmentId', item.id);
     router.push('/followup');
+  };
+
+  const handleSkipPendingFollowup = async () => {
+    setSkipping(true);
+    try {
+      const res = await fetch('/api/skip-followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const subRes = await fetch('/api/subscription-status', { credentials: 'include' });
+        if (subRes.ok) setSubStatus(await subRes.json());
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } catch {
+      alert('Network error. Please try again.');
+    } finally {
+      setSkipping(false);
+    }
   };
 
   const plan = subStatus?.plan ?? 'free';
@@ -108,14 +130,19 @@ export default function HistoryClient({ userId }: { userId: string }) {
     );
   }
 
+  const awaitingFollowup = subStatus?.currentAttemptStatus === 'awaiting_followup_decision';
+
   // Does any item need a followup unlock (has first report, no roadmap yet,
-  // Basic plan, bundle not yet purchased)? Only offered here once BOTH
-  // main attempts are completed (history.length >= 2) — per design, the
-  // followup bundle upsell only appears on the decision screen right after
-  // an assessment, or here in history once both attempts are done, not
-  // immediately after just the first one.
+  // Basic plan, bundle not yet purchased)?
+  //
+  // Normally the upsell waits until both main attempts are done — per design,
+  // it belongs on the decision screen right after an assessment, not straight
+  // after the first one. The exception is a customer with an attempt actually
+  // parked in 'awaiting_followup_decision': /assess sends them here to finish
+  // it, so if this page shows them nothing to act on they are stuck in a loop
+  // between the two pages.
   const hasItemNeedingBundle =
-    history.length >= 2 &&
+    (history.length >= 2 || awaitingFollowup) &&
     history.some(item => !!item.firstAIReport && !item.detailedRoadmap);
 
   return (
@@ -147,13 +174,16 @@ export default function HistoryClient({ userId }: { userId: string }) {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white drop-shadow-lg">Your Assessment History</h1>
-        {(mainAttemptsRemaining > 0 || hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress') && (
-          <button onClick={() => router.push('/assess')} className="btn-primary">
-            {hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress'
-              ? 'Continue Last Attempt'
-              : 'Start New Assessment'}
-          </button>
-        )}
+        {/* Hidden while an attempt is parked awaiting its followup decision:
+            /assess would just bounce them straight back here. */}
+        {!awaitingFollowup &&
+          (mainAttemptsRemaining > 0 || hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress') && (
+            <button onClick={() => router.push('/assess')} className="btn-primary">
+              {hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress'
+                ? 'Continue Last Attempt'
+                : 'Start New Assessment'}
+            </button>
+          )}
       </div>
 
       {/* Subscription status banner */}
@@ -169,6 +199,27 @@ export default function HistoryClient({ userId }: { userId: string }) {
               </span>
             )}
           </p>
+        </div>
+      )}
+
+      {/* Attempt parked awaiting its followup — say what's holding things up
+          and give both ways out, so this page is never a dead end. */}
+      {awaitingFollowup && (
+        <div className="mb-6 p-5 bg-amber-900/30 border border-amber-400/50 rounded-xl">
+          <p className="text-white font-semibold mb-1">One attempt is waiting on its followup</p>
+          <p className="text-gray-200 text-sm leading-relaxed">
+            You can&apos;t start a new assessment until this one is wrapped up.
+            {plan === 'full' || followupBundlePurchased
+              ? ' Use “Start Followup Questionnaire” on the attempt below to finish it.'
+              : ' Unlock your followups below to finish it — or skip it if you’d rather move on.'}
+          </p>
+          <button
+            onClick={handleSkipPendingFollowup}
+            disabled={skipping}
+            className="mt-3 text-sm text-amber-200 hover:text-white underline disabled:opacity-50"
+          >
+            {skipping ? 'Please wait...' : 'Skip this followup and free up a new assessment'}
+          </button>
         </div>
       )}
 
@@ -194,8 +245,13 @@ export default function HistoryClient({ userId }: { userId: string }) {
           const hasRoadmap = !!item.detailedRoadmap;
           const hasFirstReport = !!item.firstAIReport;
 
+          // item.followupUnlocked covers accounts that bought a per-attempt
+          // unlock under the old pricing, and top-up credits already spent
+          // on this attempt — both leave a row in followup_unlocks.
           const showStartFollowup =
-            hasFirstReport && !hasRoadmap && (plan === 'full' || followupBundlePurchased);
+            hasFirstReport &&
+            !hasRoadmap &&
+            (plan === 'full' || followupBundlePurchased || item.followupUnlocked);
 
           return (
             <div key={item.id} className="glass-card">

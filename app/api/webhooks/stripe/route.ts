@@ -1,19 +1,9 @@
 // app/api/webhooks/stripe/route.ts
 import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { createClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe';
-import {
-  ATTEMPTS_GRANTED,
-  PLAN_FOR_PRODUCT,
-  PRODUCT_AMOUNTS_CENTS,
-  type ProductType,
-} from '@/lib/plans';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { fulfillCheckoutSession } from '@/lib/fulfillment';
+import type { ProductType } from '@/lib/plans';
 
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
@@ -36,7 +26,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  if (event.type !== 'checkout.session.completed') {
+  // checkout.session.completed fires as soon as the session completes, which
+  // for some payment methods is BEFORE the money has actually settled.
+  // async_payment_succeeded is the late confirmation for those. Both are
+  // handled through the same idempotent fulfillment path.
+  if (
+    event.type !== 'checkout.session.completed' &&
+    event.type !== 'checkout.session.async_payment_succeeded'
+  ) {
     return NextResponse.json({ received: true });
   }
 
@@ -53,101 +50,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
+  // Don't grant anything for a session that completed without being paid
+  // (e.g. a delayed bank debit that is still processing). The matching
+  // async_payment_succeeded event will come back through here once it is.
+  if (session.payment_status && session.payment_status !== 'paid') {
+    console.log(
+      'WEBHOOK: session',
+      sessionId,
+      'not paid yet (payment_status:',
+      session.payment_status,
+      ') — skipping grant'
+    );
+    return NextResponse.json({ received: true });
+  }
+
   try {
-    const { error: paymentInsertError } = await supabaseAdmin.from('payments').insert({
-      user_id: userId,
-      stripe_session_id: sessionId,
-      stripe_payment_intent_id: paymentIntentId,
-      product_type: productType,
-      amount_cents: PRODUCT_AMOUNTS_CENTS[productType],
-      currency: 'eur',
-      status: 'completed',
+    const outcome = await fulfillCheckoutSession({
+      userId,
+      productType,
+      sessionId,
+      paymentIntentId,
     });
 
-    if (paymentInsertError) {
-      if (paymentInsertError.code === '23505') {
-        console.log('WEBHOOK: duplicate event for session', sessionId, '— already processed');
-        return NextResponse.json({ received: true });
-      }
-      throw paymentInsertError;
+    if (outcome === 'already_processed') {
+      console.log('WEBHOOK: session', sessionId, 'already fulfilled — nothing to do');
     }
-
-    await grantPurchase(userId, productType);
 
     return NextResponse.json({ received: true });
   } catch (err: any) {
     Sentry.captureException(err);
     console.error('WEBHOOK PROCESSING ERROR:', err);
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
-  }
-}
-
-async function grantPurchase(userId: string, productType: ProductType) {
-  const { data: sub, error: subError } = await supabaseAdmin
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (subError || !sub) {
-    throw new Error(`Subscription not found for user ${userId}`);
-  }
-
-  switch (productType) {
-    case 'basic':
-    case 'full': {
-      const attempts = ATTEMPTS_GRANTED[productType];
-      const plan = PLAN_FOR_PRODUCT[productType];
-
-      const { error } = await supabaseAdmin
-        .from('subscriptions')
-        .update({
-          plan,
-          main_attempts_remaining: sub.main_attempts_remaining + attempts,
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      break;
-    }
-
-    case 'topup': {
-      // Now a 3-pack: grants 3 full attempts (main + followup each) per
-      // purchase — both numbers driven by ATTEMPTS_GRANTED.topup so they
-      // always stay in sync with plans.ts.
-      const { error } = await supabaseAdmin
-        .from('subscriptions')
-        .update({
-          main_attempts_remaining: sub.main_attempts_remaining + ATTEMPTS_GRANTED.topup,
-          topup_followup_credits: (sub.topup_followup_credits ?? 0) + ATTEMPTS_GRANTED.topup,
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      break;
-    }
-
-    case 'followup_unlock': {
-      // Now a single account-wide bundle purchase (was: pay per-attempt
-      // €1.50 x2). Unlocks followup access for ALL of this Basic-plan
-      // account's attempts, and immediately grants the bonus attempt that
-      // used to require two separate unlock purchases.
-      const updates: Record<string, unknown> = {
-        followup_bundle_purchased: true,
-      };
-
-      if (!sub.bonus_attempt_granted) {
-        updates.main_attempts_remaining = sub.main_attempts_remaining + 1;
-        updates.bonus_attempt_granted = true;
-      }
-
-      const { error: updateError } = await supabaseAdmin
-        .from('subscriptions')
-        .update(updates)
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-      break;
-    }
   }
 }

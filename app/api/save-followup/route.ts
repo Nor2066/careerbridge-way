@@ -9,6 +9,9 @@ import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
 const SaveFollowupSchema = z.object({
   answers: z.record(z.string(), z.unknown()),
+  // Which attempt this followup belongs to. Optional so older clients keep
+  // working: when it's absent we fall back to the current in-flight attempt.
+  assessmentId: z.string().uuid().optional(),
 });
 
 export async function POST(request: Request) {
@@ -27,23 +30,34 @@ export async function POST(request: Request) {
     }
 
     // Verify the user has paid followup access before saving answers.
-    // Uses current_attempt_result_id as the authoritative assessment reference —
-    // same pattern as generate-report, avoids "fetch latest" race condition.
+    //
+    // The attempt being answered is whichever one the client says it is —
+    // ownership is verified below. It deliberately is NOT required to be the
+    // "current" attempt: followups started from the history page (an older
+    // attempt the customer skipped at the time) are a normal, supported path,
+    // and requiring current_attempt_status === 'awaiting_followup_decision'
+    // meant those users answered the whole questionnaire and only got told
+    // "No followup in progress." on the very last click, losing every answer.
     const sub = await getSubscription(user.id);
 
-    if (sub.current_attempt_status !== 'awaiting_followup_decision') {
+    const assessmentId = parsed.data.assessmentId ?? sub.current_attempt_result_id;
+    if (!assessmentId) {
       return NextResponse.json(
-        { error: 'No followup in progress.' },
-        { status: 403 }
+        { error: 'No assessment found for this followup. Open it from your history page and try again.' },
+        { status: 400 }
       );
     }
 
-    const assessmentId = sub.current_attempt_result_id;
-    if (!assessmentId) {
-      return NextResponse.json(
-        { error: 'No active assessment found.' },
-        { status: 403 }
-      );
+    const { data: ownedResult, error: ownerError } = await supabaseServer
+      .from('user_results')
+      .select('id')
+      .eq('id', assessmentId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (ownerError) throw ownerError;
+    if (!ownedResult) {
+      return NextResponse.json({ error: 'Assessment not found.' }, { status: 404 });
     }
 
     const hasAccess = await canAccessFollowup(user.id, assessmentId, sub.plan);
