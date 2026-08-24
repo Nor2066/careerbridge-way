@@ -6,9 +6,23 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { NO_STORE_HEADERS } from '@/lib/auth-cookies';
+import { AUTH_COOKIE_FLAGS, NO_STORE_HEADERS } from '@/lib/auth-cookies';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Is this error Supabase telling us the session is permanently dead, rather
+ * than a transient network blip? Only the former justifies clearing cookies —
+ * signing someone out because Supabase was briefly unreachable would be worse
+ * than the log noise.
+ */
+function isDeadSession(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { __isAuthError?: boolean; status?: number; code?: string };
+  if (!e.__isAuthError) return false;
+  if (e.code === 'refresh_token_not_found' || e.code === 'session_not_found') return true;
+  return e.status === 400 || e.status === 401 || e.status === 403;
+}
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -27,12 +41,25 @@ export async function GET() {
 
   // getUser() validates the token against Supabase rather than trusting the
   // cookie's contents, so a forged cookie can't fake a login here.
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  return NextResponse.json(
-    {
-      user: user ? { id: user.id, email: user.email ?? null } : null,
-    },
+  const response = NextResponse.json(
+    { user: user ? { id: user.id, email: user.email ?? null } : null },
     { headers: NO_STORE_HEADERS }
   );
+
+  // Evict cookies for a session that no longer exists. Without this the
+  // browser keeps resending a dead token on every request forever — which is
+  // what filled the logs with "Invalid Refresh Token: Refresh Token Not
+  // Found" and left stale `sb-*-auth-token.0/.1` chunks lying around from an
+  // earlier deployment, confusing later sign-in attempts.
+  if (!user && isDeadSession(error)) {
+    for (const { name } of cookieStore.getAll()) {
+      if (name.startsWith('sb-') && !name.endsWith('-code-verifier')) {
+        response.cookies.set(name, '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
+      }
+    }
+  }
+
+  return response;
 }

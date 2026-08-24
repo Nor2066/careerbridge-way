@@ -17,6 +17,7 @@ import {
   createBufferedServerClient,
   applyCookies,
   siteOrigin,
+  requestOrigin,
   safeReturnTo,
   AUTH_COOKIE_FLAGS,
   NO_STORE_HEADERS,
@@ -32,6 +33,23 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const origin = siteOrigin(request);
   const returnTo = safeReturnTo(requestUrl.searchParams.get('returnTo'));
+
+  // The verifier cookie we're about to set belongs to whichever origin serves
+  // THIS request, but the callback always lands on the canonical origin (it's
+  // the only URL in Supabase's redirect allow-list). If those differ — which
+  // they do on every Vercel branch preview, e.g.
+  // careerbridge-way-git-main-*.vercel.app — the cookie is written on one
+  // domain and read on another, so it is never found and sign-in fails with
+  // oauth_no_verifier every single time.
+  //
+  // Bounce to the canonical origin first, before minting anything, so the
+  // whole handshake happens on one domain.
+  const here = requestOrigin(request);
+  if (here !== origin) {
+    const target = new URL('/api/auth/google', origin);
+    if (returnTo !== '/') target.searchParams.set('returnTo', returnTo);
+    return NextResponse.redirect(target, { headers: NO_STORE_HEADERS });
+  }
 
   const cookieStore = await cookies();
   const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());

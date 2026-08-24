@@ -126,13 +126,35 @@ export function applyCookies(response: NextResponse, pending: PendingCookie[]) {
  * Prefers the configured site URL over the incoming request's origin so a
  * spoofed Host header can't turn our redirects into a phishing hop.
  */
-export function siteOrigin(request: Request): string {
-  const requestOrigin = new URL(request.url).origin;
+/**
+ * The origin the browser actually asked for.
+ *
+ * Read from the forwarding headers rather than `request.url`, which on Vercel
+ * can carry an internal hostname. This is what tells us whether the visitor is
+ * on the production domain or one of the per-branch preview deployments.
+ */
+export function requestOrigin(request: Request): string {
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+  if (host) {
+    const proto = request.headers.get('x-forwarded-proto') ?? 'https';
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin;
+}
 
+/**
+ * The single origin the whole OAuth round trip must happen on.
+ *
+ * This MUST agree with the URL registered in Supabase's redirect allow-list,
+ * because Supabase will only send the browser back to a URL on that list —
+ * and preview deployment hostnames change per branch, so they can't all be
+ * registered.
+ */
+export function siteOrigin(request: Request): string {
   // Locally the request origin is localhost and is the only correct answer —
   // using the configured production URL here would send a developer's Google
   // round trip off to the live site instead of back to their dev server.
-  if (process.env.NODE_ENV !== 'production') return requestOrigin;
+  if (process.env.NODE_ENV !== 'production') return requestOrigin(request);
 
   const configured = process.env.NEXT_PUBLIC_URL;
   if (configured) {
@@ -142,7 +164,7 @@ export function siteOrigin(request: Request): string {
       console.error('NEXT_PUBLIC_URL is not a valid URL; falling back to the request origin');
     }
   }
-  return requestOrigin;
+  return requestOrigin(request);
 }
 
 /**

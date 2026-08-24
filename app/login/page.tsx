@@ -26,6 +26,7 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,8 +88,18 @@ function LoginForm() {
     }
   };
 
+  // Guarded against firing twice. Each call to /api/auth/google mints a fresh
+  // PKCE verifier and overwrites the cookie, so two clicks in quick succession
+  // can leave the browser carrying attempt #2's verifier while Google was sent
+  // attempt #1's challenge — and the exchange then fails on a mismatch.
   const handleGoogleSignIn = () => {
-    signInWithGoogle(returnTo).catch(() => setError('Google sign-in failed. Please try again.'));
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    setError('');
+    signInWithGoogle(returnTo).catch(() => {
+      setGoogleLoading(false);
+      setError('Google sign-in failed. Please try again.');
+    });
   };
 
   return (
@@ -148,9 +159,10 @@ function LoginForm() {
 
           <button
             onClick={handleGoogleSignIn}
-            className="w-full p-3 mt-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors"
+            disabled={googleLoading}
+            className="w-full p-3 mt-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
           >
-            Sign in with Google
+            {googleLoading ? 'Redirecting to Google...' : 'Sign in with Google'}
           </button>
 
           <p className="mt-6 text-center text-gray-300 text-sm">
