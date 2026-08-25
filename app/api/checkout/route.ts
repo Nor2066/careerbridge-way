@@ -7,6 +7,7 @@ import { safeReturnTo } from '@/lib/auth-cookies';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
 import { STRIPE_PRICE_IDS, type ProductType } from '@/lib/plans';
+import { checkPurchaseEligibility } from '@/lib/purchase-rules';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
 const CheckoutSchema = z.object({
@@ -58,64 +59,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Subscription record not found' }, { status: 500 });
     }
 
-    // Basic/Full can only be purchased once — afterwards only topup/followup_unlock
-    if ((productType === 'basic' || productType === 'full') && sub.plan !== 'free') {
-      return NextResponse.json(
-        { error: 'You already have a plan. Use top-ups to get more attempts.' },
-        { status: 400 }
-      );
-    }
-
-    // followup_unlock: account-wide bundle, Basic plan only, one-time purchase.
-    // Full plan already includes followups, and Free plan has no attempts to
-    // use it on.
-    if (productType === 'followup_unlock') {
-      if (sub.plan === 'full') {
-        return NextResponse.json(
-          { error: 'Your plan already includes followups' },
-          { status: 400 }
-        );
-      }
-      if (sub.plan === 'free') {
-        return NextResponse.json(
-          { error: 'Please purchase a plan first' },
-          { status: 400 }
-        );
-      }
-      if (sub.followup_bundle_purchased) {
-        return NextResponse.json(
-          { error: 'You have already unlocked all followups' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // topup requires an existing base plan
-    if (productType === 'topup' && sub.plan === 'free') {
-      return NextResponse.json(
-        { error: 'Please purchase a plan first' },
-        { status: 400 }
-      );
-    }
-
-    // Basic-plan customers buy the followup bundle before top-ups. The bundle
-    // is what unlocks the followup half of every attempt, so selling extra
-    // attempts first would sell them something they can only half-use. The UI
-    // says the same thing; this is the server-side half of that rule.
-    if (
-      productType === 'topup' &&
-      sub.plan === 'basic' &&
-      !sub.followup_bundle_purchased &&
-      !sub.bonus_attempt_granted
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Unlock your followups first — that bundle covers the followup questionnaire for every attempt (and adds a bonus attempt). Top-ups become available afterwards.',
-          code: 'FOLLOWUP_BUNDLE_REQUIRED',
-        },
-        { status: 400 }
-      );
+    const denial = checkPurchaseEligibility(productType, sub);
+    if (denial) {
+      const { status, ...body } = denial;
+      return NextResponse.json(body, { status });
     }
 
     // ─── Create Stripe Checkout Session ────────────────────────────────
@@ -150,9 +97,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
+  } catch (err: unknown) {
     Sentry.captureException(err);
-    const message = err?.message || String(err);
+    const message = err instanceof Error ? err.message : String(err);
     console.error('CHECKOUT ERROR:', message);
     const errorMsg = process.env.NODE_ENV === 'development'
       ? message

@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import { getStripe } from '@/lib/stripe';
 import { fulfillCheckoutSession } from '@/lib/fulfillment';
 import type { ProductType } from '@/lib/plans';
+import type Stripe from 'stripe';
 
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
@@ -20,9 +21,10 @@ export async function POST(request: Request) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     Sentry.captureException(err);
-    console.error('WEBHOOK SIGNATURE VERIFICATION FAILED:', err.message);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('WEBHOOK SIGNATURE VERIFICATION FAILED:', message);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -37,12 +39,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const session = event.data.object as any;
+  const session = event.data.object as Stripe.Checkout.Session;
 
   const userId = session.metadata?.userId;
   const productType = session.metadata?.productType as ProductType | undefined;
-  const sessionId = session.id as string;
-  const paymentIntentId = session.payment_intent as string | undefined;
+  const sessionId = session.id;
+  // payment_intent is either the id or the expanded object, depending on how
+  // the session was created; normalise it the same way the verify route does.
+  const paymentIntentId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id;
 
   if (!userId || !productType) {
     Sentry.captureMessage(`Webhook missing metadata: session ${sessionId}`, 'error');
@@ -77,7 +84,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     Sentry.captureException(err);
     console.error('WEBHOOK PROCESSING ERROR:', err);
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
