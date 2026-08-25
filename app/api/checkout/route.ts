@@ -6,7 +6,12 @@ import { requireAuth } from '@/lib/auth';
 import { safeReturnTo } from '@/lib/auth-cookies';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
-import { STRIPE_PRICE_IDS, type ProductType } from '@/lib/plans';
+import {
+  STRIPE_PRICE_IDS,
+  CHECKOUT_BRANDING,
+  CHECKOUT_SUBMIT_MESSAGE,
+  type ProductType,
+} from '@/lib/plans';
 import { checkPurchaseEligibility } from '@/lib/purchase-rules';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
@@ -76,10 +81,29 @@ export async function POST(request: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://careerbridge-way.vercel.app';
     const returnPath = safeReturnTo(parsed.data.returnPath, '/assess');
 
+    // A logo only appears if one is actually reachable — pointing Stripe at a
+    // URL that 404s makes session creation fail, which would take checkout
+    // down entirely. Unset by default; set STRIPE_CHECKOUT_LOGO_URL once a
+    // real logo file is deployed.
+    const logoUrl = process.env.STRIPE_CHECKOUT_LOGO_URL;
+
     const session = await getStripe().checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
+      // payment_method_types is deliberately NOT set. Pinning it to ['card']
+      // hid every local method from customers paying in EUR — iDEAL,
+      // Bancontact, SEPA. Leaving it off lets Stripe offer whatever is
+      // enabled in the Dashboard, matched to the customer's country, and
+      // means changing the mix is a Dashboard toggle rather than a deploy.
       line_items: [{ price: priceId, quantity: 1 }],
+      // Follows the browser's language rather than defaulting to English.
+      locale: 'auto',
+      branding_settings: {
+        ...CHECKOUT_BRANDING,
+        ...(logoUrl ? { logo: { type: 'url' as const, url: logoUrl } } : {}),
+      },
+      custom_text: {
+        submit: { message: CHECKOUT_SUBMIT_MESSAGE[productType] },
+      },
       // Metadata is read by the webhook and by /api/checkout/verify — this is
       // how we know what to grant, and where to drop the customer afterwards.
       metadata: {

@@ -31,6 +31,31 @@ export const ATTEMPTS_GRANTED: Record<ProductType, number> = {
                         // each) per purchase
 };
 
+// ─── Stripe Checkout presentation ────────────────────────────────────
+// Shown directly under the Pay button. At that moment the customer is
+// asking exactly one question — "what do I actually get?" — so each
+// product answers it in its own words. Counts are interpolated from
+// ATTEMPTS_GRANTED so the copy can never drift from what is granted.
+export const CHECKOUT_SUBMIT_MESSAGE: Record<ProductType, string> = {
+  basic: `Your ${ATTEMPTS_GRANTED.basic} assessment attempts are added to your account the moment payment completes.`,
+  full: `All ${ATTEMPTS_GRANTED.full} complete attempts — main and followup questionnaire each — are added the moment payment completes.`,
+  followup_unlock:
+    'Unlocks the followup questionnaire for every attempt on your account, and adds a bonus attempt straight away.',
+  topup: `Adds ${ATTEMPTS_GRANTED.topup} complete attempts — main and followup for each — to your existing plan.`,
+};
+
+// Brand colours mirror --btn-primary-bg-start and --card-bg in globals.css.
+// Stripe takes solid colours only, so the indigo end of the site's gradient
+// stands in for it. font_family 'inter' is the closest supported match to
+// the Tailwind default sans stack the rest of the site uses.
+export const CHECKOUT_BRANDING = {
+  display_name: 'CareerBridge Way',
+  button_color: '#4f46e5',
+  background_color: '#ffffff',
+  border_style: 'rounded',
+  font_family: 'inter',
+} as const;
+
 // Which plan a purchase sets the user to (only basic/full change the plan)
 export const PLAN_FOR_PRODUCT: Record<ProductType, 'basic' | 'full' | null> = {
   basic: 'basic',

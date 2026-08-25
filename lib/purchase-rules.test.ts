@@ -107,3 +107,30 @@ describe('denial shape', () => {
     );
   });
 });
+
+describe('checkout copy', () => {
+  it('quotes the same attempt counts the fulfillment actually grants', async () => {
+    const { CHECKOUT_SUBMIT_MESSAGE, ATTEMPTS_GRANTED } = await import('@/lib/plans');
+
+    // If someone changes ATTEMPTS_GRANTED without touching the copy, the
+    // customer is told one number under the Pay button and credited another.
+    expect(CHECKOUT_SUBMIT_MESSAGE.basic).toContain(String(ATTEMPTS_GRANTED.basic));
+    expect(CHECKOUT_SUBMIT_MESSAGE.full).toContain(String(ATTEMPTS_GRANTED.full));
+    expect(CHECKOUT_SUBMIT_MESSAGE.topup).toContain(String(ATTEMPTS_GRANTED.topup));
+  });
+
+  it('gives every product a message inside Stripe’s length limit', async () => {
+    const { CHECKOUT_SUBMIT_MESSAGE } = await import('@/lib/plans');
+    for (const [product, message] of Object.entries(CHECKOUT_SUBMIT_MESSAGE)) {
+      expect(message.length, product).toBeGreaterThan(0);
+      expect(message.length, product).toBeLessThanOrEqual(1200);
+    }
+  });
+
+  it('uses hex colours Stripe will accept', async () => {
+    const { CHECKOUT_BRANDING } = await import('@/lib/plans');
+    expect(CHECKOUT_BRANDING.button_color).toMatch(/^#[0-9a-fA-F]{6}$/);
+    expect(CHECKOUT_BRANDING.background_color).toMatch(/^#[0-9a-fA-F]{6}$/);
+    expect(['pill', 'rectangular', 'rounded']).toContain(CHECKOUT_BRANDING.border_style);
+  });
+});
