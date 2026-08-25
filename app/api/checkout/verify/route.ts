@@ -101,9 +101,9 @@ export async function POST(request: Request) {
         followupBundlePurchased: sub.followup_bundle_purchased,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     Sentry.captureException(err);
-    const message = err?.message || String(err);
+    const message = err instanceof Error ? err.message : String(err);
     console.error('CHECKOUT VERIFY ERROR:', message);
     const errorMsg = process.env.NODE_ENV === 'development' ? message : 'Internal server error';
     return NextResponse.json({ error: errorMsg }, { status: 500 });
