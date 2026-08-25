@@ -86,6 +86,10 @@ export async function POST(request: Request) {
     // down entirely. Unset by default; set STRIPE_CHECKOUT_LOGO_URL once a
     // real logo file is deployed.
     const logoUrl = process.env.STRIPE_CHECKOUT_LOGO_URL;
+    // The icon is the small square mark beside the business name in the
+    // Checkout header; the logo is the wider lockup. Stripe shows one or the
+    // other depending on the "Prefer logo over icon" toggle in the Dashboard.
+    const iconUrl = process.env.STRIPE_CHECKOUT_ICON_URL;
 
     const session = await getStripe().checkout.sessions.create({
       mode: 'payment',
@@ -100,6 +104,7 @@ export async function POST(request: Request) {
       branding_settings: {
         ...CHECKOUT_BRANDING,
         ...(logoUrl ? { logo: { type: 'url' as const, url: logoUrl } } : {}),
+        ...(iconUrl ? { icon: { type: 'url' as const, url: iconUrl } } : {}),
       },
       custom_text: {
         submit: { message: CHECKOUT_SUBMIT_MESSAGE[productType] },
