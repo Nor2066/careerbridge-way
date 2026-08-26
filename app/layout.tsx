@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/AuthContext';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -65,10 +66,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
+      {/* min-h-screen + flex column keeps the footer at the bottom of short
+          pages instead of floating halfway up. */}
+      <body className="flex min-h-screen flex-col">
         <AuthProvider>
           <Navbar />
-          {children}
+          <div className="flex-1">{children}</div>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
