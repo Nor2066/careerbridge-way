@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { AUTH_COOKIE_FLAGS, NO_STORE_HEADERS } from '@/lib/auth-cookies';
+import { isEmailVerified } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,18 @@ export async function GET() {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   const response = NextResponse.json(
-    { user: user ? { id: user.id, email: user.email ?? null } : null },
+    {
+      user: user
+        ? {
+            id: user.id,
+            email: user.email ?? null,
+            // Drives the banner and the paywall messaging. Routes still check
+            // this server-side; sending it here only saves the UI from
+            // discovering it via a 403.
+            emailVerified: isEmailVerified(user),
+          }
+        : null,
+    },
     { headers: NO_STORE_HEADERS }
   );
 

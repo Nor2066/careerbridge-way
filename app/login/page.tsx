@@ -133,6 +133,16 @@ function LoginForm() {
               className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
+            {/* Sits directly under the password field, where someone who has
+                just failed to remember it is already looking. */}
+            <div className="flex justify-end -mt-2">
+              <a
+                href="/forgot-password"
+                className="text-sm text-indigo-400 hover:text-indigo-300"
+              >
+                Forgot your password?
+              </a>
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             {message && <p className="text-green-400 text-sm">{message}</p>}
             <button type="submit" className="btn-primary w-full">

@@ -4,9 +4,26 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import { PASSWORD_HINT, MIN_PASSWORD_LENGTH } from '@/lib/password';
 
-export default function AccountClient({ email }: { email: string }) {
+export default function AccountClient({
+  email,
+  emailVerified,
+}: {
+  email: string;
+  emailVerified: boolean;
+}) {
   const router = useRouter();
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordDone, setPasswordDone] = useState(false);
+
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -17,6 +34,52 @@ export default function AccountClient({ email }: { email: string }) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const emailMatches = typedEmail.trim().toLowerCase() === email.trim().toLowerCase();
+  const passwordsMatch = newPassword === confirmPassword;
+  const passwordLongEnough = newPassword.length >= MIN_PASSWORD_LENGTH;
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangingPassword(true);
+    setPasswordError(null);
+    setPasswordDone(false);
+
+    try {
+      const res = await fetchWithAuth('/api/auth/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setPasswordError(data.error ?? 'We could not change your password. Please try again.');
+        return;
+      }
+
+      setPasswordDone(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch {
+      setPasswordError('Network error. Please check your connection and try again.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    setResendMessage(null);
+    try {
+      const res = await fetchWithAuth('/api/auth/resend-verification', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      setResendMessage(data.message ?? data.error ?? 'Something went wrong. Please try again.');
+    } catch {
+      setResendMessage('Network error. Please check your connection and try again.');
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -83,8 +146,90 @@ export default function AccountClient({ email }: { email: string }) {
           Signed in as <span className="text-gray-200">{email}</span>
         </p>
 
+        {/* ── Confirm email ──────────────────────────────────────────── */}
+        {!emailVerified && (
+          <section className="mt-8 rounded-xl border border-amber-400/30 bg-amber-400/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Confirm your email address</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-300">
+              We sent a link to <span className="text-white">{email}</span> when you signed up.
+              Until you click it you can take the assessment, but you cannot buy anything or
+              generate a report &mdash; we will not charge an address we cannot reach.
+            </p>
+            <button
+              onClick={handleResendVerification}
+              disabled={resending}
+              className="btn-secondary mt-4 text-sm disabled:opacity-50"
+            >
+              {resending ? 'Sending…' : 'Send the link again'}
+            </button>
+            {resendMessage && <p className="mt-3 text-sm text-gray-300">{resendMessage}</p>}
+          </section>
+        )}
+
+        {/* ── Change password ────────────────────────────────────────── */}
+        <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-lg font-semibold text-white">Change your password</h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-400">{PASSWORD_HINT}</p>
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            Changing it signs out anyone else who is logged into your account.
+          </p>
+
+          <form onSubmit={handleChangePassword} className="mt-4 flex flex-col gap-3">
+            <input
+              type="password"
+              autoComplete="current-password"
+              placeholder="Current password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white placeholder:text-gray-600 focus:border-indigo-400/60 focus:outline-none"
+            />
+            <input
+              type="password"
+              autoComplete="new-password"
+              placeholder="New password"
+              required
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white placeholder:text-gray-600 focus:border-indigo-400/60 focus:outline-none"
+            />
+            <input
+              type="password"
+              autoComplete="new-password"
+              placeholder="Type the new password again"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white placeholder:text-gray-600 focus:border-indigo-400/60 focus:outline-none"
+            />
+
+            {confirmPassword.length > 0 && !passwordsMatch && (
+              <p className="text-xs text-red-300">These do not match yet.</p>
+            )}
+            {passwordError && <p className="text-sm text-red-300">{passwordError}</p>}
+            {passwordDone && (
+              <p className="text-sm text-emerald-300">
+                Your password has been updated, and other sessions were signed out.
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={changingPassword || !passwordsMatch || !passwordLongEnough}
+              className="btn-secondary self-start text-sm disabled:opacity-50"
+            >
+              {changingPassword ? 'Saving…' : 'Change password'}
+            </button>
+          </form>
+
+          <p className="mt-4 text-sm text-gray-500">
+            Signed in with Google? You do not have a password here, so there is nothing to
+            change.
+          </p>
+        </section>
+
         {/* ── Export ─────────────────────────────────────────────────── */}
-        <section className="mt-10 rounded-xl border border-white/10 bg-white/5 p-6">
+        <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
           <h2 className="text-lg font-semibold text-white">Download your data</h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-400">
             A JSON file containing your account details, every assessment you have taken,

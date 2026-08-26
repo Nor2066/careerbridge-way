@@ -40,6 +40,10 @@ export default function AuthCallbackPage() {
         const hashParams = new URLSearchParams(hash.substring(1));
         const access_token = hashParams.get('access_token');
         const refresh_token = hashParams.get('refresh_token');
+        // 'recovery' means this link came from "forgot password". It travels
+        // to the server, which turns it into an httpOnly marker; the value
+        // here is only used to decide where to send the browser next.
+        const linkType = hashParams.get('type');
 
         if (!access_token || !refresh_token) {
           failOut('This sign-in link is invalid or has expired. Please try again.');
@@ -53,7 +57,7 @@ export default function AuthCallbackPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ access_token, refresh_token }),
+          body: JSON.stringify({ access_token, refresh_token, type: linkType }),
         });
 
         if (!res.ok) {
@@ -63,7 +67,10 @@ export default function AuthCallbackPage() {
 
         if (cancelled) return;
         await refresh();
-        router.push('/');
+        // Someone arriving from a recovery link is here to choose a new
+        // password, not to browse. Dropping them on the homepage signed in
+        // leaves the thing they came to do undone.
+        router.push(linkType === 'recovery' ? '/reset-password' : '/');
       } catch (err) {
         console.error('Auth callback error:', err);
         failOut('Something went wrong signing you in. Please try again.');

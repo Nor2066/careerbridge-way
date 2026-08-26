@@ -2,8 +2,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
-import { requireAuth } from '@/lib/auth';
-import { unauthorizedResponse } from '@/lib/api-errors';
+import { requireVerifiedAuth } from '@/lib/auth';
+import {
+  isUnauthorized,
+  unauthorizedResponse,
+  isEmailNotVerified,
+  emailNotVerifiedResponse,
+} from '@/lib/api-errors';
 import { safeReturnTo } from '@/lib/auth-cookies';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
@@ -34,9 +39,14 @@ const CheckoutSchema = z.object({
 export async function POST(request: Request) {
   let user;
   try {
-    user = await requireAuth(request);
-  } catch {
-    return unauthorizedResponse();
+    user = await requireVerifiedAuth(request);
+  } catch (err) {
+    // Never take money from an address nobody has proved they can read: the
+    // receipt and every later sign-in link would go nowhere, and the customer's
+    // first move would be a chargeback rather than an email to us.
+    if (isEmailNotVerified(err)) return emailNotVerifiedResponse();
+    if (isUnauthorized(err)) return unauthorizedResponse();
+    throw err;
   }
 
   try {

@@ -3,8 +3,13 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import OpenAI from 'openai';
 import * as Sentry from '@sentry/nextjs';
-import { requireAuth } from '@/lib/auth';
-import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
+import { requireVerifiedAuth } from '@/lib/auth';
+import {
+  isUnauthorized,
+  unauthorizedResponse,
+  isEmailNotVerified,
+  emailNotVerifiedResponse,
+} from '@/lib/api-errors';
 import { getSubscription, canAccessFollowup, finishCurrentAttempt } from '@/lib/subscription';
 import { supabaseServer } from '@/lib/supabase-server';
 import {
@@ -92,7 +97,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = await requireAuth(request);
+    const user = await requireVerifiedAuth(request);
 
     // Keyed by user, not IP: this endpoint costs real money per call, and the
     // user is what the cost attaches to. Keying it by address both punished
@@ -272,6 +277,8 @@ Please write the career roadmap now.
     // An expired session is not a server fault — answer 401 so the client
     // can prompt a sign-in instead of showing an error.
     if (isUnauthorized(err)) return unauthorizedResponse();
+    // Generation costs us money per call; require a real address first.
+    if (isEmailNotVerified(err)) return emailNotVerifiedResponse();
     Sentry.captureException(err);
     console.error('GENERATE FOLLOWUP REPORT ERROR:', err);
     const response: { error: string; stack?: string } = { error: 'Internal server error' };

@@ -14,6 +14,9 @@ export default function robots(): MetadataRoute.Robots {
           '/history',
           '/followup',
           '/account',
+          // Reached only by clicking a one-time link from an email; there is
+          // nothing to index and a crawler landing there is just noise.
+          '/reset-password',
           '/payment/',
           '/api/',
         ],

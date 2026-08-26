@@ -33,3 +33,32 @@ export function unauthorizedResponse() {
     { status: 401 }
   );
 }
+
+/**
+ * The caller is signed in, but has not proved they own the email address.
+ *
+ * Distinct from Unauthorized on purpose: the fix is not "sign in again", it is
+ * "go and click the link we sent you", and the client needs to tell those two
+ * apart to show the right thing.
+ */
+export class EmailNotVerifiedError extends Error {
+  constructor(message = 'Email not verified') {
+    super(message);
+    this.name = 'EmailNotVerifiedError';
+  }
+}
+
+export function isEmailNotVerified(err: unknown): boolean {
+  return err instanceof EmailNotVerifiedError;
+}
+
+export function emailNotVerifiedResponse() {
+  return NextResponse.json(
+    {
+      error:
+        'Please confirm your email address first — we sent you a link when you signed up. You can send a new one from your account page.',
+      code: 'EMAIL_NOT_VERIFIED',
+    },
+    { status: 403 }
+  );
+}

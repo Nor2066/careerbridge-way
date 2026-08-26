@@ -18,6 +18,13 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 export type SessionUser = {
   id: string;
   email: string | null;
+  /**
+   * Whether the address has been confirmed. Optional so an older cached
+   * response, or a deploy where the two halves land a moment apart, is treated
+   * as "unknown" rather than crashing — the UI falls back to not nagging, and
+   * the server still enforces the real rule on every paid route.
+   */
+  emailVerified?: boolean;
 };
 
 type AuthContextType = {
