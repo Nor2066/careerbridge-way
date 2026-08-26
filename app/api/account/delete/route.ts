@@ -91,21 +91,46 @@ export async function POST(request: Request) {
     }
 
     // ── 2. Detach payments, keep the transaction ────────────────────────
-    // If user_id is NOT NULL in your schema this update fails; that is not
-    // fatal on its own, but it does mean step 3 will fail too if the foreign
-    // key restricts deletion. See supabase/audit-queries.sql — the fix is to
-    // make payments.user_id nullable with ON DELETE SET NULL.
+    // The audit found payments.user_id is NOT NULL with ON DELETE CASCADE, so
+    // this update fails and step 3 would then delete the payment rows outright
+    // — destroying sales records UK tax law requires be kept for six years.
+    //
+    // So a failure here is fatal, not a warning. Refusing to finish is the
+    // safe outcome: the customer can be told to contact us, whereas records
+    // deleted to satisfy an erasure request cannot be brought back.
+    //
+    // supabase/security-fixes-part2.sql makes the column nullable with
+    // ON DELETE SET NULL, after which this succeeds and the branch never runs.
     const { error: paymentError } = await supabaseServer
       .from(PAYMENTS_TABLE)
       .update({ user_id: null })
       .eq('user_id', user.id);
 
     if (paymentError) {
-      console.warn(
-        'DELETE ACCOUNT: could not detach payment records —',
-        paymentError.message,
-        '(see supabase/audit-queries.sql for the constraint this needs)'
-      );
+      const { count } = await supabaseServer
+        .from(PAYMENTS_TABLE)
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if ((count ?? 0) > 0) {
+        Sentry.captureException(paymentError);
+        console.error(
+          'DELETE ACCOUNT: refusing to continue — cannot detach',
+          count,
+          'payment record(s), and deleting the user would cascade them away:',
+          paymentError.message
+        );
+        return NextResponse.json(
+          {
+            error:
+              'We could not finish deleting your account because of a problem with your purchase records. Nothing has been lost. Please contact support and we will complete it by hand.',
+          },
+          { status: 500, headers: NO_STORE_HEADERS }
+        );
+      }
+
+      // No payment rows to lose, so the failed update was a no-op anyway.
+      console.warn('DELETE ACCOUNT: payment detach failed but user has no payments —', paymentError.message);
     }
 
     // Audit rows record that something happened, not what was in it.
