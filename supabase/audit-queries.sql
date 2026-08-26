@@ -86,21 +86,35 @@ ORDER BY contype;
 --   SET NULL  — link is dropped, row kept. What payments should be.
 --   NO ACTION / RESTRICT — deletion is blocked. Needs fixing.
 
+-- NOTE: an earlier version of this query used information_schema, which
+-- returned zero rows on Supabase. Those views only show objects the current
+-- role has privileges on, and auth.users is owned by supabase_auth_admin — so
+-- the foreign keys pointing at it were invisible rather than absent. Reading
+-- pg_catalog directly avoids that.
+
 SELECT
-  tc.table_name,
-  kcu.column_name,
-  ccu.table_schema || '.' || ccu.table_name AS references_table,
-  rc.delete_rule
-FROM information_schema.table_constraints tc
-JOIN information_schema.key_column_usage kcu
-  ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage ccu
-  ON ccu.constraint_name = tc.constraint_name
-JOIN information_schema.referential_constraints rc
-  ON rc.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY'
-  AND ccu.table_name = 'users'
-ORDER BY rc.delete_rule, tc.table_name;
+  con.conname                              AS constraint_name,
+  src.relname                              AS table_name,
+  att.attname                              AS column_name,
+  tgt_ns.nspname || '.' || tgt.relname     AS references_table,
+  CASE con.confdeltype
+    WHEN 'a' THEN 'NO ACTION'
+    WHEN 'r' THEN 'RESTRICT'
+    WHEN 'c' THEN 'CASCADE'
+    WHEN 'n' THEN 'SET NULL'
+    WHEN 'd' THEN 'SET DEFAULT'
+  END                                      AS delete_rule,
+  att.attnotnull                           AS column_is_not_null
+FROM pg_constraint con
+JOIN pg_class      src    ON src.oid = con.conrelid
+JOIN pg_class      tgt    ON tgt.oid = con.confrelid
+JOIN pg_namespace  tgt_ns ON tgt_ns.oid = tgt.relnamespace
+JOIN pg_attribute  att    ON att.attrelid = con.conrelid
+                         AND att.attnum = ANY (con.conkey)
+WHERE con.contype = 'f'
+  AND tgt.relname = 'users'
+  AND tgt_ns.nspname = 'auth'
+ORDER BY delete_rule, src.relname;
 
 
 -- ═══════════════════════════════════════════════════════════════════════
