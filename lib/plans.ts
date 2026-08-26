@@ -12,6 +12,11 @@ export const STRIPE_PRICE_IDS: Record<ProductType, string> = {
   topup: process.env.STRIPE_PRICE_TOPUP!,
 };
 
+// FALLBACK ONLY. The amount written to payments.amount_cents comes from the
+// Stripe session's amount_total; these values are used solely when Stripe
+// gives us nothing to record. They are not the source of truth for what a
+// customer is charged — the Price object in the Dashboard is — so a mismatch
+// here does not affect billing, only a fallback record.
 export const PRODUCT_AMOUNTS_CENTS: Record<ProductType, number> = {
   basic: 300,
   full: 450,

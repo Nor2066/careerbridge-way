@@ -82,12 +82,17 @@ beforeEach(() => {
   stub.state.subscription = { ...BASE_SUB };
 });
 
-const fulfill = (productType: Product, sessionId = 'cs_1') =>
+const fulfill = (
+  productType: Product,
+  sessionId = 'cs_1',
+  extra: { amountTotal?: number | null; currency?: string | null } = {}
+) =>
   fulfillCheckoutSession({
     userId: 'user-1',
     productType,
     sessionId,
     paymentIntentId: 'pi_1',
+    ...extra,
   });
 
 describe('idempotency: the double-grant guard', () => {
@@ -122,7 +127,7 @@ describe('idempotency: the double-grant guard', () => {
 });
 
 describe('the payments row', () => {
-  it('records amount, currency and status for each product', async () => {
+  it('falls back to the configured amount when Stripe sends none', async () => {
     for (const p of ['basic', 'full', 'topup', 'followup_unlock'] as const) {
       stub.state.inserts = [];
       stub.state.subscription = { ...BASE_SUB };
@@ -150,6 +155,40 @@ describe('the payments row', () => {
     });
 
     expect(stub.state.inserts[0].row.stripe_payment_intent_id).toBeNull();
+  });
+});
+
+describe('the recorded amount', () => {
+  // The point of the change: Stripe prices are immutable, so replacing one
+  // means pointing STRIPE_PRICE_* at a new object. If the amount were read
+  // from a constant in the code, the payments table would quietly disagree
+  // with what the customer was actually charged until someone redeployed.
+  it('records what Stripe charged, not the configured constant', async () => {
+    await fulfill('topup', 'cs_amt', { amountTotal: 500, currency: 'eur' });
+
+    expect(stub.state.inserts[0].row.amount_cents).toBe(500);
+    expect(PRODUCT_AMOUNTS_CENTS.topup).not.toBe(500); // the constant still says 300
+  });
+
+  it('records the currency Stripe used', async () => {
+    await fulfill('basic', 'cs_cur', { amountTotal: 300, currency: 'usd' });
+    expect(stub.state.inserts[0].row.currency).toBe('usd');
+  });
+
+  it('still fulfils, using the fallback, when amount_total is null', async () => {
+    const outcome = await fulfill('full', 'cs_null', { amountTotal: null });
+
+    expect(outcome).toBe('granted');
+    expect(stub.state.inserts[0].row.amount_cents).toBe(PRODUCT_AMOUNTS_CENTS.full);
+    // a missing amount must never block a paid customer's grant
+    expect(stub.state.updates).toHaveLength(1);
+  });
+
+  it('records a zero amount rather than treating it as missing', async () => {
+    // 0 is falsy; ?? must let it through or a 100%-discounted purchase
+    // would be recorded at full price.
+    await fulfill('topup', 'cs_zero', { amountTotal: 0, currency: 'eur' });
+    expect(stub.state.inserts[0].row.amount_cents).toBe(0);
   });
 });
 

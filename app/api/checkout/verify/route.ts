@@ -87,6 +87,8 @@ export async function POST(request: Request) {
         typeof session.payment_intent === 'string'
           ? session.payment_intent
           : session.payment_intent?.id ?? null,
+      amountTotal: session.amount_total,
+      currency: session.currency,
     });
 
     const sub = await getSubscription(user.id);

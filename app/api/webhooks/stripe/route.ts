@@ -77,6 +77,8 @@ export async function POST(request: Request) {
       productType,
       sessionId,
       paymentIntentId,
+      amountTotal: session.amount_total,
+      currency: session.currency,
     });
 
     if (outcome === 'already_processed') {

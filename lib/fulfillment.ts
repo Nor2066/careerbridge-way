@@ -36,16 +36,35 @@ export async function fulfillCheckoutSession(params: {
   productType: ProductType;
   sessionId: string;
   paymentIntentId?: string | null;
+  // What Stripe actually charged, straight off the session. Recorded verbatim
+  // so the payments table stays truthful when a price is replaced in the
+  // Dashboard — Stripe prices are immutable, so "changing" one really means
+  // pointing STRIPE_PRICE_* at a new object, and the code need not redeploy
+  // for the amount to stay correct.
+  amountTotal?: number | null;
+  currency?: string | null;
 }): Promise<FulfillOutcome> {
   const { userId, productType, sessionId, paymentIntentId } = params;
+
+  // Fall back to the configured amount only when Stripe gave us nothing —
+  // never refuse to fulfil a paid session just because the amount is
+  // missing, but do say so, because it means the record may be wrong.
+  const amountCents = params.amountTotal ?? PRODUCT_AMOUNTS_CENTS[productType];
+  const currency = params.currency ?? 'eur';
+  if (params.amountTotal == null) {
+    console.warn(
+      'FULFILLMENT: session', sessionId, 'had no amount_total — recording the',
+      `configured ${productType} amount (${PRODUCT_AMOUNTS_CENTS[productType]}) instead`
+    );
+  }
 
   const { error: paymentInsertError } = await supabaseAdmin.from('payments').insert({
     user_id: userId,
     stripe_session_id: sessionId,
     stripe_payment_intent_id: paymentIntentId ?? null,
     product_type: productType,
-    amount_cents: PRODUCT_AMOUNTS_CENTS[productType],
-    currency: 'eur',
+    amount_cents: amountCents,
+    currency,
     status: 'completed',
   });
 
