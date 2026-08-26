@@ -4,11 +4,34 @@ import { z } from 'zod';
 import OpenAI from 'openai';
 import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
+import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { getSubscription, canAccessFollowup, finishCurrentAttempt } from '@/lib/subscription';
 import { supabaseServer } from '@/lib/supabase-server';
-import { generateReportLimiter, getIP } from '@/lib/rate-limit';
+import {
+  detectCrisisSignals,
+  buildSupportNotice,
+  CRISIS_PROMPT_ADDENDUM,
+} from '@/lib/crisis';
+import {
+  generateReportLimiter,
+  generateReportIpLimiter,
+  getIP,
+  getUserIdentifier,
+} from '@/lib/rate-limit';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// A hung OpenAI call used to hold the serverless function open for its whole
+// allowance while the customer stared at a spinner. Cap it: 25s per attempt,
+// one retry, so the worst case stays inside the 60s maxDuration below rather
+// than being killed by the platform mid-request.
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 25_000,
+  maxRetries: 1,
+});
+
+// Report generation is a long call by nature; give the platform the real
+// number rather than letting it apply a shorter default.
+export const maxDuration = 60;
 
 const MAX_TEXT = 500;
 
@@ -59,15 +82,29 @@ WHAT YOUR ROADMAP MUST CONTAIN:
 You will now receive structured assessment and follow-up data. Write the career roadmap.`;
 
 export async function POST(request: Request) {
-  // Rate limit by IP first — before any DB calls
+  // Coarse IP gate first — this runs before the session is verified, so it is
+  // what stops an unauthenticated flood from costing us a Supabase round trip
+  // per request. The meaningful limit is the per-user one just below.
   const ip = getIP(request);
-  const { success: rateLimitOk } = await generateReportLimiter.limit(ip);
-  if (!rateLimitOk) {
+  const { success: ipOk } = await generateReportIpLimiter.limit(ip);
+  if (!ipOk) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   try {
     const user = await requireAuth(request);
+
+    // Keyed by user, not IP: this endpoint costs real money per call, and the
+    // user is what the cost attaches to. Keying it by address both punished
+    // everyone sharing a campus NAT and let anyone with a few addresses walk
+    // straight past it.
+    const { success: userOk } = await generateReportLimiter.limit(getUserIdentifier(user.id));
+    if (!userOk) {
+      return NextResponse.json(
+        { error: 'You have generated several reports in a short time. Please wait a few minutes and try again.' },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json();
     const parsed = FollowupReportSchema.safeParse(body);
@@ -125,6 +162,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Screen the raw free text — the followup answers the user just wrote, plus
+    // the open-ended answers from the original assessment. Checked before
+    // sanitize() runs, and never persisted; see lib/crisis.ts.
+    const crisisDetected = detectCrisisSignals([
+      ...Object.values(followupAnswers).flatMap((qa) => Object.values(qa)),
+      mainAnswers.dreamJob,
+      mainAnswers.topValues,
+      mainAnswers.fulfillingProject,
+      mainAnswers.pastConsiderations,
+    ]);
+
     const clusterSummary = topClusters
       .map((c) => `- ${sanitize(c.cluster)}: ${c.percentage}%`)
       .join('\n');
@@ -166,35 +214,64 @@ ${followupSummary}
 Please write the career roadmap now.
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1200,
-    });
+    // The followup unlock has already been spent by canAccessFollowup above,
+    // but it wrote a followup_unlocks row for this result — so a retry after a
+    // failure here finds that row and does not charge a second credit. What
+    // this wrapper adds is an honest message instead of a bare 500, and it
+    // leaves current_attempt_status alone so the customer can simply try again.
+    let report: string;
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: crisisDetected ? SYSTEM_PROMPT + CRISIS_PROMPT_ADDENDUM : SYSTEM_PROMPT,
+          },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 1200,
+      });
 
-    const report = completion.choices[0]?.message?.content || 'Unable to generate report.';
+      report = completion.choices[0]?.message?.content?.trim() || '';
+      if (!report) throw new Error('OpenAI returned an empty roadmap');
 
-    const { error: dbError } = await supabaseServer.from('ai_followup_reports').insert({
-      user_id: user.id,
-      assessment_id: assessmentId,
-      report,
-      top_clusters: topClusters,
-      followup_answers: followupAnswers,
-    });
+      const { error: dbError } = await supabaseServer.from('ai_followup_reports').insert({
+        user_id: user.id,
+        assessment_id: assessmentId,
+        report,
+        top_clusters: topClusters,
+        followup_answers: followupAnswers,
+      });
 
-    if (dbError) throw dbError;
+      if (dbError) throw dbError;
+    } catch (generationError) {
+      Sentry.captureException(generationError);
+      console.error('GENERATE FOLLOWUP REPORT: generation failed:', generationError);
+      return NextResponse.json(
+        {
+          error:
+            'We could not generate your roadmap just now. Your unlock is still valid — please try again in a moment.',
+          code: 'GENERATION_FAILED',
+        },
+        { status: 503 }
+      );
+    }
 
     // ─── This attempt is now fully complete ────────────────────────────
     // Reset current_attempt_status to 'none' so the user is free to start
     // a new assessment (consuming another attempt, if they have one).
     await finishCurrentAttempt(user.id);
 
-    return NextResponse.json({ report });
+    return NextResponse.json({
+      report,
+      ...(crisisDetected ? { support: buildSupportNotice() } : {}),
+    });
   } catch (err: any) {
+    // An expired session is not a server fault — answer 401 so the client
+    // can prompt a sign-in instead of showing an error.
+    if (isUnauthorized(err)) return unauthorizedResponse();
     Sentry.captureException(err);
     console.error('GENERATE FOLLOWUP REPORT ERROR:', err);
     const response: { error: string; stack?: string } = { error: 'Internal server error' };

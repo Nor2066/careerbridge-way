@@ -10,6 +10,7 @@
 //     assessmentId — the client never needs to store or resend them
 
 import { useState, useEffect } from 'react';
+import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useRouter } from 'next/navigation';
 
 const clusterQuestions: Record<string, string[]> = {
@@ -201,6 +202,8 @@ export default function FollowUpClient() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [followupReport, setFollowupReport] = useState('');
+  // See lib/crisis.ts — in memory only, never stored.
+  const [support, setSupport] = useState<SupportNoticeData | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
@@ -409,6 +412,7 @@ export default function FollowUpClient() {
       const data = await res.json();
       if (res.ok) {
         setFollowupReport(data.report);
+        setSupport(data.support ?? null);
         setReportGenerated(true);
         sessionStorage.removeItem('topClusters');
         sessionStorage.removeItem('lastAssessmentId');
@@ -531,12 +535,15 @@ export default function FollowUpClient() {
                 )}
               </div>
             ) : (
-              <div className="mt-4 p-4 bg-white/20 rounded-lg">
-                <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
-                <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
-                <button onClick={() => router.push('/history')} className="btn-primary mt-4">
-                  Go to History
-                </button>
+              <div className="mt-4">
+                {support && <SupportNotice data={support} />}
+                <div className="p-4 bg-white/20 rounded-lg">
+                  <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
+                  <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
+                  <button onClick={() => router.push('/history')} className="btn-primary mt-4">
+                    Go to History
+                  </button>
+                </div>
               </div>
             )}
           </div>

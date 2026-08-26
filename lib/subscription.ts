@@ -147,19 +147,67 @@ export async function markAssessmentInProgress(userId: string, resultId: string)
 }
 
 // ─── Consume an attempt + transition to awaiting_followup_decision ───────
+//
+// Written as a compare-and-swap rather than a plain update. The old version
+// read the row, subtracted one in JavaScript, and wrote the result back — so
+// two requests that read the same row (two tabs, or a retry racing the
+// original) both computed the same "one fewer" and the second silently undid
+// the first. Gating the update on the values we read makes the database the
+// arbiter: exactly one writer matches, and the loser is told it lost.
+//
+// Returns false when someone else got there first. Callers should treat that
+// as "this attempt is already being generated", not as an error.
 export async function consumeAttemptAndAwaitFollowup(
+  userId: string,
+  sub: SubscriptionRow
+): Promise<boolean> {
+  const { data, error } = await supabaseServer
+    .from('subscriptions')
+    .update({
+      main_attempts_remaining: Math.max(0, sub.main_attempts_remaining - 1),
+      current_attempt_status: 'awaiting_followup_decision',
+    })
+    .eq('user_id', userId)
+    // The guard: every field we based the new value on must still hold.
+    .eq('current_attempt_status', 'in_progress')
+    .eq('main_attempts_remaining', sub.main_attempts_remaining)
+    .select('user_id');
+
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+// ─── Give a consumed attempt back ────────────────────────────────────────
+//
+// Report generation consumes the attempt before calling OpenAI, deliberately:
+// the alternative is generating first and risking two concurrent requests each
+// producing a paid report. But that ordering means an OpenAI timeout or outage
+// left the customer with one fewer attempt and nothing to show for it — the
+// single most refund-worthy failure this product has.
+//
+// So the consume is now a reservation, and this puts it back if generation
+// never happened. Guarded the same way: only reverses the exact transition we
+// made, so it can't hand out a free attempt if the state has moved on.
+export async function restoreConsumedAttempt(
   userId: string,
   sub: SubscriptionRow
 ): Promise<void> {
   const { error } = await supabaseServer
     .from('subscriptions')
     .update({
-      main_attempts_remaining: Math.max(0, sub.main_attempts_remaining - 1),
-      current_attempt_status: 'awaiting_followup_decision',
+      main_attempts_remaining: sub.main_attempts_remaining,
+      current_attempt_status: 'in_progress',
     })
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('current_attempt_status', 'awaiting_followup_decision')
+    .eq('main_attempts_remaining', Math.max(0, sub.main_attempts_remaining - 1))
+    .eq('current_attempt_result_id', sub.current_attempt_result_id ?? '');
 
-  if (error) throw error;
+  // A failed restore must not mask the original error the caller is handling —
+  // log it and let the caller report the real failure.
+  if (error) {
+    console.error('RESTORE ATTEMPT FAILED for', userId, error.message);
+  }
 }
 
 // ─── Reset to 'none' once the user moves on ─────────────────────────────
