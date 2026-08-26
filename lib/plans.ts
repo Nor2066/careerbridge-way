@@ -61,6 +61,22 @@ export const CHECKOUT_BRANDING = {
   font_family: 'inter',
 } as const;
 
+/**
+ * The consumer-rights sentence that has to be seen BEFORE payment.
+ *
+ * Under the Consumer Contracts Regulations 2013 a UK buyer has 14 days to
+ * change their mind — except for digital content they agreed to receive
+ * immediately, having been told they lose that right by doing so. The refund
+ * policy leans on this, and it only holds if the customer was actually shown
+ * it at the point of payment rather than only on a policy page they never
+ * opened.
+ *
+ * Kept short on purpose. A paragraph of legalese under a Pay button is read by
+ * nobody, which defeats the point of showing it.
+ */
+export const IMMEDIATE_DELIVERY_NOTICE =
+  'Your purchase is available straight away, so your 14-day right to cancel ends once you generate a report with it. Anything you have not used stays refundable for 14 days.';
+
 // Which plan a purchase sets the user to (only basic/full change the plan)
 export const PLAN_FOR_PRODUCT: Record<ProductType, 'basic' | 'full' | null> = {
   basic: 'basic',

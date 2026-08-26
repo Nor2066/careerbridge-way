@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
+import { unauthorizedResponse } from '@/lib/api-errors';
 import { safeReturnTo } from '@/lib/auth-cookies';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
@@ -10,6 +11,7 @@ import {
   STRIPE_PRICE_IDS,
   CHECKOUT_BRANDING,
   CHECKOUT_SUBMIT_MESSAGE,
+  IMMEDIATE_DELIVERY_NOTICE,
   type ProductType,
 } from '@/lib/plans';
 import { checkPurchaseEligibility } from '@/lib/purchase-rules';
@@ -34,9 +36,7 @@ export async function POST(request: Request) {
   try {
     user = await requireAuth(request);
   } catch {
-    // Distinct from a 500 — the client turns this into "your session expired,
-    // please sign in again" rather than a scary "Internal server error".
-    return NextResponse.json({ error: 'Your session has expired. Please sign in again.', code: 'UNAUTHENTICATED' }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   try {
@@ -107,8 +107,21 @@ export async function POST(request: Request) {
         ...(iconUrl ? { icon: { type: 'url' as const, url: iconUrl } } : {}),
       },
       custom_text: {
-        submit: { message: CHECKOUT_SUBMIT_MESSAGE[productType] },
+        // Two things the customer needs at the moment they decide: what they
+        // get, and the fact that receiving it immediately ends their 14-day
+        // cancellation right. See IMMEDIATE_DELIVERY_NOTICE in lib/plans.ts.
+        submit: {
+          message: `${CHECKOUT_SUBMIT_MESSAGE[productType]} ${IMMEDIATE_DELIVERY_NOTICE}`,
+        },
       },
+      // A tickbox tying the purchase to the published terms. Behind an env
+      // flag because Stripe rejects session creation if consent is required
+      // and no terms-of-service URL is set in the Dashboard — switching this
+      // on before that is configured would take checkout down entirely.
+      // Set the URL under Settings → Checkout, then STRIPE_REQUIRE_TOS=true.
+      ...(process.env.STRIPE_REQUIRE_TOS === 'true'
+        ? { consent_collection: { terms_of_service: 'required' as const } }
+        : {}),
       // Metadata is read by the webhook and by /api/checkout/verify — this is
       // how we know what to grant, and where to drop the customer afterwards.
       metadata: {
