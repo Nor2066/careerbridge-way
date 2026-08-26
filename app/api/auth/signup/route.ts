@@ -10,6 +10,7 @@ import { z } from 'zod';
 import {
   createBufferedServerClient,
   applyCookies,
+  isSameOrigin,
   siteOrigin,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
@@ -25,6 +26,16 @@ const SignUpSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Account creation triggers a confirmation email to an address the caller
+  // chooses, so it gets the same cross-site guard as the other routes that
+  // send mail or write a session.
+  if (!isSameOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Bad request' },
+      { status: 403, headers: NO_STORE_HEADERS }
+    );
+  }
+
   const ip = getIP(request);
   const { success } = await authLimiter.limit(`signup_${ip}`);
   if (!success) {

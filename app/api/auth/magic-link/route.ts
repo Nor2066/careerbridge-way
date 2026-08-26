@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
+import { isSameOrigin, siteOrigin, NO_STORE_HEADERS } from '@/lib/auth-cookies';
 import { authLimiter, getIP } from '@/lib/rate-limit';
 
 const MagicLinkSchema = z.object({
@@ -20,6 +21,17 @@ function getAnonClient() {
 }
 
 export async function POST(request: Request) {
+  // This route makes us send email to an address the caller chooses, which is
+  // exactly the shape of endpoint worth abusing from someone else's page.
+  // SameSite=Lax already blocks a cross-site POST from carrying our cookies,
+  // but this one needs no cookie to do its damage — so check the origin.
+  if (!isSameOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Bad request' },
+      { status: 403, headers: NO_STORE_HEADERS }
+    );
+  }
+
   // IP-based limit — user is not authenticated yet
   const ip = getIP(request);
   const { success } = await authLimiter.limit(`magic_${ip}`);
@@ -42,7 +54,11 @@ export async function POST(request: Request) {
     const { error } = await getAnonClient().auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_URL}/auth/callback`,
+        // siteOrigin() rather than the raw env var: every other auth route
+        // uses it, it falls back to the request origin so local development
+        // works without NEXT_PUBLIC_URL set, and an unset var here used to
+        // produce a link to "undefined/auth/callback".
+        emailRedirectTo: `${siteOrigin(request)}/auth/callback`,
       },
     });
 

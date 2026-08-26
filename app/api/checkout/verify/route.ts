@@ -17,6 +17,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
+import { unauthorizedResponse } from '@/lib/api-errors';
 import { safeReturnTo } from '@/lib/auth-cookies';
 import { getStripe } from '@/lib/stripe';
 import { fulfillCheckoutSession } from '@/lib/fulfillment';
@@ -33,10 +34,7 @@ export async function POST(request: Request) {
   try {
     user = await requireAuth(request);
   } catch {
-    return NextResponse.json(
-      { error: 'Your session has expired. Please sign in again.', code: 'UNAUTHENTICATED' },
-      { status: 401 }
-    );
+    return unauthorizedResponse();
   }
 
   try {

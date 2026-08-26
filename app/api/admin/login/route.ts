@@ -3,7 +3,12 @@ import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { createBufferedServerClient, applyCookies, NO_STORE_HEADERS } from '@/lib/auth-cookies';
+import {
+  createBufferedServerClient,
+  applyCookies,
+  isSameOrigin,
+  NO_STORE_HEADERS,
+} from '@/lib/auth-cookies';
 import { getUserRole, isAdmin } from '@/lib/roles';
 import { adminLoginLimiter, getIP } from '@/lib/rate-limit';
 
@@ -15,6 +20,17 @@ const LoginSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Login CSRF: without this, a hostile page can POST the attacker's own
+  // credentials here and silently sign the visitor into the attacker's
+  // account, where their activity is then visible to whoever owns it.
+  // /api/auth/set-session already guards the same way.
+  if (!isSameOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Bad request' },
+      { status: 403, headers: NO_STORE_HEADERS }
+    );
+  }
+
   // IP-based limit for login — must happen before any auth attempt
   const ip = getIP(request);
   const { success } = await adminLoginLimiter.limit(ip);

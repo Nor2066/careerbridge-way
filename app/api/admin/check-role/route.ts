@@ -2,6 +2,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
+import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { getUserRole, isAdmin, isSuperAdmin } from '@/lib/roles';
 import { adminReadLimiter, getUserIdentifier } from '@/lib/rate-limit';
 
@@ -26,8 +27,13 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
+    // An expired session is not a server fault — answer 401 so the client
+    // can prompt a sign-in instead of showing an error.
+    if (isUnauthorized(err)) return unauthorizedResponse();
     Sentry.captureException(err);
     console.error('CHECK ROLE ERROR:', err);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Reaching here means the role lookup itself failed, not that the caller
+    // was unauthenticated — that case is answered above.
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

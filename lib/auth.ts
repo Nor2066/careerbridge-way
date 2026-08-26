@@ -2,6 +2,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { UnauthorizedError } from '@/lib/api-errors';
 
 // Accepts EITHER a Bearer token from the Authorization header OR the session
 // cookie. The cookie is now the normal path for everything in the browser:
@@ -41,6 +42,8 @@ export async function requireAuth(request?: Request) {
   );
 
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) throw new Error('Unauthorized');
+  // Typed so callers can answer 401 for a missing session and keep 500 for a
+  // genuine fault — see lib/api-errors.ts.
+  if (error || !user) throw new UnauthorizedError();
   return user;
 }
