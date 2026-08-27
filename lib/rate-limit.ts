@@ -6,22 +6,36 @@ import { Redis } from "@upstash/redis";
 const redis = Redis.fromEnv();
 
 // ─── IP extraction ────────────────────────────────────────────────────────────
-// On Vercel, x-forwarded-for can be a comma-separated list: "clientIP, proxy1, proxy2"
-// We always take the LAST entry that Vercel itself appended, not the first
-// (the first can be spoofed by a user adding their own x-forwarded-for header).
+// Every part of x-forwarded-for is caller-supplied until a proxy you trust
+// rewrites it, and which position ends up trustworthy depends on how many
+// hops there are. Picking an index is therefore always a guess.
+//
+// Vercel removes the guesswork: it sets x-vercel-forwarded-for itself and
+// strips any inbound copy, so its value is the real client address and cannot
+// be spoofed. Prefer it, then x-real-ip, and only then fall back to parsing
+// x-forwarded-for — where the FIRST entry is the conventional client position.
+//
 // Falls back to a fixed string so unauthenticated limiters still work locally.
+const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+const IPV6 = /^[a-fA-F0-9:]+$/;
+
+function looksLikeIP(value: string): boolean {
+  return IPV4.test(value) || IPV6.test(value);
+}
+
 export function getIP(request: Request): string {
+  const trusted =
+    request.headers.get("x-vercel-forwarded-for") ?? request.headers.get("x-real-ip");
+  if (trusted) {
+    const ip = trusted.split(",")[0].trim();
+    if (looksLikeIP(ip)) return ip;
+  }
+
   const forwarded = request.headers.get("x-forwarded-for");
   if (!forwarded) return "127.0.0.1";
 
-  const ips = forwarded.split(",").map((ip) => ip.trim());
-  // Use the last IP — this is what Vercel's edge appended and can't be spoofed
-  const ip = ips[ips.length - 1];
-
-  // Basic sanity check — must look like an IP address
-  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
-  const ipv6 = /^[a-fA-F0-9:]+$/;
-  if (ipv4.test(ip) || ipv6.test(ip)) return ip;
+  const ip = forwarded.split(",")[0].trim();
+  if (looksLikeIP(ip)) return ip;
 
   return "unknown";
 }
@@ -47,13 +61,30 @@ export const assessLimiter = new Ratelimit({
   prefix: "rl:assess",
 });
 
-// AI report generation — expensive OpenAI calls, strict limit per user
-// 3 reports per 10 minutes prevents abuse and cost overruns
+// AI report generation — expensive OpenAI calls, strict limit per user.
+//
+// This one has to be keyed by USER, not IP. Keying it by IP had two failure
+// modes at once: a whole university or office behind one NAT address shares a
+// single allowance, so one student generating three reports locks out
+// everyone else on campus — and an attacker with a pool of addresses simply
+// walks around it. The user id is the thing that actually maps to the cost.
 export const generateReportLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(3, "10 m"),
   analytics: true,
   prefix: "rl:gen_report",
+});
+
+// Coarse IP gate in front of the per-user limit above. It runs before the
+// session is verified, so it is the only thing standing between an
+// unauthenticated flood and a Supabase round trip per request. Set generously
+// enough that shared campus addresses are unaffected — the strict, meaningful
+// limit is the per-user one.
+export const generateReportIpLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, "10 m"),
+  analytics: true,
+  prefix: "rl:gen_report_ip",
 });
 
 // Saving assessment results — per user, moderate limit

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
@@ -229,6 +230,10 @@ export default function Home() {
   const [submittedAnswers, setSubmittedAnswers] = useState<any>(null);
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
   const [aiReport, setAiReport] = useState('');
+  // Set only when the report response carries a support notice. Held in
+  // memory and never persisted, so it is gone on reload — deliberate;
+  // see lib/crisis.ts on why none of this is stored.
+  const [support, setSupport] = useState<SupportNoticeData | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
 
@@ -652,6 +657,7 @@ export default function Home() {
       const data = await res.json();
       if (res.ok) {
         setAiReport(data.report);
+        setSupport(data.support ?? null);
         setReportGenerated(true);
 
         // ── ISSUE #4 FIX ──────────────────────────────────────────────
@@ -1123,6 +1129,8 @@ export default function Home() {
               ))}
             </ul>
           </div>
+
+          {support && <SupportNotice data={support} />}
 
           <div className="glass-card mb-8">
             <h3 className="text-xl font-bold text-white mb-3">Your Personalized Career Report</h3>

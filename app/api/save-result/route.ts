@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
+import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { supabaseServer } from '@/lib/supabase-server';
 import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
 import { getSubscription, canStartAssessment, markAssessmentInProgress } from '@/lib/subscription';
@@ -58,6 +59,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, id: data.id });
   } catch (err: any) {
+    // An expired session is not a server fault — answer 401 so the client
+    // can prompt a sign-in instead of showing an error.
+    if (isUnauthorized(err)) return unauthorizedResponse();
     Sentry.captureException(err);
     console.error('SAVE RESULT ERROR:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

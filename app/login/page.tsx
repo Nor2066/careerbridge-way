@@ -133,6 +133,26 @@ function LoginForm() {
               className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
+            {/* Sits directly under the password field, where someone who has
+                just failed to remember it is already looking. */}
+            <div className="flex flex-wrap justify-between gap-2 -mt-2">
+              {/* Sign-in says "invalid email or password" for every failure,
+                  including an unconfirmed address, so that it cannot be used
+                  to test which emails are registered. This is the door out for
+                  the person whose confirmation email never arrived. */}
+              <a
+                href="/resend-confirmation"
+                className="text-sm text-gray-400 hover:text-gray-200"
+              >
+                Never got your confirmation email?
+              </a>
+              <a
+                href="/forgot-password"
+                className="text-sm text-indigo-400 hover:text-indigo-300"
+              >
+                Forgot your password?
+              </a>
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             {message && <p className="text-green-400 text-sm">{message}</p>}
             <button type="submit" className="btn-primary w-full">

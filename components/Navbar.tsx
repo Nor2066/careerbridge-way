@@ -41,7 +41,15 @@ export default function Navbar() {
               <Link href="/history" className="text-gray-300 hover:text-white transition text-sm font-medium">
                 History
               </Link>
-              <span className="text-sm text-gray-400">{user.email}</span>
+              {/* The email doubles as the link to account settings — that is
+                  where people look for it, and it saves a nav slot. */}
+              <Link
+                href="/account"
+                className="text-sm text-gray-400 hover:text-white transition"
+                title="Account settings"
+              >
+                {user.email}
+              </Link>
               <button onClick={() => signOut()} className="btn-secondary text-sm">
                 Logout
               </button>

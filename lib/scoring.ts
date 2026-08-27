@@ -191,7 +191,7 @@ export interface UserAnswers {
 
 // ---------- Scoring function (unchanged logic, now includes new clusters) ----------
 export function calculateScores(answers: UserAnswers) {
-  let scores = initScores();
+  const scores = initScores();
 
   // Subjects
   for (const s of answers.subjects) {
@@ -252,7 +252,7 @@ export function calculateScores(answers: UserAnswers) {
     percentages[c] = (scores[c] / MAX_SCORES[c]) * 100;
   }
 
-  let sorted = Object.entries(percentages)
+  const sorted = Object.entries(percentages)
     .sort((a, b) => b[1] - a[1])
     .map(([c, p]) => ({ cluster: c as Cluster, percentage: Math.round(p * 10) / 10 }));
 

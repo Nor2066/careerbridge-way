@@ -10,21 +10,35 @@ import { z } from 'zod';
 import {
   createBufferedServerClient,
   applyCookies,
+  isSameOrigin,
   siteOrigin,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
 import { authLimiter, getIP } from '@/lib/rate-limit';
+import { assessPassword, MAX_PASSWORD_LENGTH } from '@/lib/password';
 
 export const dynamic = 'force-dynamic';
 
 const SignUpSchema = z.object({
   email: z.string().email().max(320),
-  // Supabase's own default minimum is 6; enforce it here too so the user gets
-  // a clear message instead of a raw provider error.
-  password: z.string().min(8, 'Password must be at least 8 characters').max(256),
+  // Length and content rules live in lib/password.ts, checked below by
+  // assessPassword — including the breached-password lookup, which needs a
+  // network call and so cannot live in a Zod schema. Here we only bound the
+  // input so an enormous body never reaches the hashing step.
+  password: z.string().min(1).max(MAX_PASSWORD_LENGTH),
 });
 
 export async function POST(request: Request) {
+  // Account creation triggers a confirmation email to an address the caller
+  // chooses, so it gets the same cross-site guard as the other routes that
+  // send mail or write a session.
+  if (!isSameOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Bad request' },
+      { status: 403, headers: NO_STORE_HEADERS }
+    );
+  }
+
   const ip = getIP(request);
   const { success } = await authLimiter.limit(`signup_${ip}`);
   if (!success) {
@@ -39,6 +53,16 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Invalid email or password';
       return NextResponse.json({ error: message }, { status: 400, headers: NO_STORE_HEADERS });
+    }
+
+    // Checked before Supabase is called: no point creating an account and
+    // then telling someone the password is unacceptable.
+    const verdict = await assessPassword(parsed.data.password, parsed.data.email);
+    if (!verdict.ok) {
+      return NextResponse.json(
+        { error: verdict.reason },
+        { status: 400, headers: NO_STORE_HEADERS }
+      );
     }
 
     const cookieStore = await cookies();

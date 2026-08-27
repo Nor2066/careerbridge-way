@@ -13,8 +13,10 @@ import {
   createBufferedServerClient,
   applyCookies,
   isSameOrigin,
+  AUTH_COOKIE_FLAGS,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
+import { RECOVERY_COOKIE, RECOVERY_COOKIE_MAX_AGE } from '@/lib/recovery-cookie';
 import { authLimiter, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +26,10 @@ const SetSessionSchema = z.object({
   // arbitrary payloads into a Set-Cookie header.
   access_token: z.string().min(10).max(4096),
   refresh_token: z.string().min(10).max(4096),
+  // Supabase puts the link's purpose in the fragment alongside the tokens.
+  // 'recovery' is what lets the next step accept a new password without the
+  // old one — see lib/recovery-cookie.ts.
+  type: z.string().max(32).optional(),
 });
 
 export async function POST(request: Request) {
@@ -59,7 +65,9 @@ export async function POST(request: Request) {
 
     // setSession verifies the access token with Supabase before storing it,
     // so a made-up token is rejected here rather than becoming a cookie.
-    const { data, error } = await supabase.auth.setSession(parsed.data);
+    const { access_token, refresh_token, type } = parsed.data;
+
+    const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
 
     if (error || !data.session || !data.user) {
       console.error('set-session rejected:', error?.message ?? 'no session returned');
@@ -74,6 +82,17 @@ export async function POST(request: Request) {
       { headers: NO_STORE_HEADERS }
     );
     applyCookies(response, pending);
+
+    // Mark this as a recovery session so /api/auth/update-password will accept
+    // a new password without the old one. Written here rather than trusted
+    // from the client: httpOnly, so no script can mint one.
+    if (type === 'recovery') {
+      response.cookies.set(RECOVERY_COOKIE, '1', {
+        ...AUTH_COOKIE_FLAGS,
+        maxAge: RECOVERY_COOKIE_MAX_AGE,
+      });
+    }
+
     return response;
   } catch (err) {
     Sentry.captureException(err);

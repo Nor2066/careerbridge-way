@@ -6,18 +6,29 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-test-key';
 
 /**
- * Records every write and replays canned responses. Covers exactly the two
- * call chains fulfillment.ts uses:
- *   from(t).insert(row)                    -> { error }
- *   from(t).select().eq().single()         -> { data, error }
- *   from(t).update(patch).eq()             -> { error }   (awaited directly)
+ * Records every write and replays canned responses. Covers exactly the call
+ * chains fulfillment.ts uses:
+ *   from(t).insert(row)                        -> { error }
+ *   from(t).select().eq().single()             -> { data, error }
+ *   from(t).update(patch).eq()...select()      -> { data, error }
+ *
+ * The update chain is a compare-and-swap: it carries one .eq per guarded
+ * column (or .is for a NULL one) and ends in .select(), whose row count says
+ * whether this writer won. `updateMatches` drives that — shift a `false` onto
+ * it to simulate losing a race and force the retry path.
  */
 function makeSupabaseStub() {
   const state = {
     inserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
-    updates: [] as Array<{ table: string; patch: Record<string, unknown> }>,
+    updates: [] as Array<{
+      table: string;
+      patch: Record<string, unknown>;
+      guards: Array<[string, unknown]>;
+    }>,
     insertError: null as { code?: string; message?: string } | null,
     updateError: null as { code?: string; message?: string } | null,
+    // One entry consumed per update; `false` means zero rows matched.
+    updateMatches: [] as boolean[],
     subscription: null as Record<string, unknown> | null,
     subscriptionError: null as { message?: string } | null,
   };
@@ -43,9 +54,31 @@ function makeSupabaseStub() {
           };
         },
         update(patch: Record<string, unknown>) {
-          state.updates.push({ table, patch });
-          // Awaited directly, so eq() must resolve to { error }.
-          return { eq: () => Promise.resolve({ error: state.updateError }) };
+          const record = { table, patch, guards: [] as Array<[string, unknown]> };
+          state.updates.push(record);
+
+          const chain = {
+            eq(column: string, value: unknown) {
+              // user_id is the row selector, not a concurrency guard.
+              if (column !== 'user_id') record.guards.push([column, value]);
+              return chain;
+            },
+            is(column: string, value: unknown) {
+              record.guards.push([column, value]);
+              return chain;
+            },
+            select() {
+              const matched = state.updateMatches.length
+                ? state.updateMatches.shift()
+                : true;
+              return Promise.resolve({
+                data: matched ? [{ user_id: 'user-1' }] : [],
+                error: state.updateError,
+              });
+            },
+          };
+
+          return chain;
         },
       };
     },
@@ -78,6 +111,7 @@ beforeEach(() => {
   stub.state.updates = [];
   stub.state.insertError = null;
   stub.state.updateError = null;
+  stub.state.updateMatches = [];
   stub.state.subscriptionError = null;
   stub.state.subscription = { ...BASE_SUB };
 });
@@ -264,6 +298,43 @@ describe('granting the followup bundle', () => {
     await fulfill('followup_unlock');
 
     expect(stub.state.updates[0].patch).toEqual({ followup_bundle_purchased: true });
+  });
+});
+
+// Two payments settling at the same moment used to be a silent loss: both
+// webhooks read the same balance, both wrote the same total, and the customer
+// was credited once for two purchases. The write is now pinned to the values
+// it was derived from, so the loser is told it lost and tries again.
+describe('concurrent grants', () => {
+  it('pins every derived counter to the value it was read from', async () => {
+    stub.state.subscription = { ...BASE_SUB, plan: 'full', main_attempts_remaining: 4, topup_followup_credits: 2 };
+
+    await fulfill('topup');
+
+    expect(stub.state.updates[0].guards).toEqual(
+      expect.arrayContaining([
+        ['main_attempts_remaining', 4],
+        ['topup_followup_credits', 2],
+      ])
+    );
+  });
+
+  it('re-reads and retries when another writer got there first', async () => {
+    stub.state.subscription = { ...BASE_SUB, main_attempts_remaining: 0 };
+    // First write matches nothing; the row is re-read and the second wins.
+    stub.state.updateMatches = [false, true];
+
+    const outcome = await fulfill('basic');
+
+    expect(outcome).toBe('granted');
+    expect(stub.state.updates).toHaveLength(2);
+  });
+
+  it('throws rather than dropping a paid grant it can never apply', async () => {
+    stub.state.subscription = { ...BASE_SUB };
+    stub.state.updateMatches = [false, false, false, false, false];
+
+    await expect(fulfill('full')).rejects.toThrow(/Could not apply full grant/);
   });
 });
 

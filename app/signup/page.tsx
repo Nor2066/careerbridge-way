@@ -11,6 +11,12 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Set once the account exists but the address is unconfirmed. Keeps the
+  // person on this page instead of bouncing them to a sign-in they cannot
+  // complete yet.
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendNote, setResendNote] = useState('');
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
 
@@ -21,8 +27,10 @@ export default function SignupPage() {
     try {
       const { needsConfirmation } = await signUp(email, password);
       if (needsConfirmation) {
-        setMessage('Check your email for confirmation!');
-        setTimeout(() => router.push('/login'), 3000);
+        // Deliberately no redirect to /login. Supabase refuses to sign in an
+        // unconfirmed user, so sending them there would strand them on a form
+        // that cannot work, with no way to ask for the email again.
+        setAwaitingConfirmation(true);
       } else {
         // Email confirmation is off — Supabase signed them straight in.
         router.push('/');
@@ -30,6 +38,25 @@ export default function SignupPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setResendNote('');
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setResendNote(data.message ?? data.error ?? 'Something went wrong. Please try again.');
+    } catch {
+      setResendNote('Network error. Please check your connection and try again.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -51,6 +78,43 @@ export default function SignupPage() {
          style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
       <div className="absolute inset-0 bg-black/30 z-0" />
       <div className="relative z-10 max-w-md w-full glass-card">
+        {awaitingConfirmation ? (
+          <div className="space-y-4">
+            <h1 className="text-2xl font-bold text-white text-center">Check your email</h1>
+            <p className="text-gray-200 text-sm leading-relaxed">
+              We sent a confirmation link to <span className="text-white">{email}</span>. Click
+              it and you will be signed in. You cannot sign in until you do.
+            </p>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              It can take a minute to arrive, and it often lands in spam. If it never turns up,
+              send it again below.
+            </p>
+
+            <button
+              onClick={handleResend}
+              disabled={resending}
+              className="btn-secondary w-full text-sm disabled:opacity-50"
+            >
+              {resending ? 'Sending…' : 'Send the email again'}
+            </button>
+
+            {resendNote && <p className="text-gray-300 text-sm">{resendNote}</p>}
+
+            <p className="text-gray-400 text-sm text-center">
+              Typed the wrong address?{' '}
+              <button
+                onClick={() => {
+                  setAwaitingConfirmation(false);
+                  setResendNote('');
+                }}
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Start again
+              </button>
+            </p>
+          </div>
+        ) : (
+        <>
         <h1 className="text-2xl font-bold text-white text-center mb-6">Sign Up</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -105,6 +169,8 @@ export default function SignupPage() {
             Login
           </Link>
         </p>
+        </>
+        )}
       </div>
     </div>
   );
