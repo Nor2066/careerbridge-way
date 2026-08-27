@@ -9,6 +9,19 @@ const nextConfig = {
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Tells the browser to refuse plain http for this domain from now on,
+          // which closes the window where a first request over http could be
+          // intercepted before the redirect to https. Two years, subdomains
+          // included.
+          //
+          // Deliberately NOT preloaded: preloading is submitted to a browser
+          // list and is slow and awkward to undo, and it would apply to every
+          // subdomain — including the app.* and mail subdomains the launch plan
+          // adds later. Worth doing once the domain layout has settled.
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains',
+          },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Permissions-Policy',

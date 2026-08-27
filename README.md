@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CareerBridge Way
 
-## Getting Started
+An AI-assisted career assessment for students and graduates. Someone answers a
+46-question assessment, gets a scored breakdown of their strongest career
+clusters, and a written report explaining why they fit them. A paid follow-up
+questionnaire produces a more detailed roadmap.
 
-First, run the development server:
+Next.js 16 (App Router) · Supabase (auth + Postgres) · Stripe · OpenAI ·
+Upstash Redis · Sentry · deployed on Vercel.
+
+---
+
+## Running it locally
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill it in
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.example` lists every variable with a note on what it is for. The app
+starts without the optional ones — email and Stripe branding degrade quietly
+rather than crashing.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build        # production build
+npm run test         # 152 tests
+npx tsc --noEmit     # type check
+npx eslint .         # lint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Things worth knowing before changing anything
 
-To learn more about Next.js, take a look at the following resources:
+These are the decisions that look wrong until you know why. Each one has a
+longer explanation in the file itself.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**The session is httpOnly and OAuth stays on one origin.** Browser JavaScript
+never sees the access token; the client learns who it is from
+`GET /api/auth/me`. Three different places used to write the auth cookies with
+different flags and whichever ran last won, which is what made Google sign-in
+work only on the second attempt. `lib/auth-cookies.ts` is now the single place
+that decides. Do not "simplify" it back.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Everything server-side uses the Supabase service role, which bypasses RLS.**
+So route-level authorisation is the real protection, not the database policies:
+every route takes the user id from the verified session and never from the
+request body. RLS is the second layer beneath that, and the Data API is
+disabled at table level above it. `scripts/rls-proof.mjs` checks all of it.
 
-## Deploy on Vercel
+**Money is idempotent by database constraint.** The Stripe webhook and the
+success page's verify call race each other by design; the UNIQUE constraint on
+`payments.stripe_session_id` decides the winner. Grants are compare-and-swap
+with a retry, because two payments settling at once used to overwrite each
+other and credit the customer once for two purchases.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**A report attempt is a reservation, not a debit.** It is consumed before the
+OpenAI call so two tabs cannot both generate, and handed back if generation
+fails. Losing a paid attempt to a timeout is the most refund-worthy thing this
+product can do.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Pricing and attempt rules live only in `lib/plans.ts`.** The checkout route,
+the webhook and the pricing UI all read from it. Changing what a product grants
+means changing it there and nowhere else.
+
+**The model has guardrails, and they are not decoration.** `lib/crisis.ts`
+screens free-text answers for distress and puts support information above the
+report. `lib/guardrails.ts` adds rules to every prompt that keep
+recommendations lawful and redirect rather than lecture. Both have tests
+pinning the behaviour, including the false positives they must not produce.
+
+---
+
+## Layout
+
+```
+app/
+  api/            route handlers — auth, checkout, reports, account, admin
+  assess/         the main questionnaire
+  followup/       the paid follow-up questionnaire
+  history/        past attempts and reports
+  account/        data export and account deletion
+  privacy|terms|refunds/   legal pages
+lib/
+  auth*.ts        session handling, CSRF, the one-origin rule
+  plans.ts        pricing and what each product grants
+  fulfillment.ts  turning a paid session into account credit
+  scoring.ts      the cluster scoring model
+  followup-questions.ts   the follow-up questionnaire
+  crisis.ts       distress screening and support resources
+  guardrails.ts   lawful-guidance rules for the model
+  kill-switch.ts  the emergency brake
+scripts/
+  rls-proof.mjs      prove row level security actually holds
+  kill-switch.mjs    turn report generation or checkout off and on
+supabase/
+  *.sql           audit queries and the migrations already applied
+```
+
+---
+
+## Operations
+
+**Turn something off in a hurry.** Reads a Redis key, so it takes effect in
+about ten seconds with no deploy:
+
+```bash
+node scripts/kill-switch.mjs status
+node scripts/kill-switch.mjs off reports
+node scripts/kill-switch.mjs on all
+```
+
+**Check the database is still locked down.** Run after any policy change or
+new table:
+
+```bash
+node scripts/rls-proof.mjs
+node scripts/rls-proof.mjs --email you@example.com --password '…'
+```
+
+**See where people give up.** `supabase/analytics-setup.sql` block 2 is the
+funnel; block 3 shows which question number loses people.
+
+---
+
+## Before launch
+
+`lib/legal.ts` still has placeholder company details, and every legal page
+shows a banner saying so until they are filled in. The banner disappears on its
+own. The remaining launch tasks live outside this repo: a domain, Stripe live
+keys, a transactional email provider, and a spend cap on the OpenAI account.

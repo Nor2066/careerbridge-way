@@ -25,6 +25,11 @@ import {
   CRISIS_PROMPT_ADDENDUM,
 } from '@/lib/crisis';
 import {
+  LAWFUL_GUIDANCE_RULES,
+  detectUnlawfulAspiration,
+  UNLAWFUL_PROMPT_ADDENDUM,
+} from '@/lib/guardrails';
+import {
   generateReportLimiter,
   generateReportIpLimiter,
   getIP,
@@ -103,7 +108,7 @@ WHAT YOUR REPORT MUST CONTAIN:
 - An invitation to take the follow-up questionnaire for more personalised advice
 - Do NOT list specific job titles or concrete next steps in this report
 
-You will now receive structured assessment data. Write the career report.`;
+You will now receive structured assessment data. Write the career report.` + LAWFUL_GUIDANCE_RULES;
 
 export async function POST(request: Request) {
   // Coarse IP gate first — this runs before the session is verified, so it is
@@ -209,6 +214,16 @@ export async function POST(request: Request) {
     // Screen the raw answers, before sanitize() strips bracketed text and code
     // fences — those could remove the very phrase we need to see. Nothing about
     // this is persisted; see lib/crisis.ts for why.
+    // Screened on the same raw text as the crisis check. The always-on
+    // rules in LAWFUL_GUIDANCE_RULES are the real defence; this only adds
+    // the redirect instructions when it happens to catch something.
+    const unlawfulDetected = detectUnlawfulAspiration([
+      answers.dreamJob,
+      answers.topValues,
+      answers.fulfillingProject,
+      answers.pastConsiderations,
+    ]);
+
     const crisisDetected = detectCrisisSignals([
       answers.dreamJob,
       answers.topValues,
@@ -257,7 +272,10 @@ Please write the career report now.
         messages: [
           {
             role: 'system',
-            content: crisisDetected ? SYSTEM_PROMPT + CRISIS_PROMPT_ADDENDUM : SYSTEM_PROMPT,
+            content:
+              SYSTEM_PROMPT +
+              (crisisDetected ? CRISIS_PROMPT_ADDENDUM : '') +
+              (unlawfulDetected ? UNLAWFUL_PROMPT_ADDENDUM : ''),
           },
           { role: 'user', content: userPrompt },
         ],

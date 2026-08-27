@@ -21,6 +21,11 @@ import {
   CRISIS_PROMPT_ADDENDUM,
 } from '@/lib/crisis';
 import {
+  LAWFUL_GUIDANCE_RULES,
+  detectUnlawfulAspiration,
+  UNLAWFUL_PROMPT_ADDENDUM,
+} from '@/lib/guardrails';
+import {
   generateReportLimiter,
   generateReportIpLimiter,
   getIP,
@@ -87,7 +92,7 @@ WHAT YOUR ROADMAP MUST CONTAIN:
 - A "Your next 3 months" action plan with 3 bullet points
 - Do NOT repeat basic cluster explanations from a previous report
 
-You will now receive structured assessment and follow-up data. Write the career roadmap.`;
+You will now receive structured assessment and follow-up data. Write the career roadmap.` + LAWFUL_GUIDANCE_RULES;
 
 export async function POST(request: Request) {
   // Coarse IP gate first — this runs before the session is verified, so it is
@@ -182,6 +187,17 @@ export async function POST(request: Request) {
     // Screen the raw free text — the followup answers the user just wrote, plus
     // the open-ended answers from the original assessment. Checked before
     // sanitize() runs, and never persisted; see lib/crisis.ts.
+    // Screened on the same raw text as the crisis check. The always-on
+    // rules in LAWFUL_GUIDANCE_RULES are the real defence; this only adds
+    // the redirect instructions when it happens to catch something.
+    const unlawfulDetected = detectUnlawfulAspiration([
+      ...Object.values(followupAnswers).flatMap((qa) => Object.values(qa)),
+      mainAnswers.dreamJob,
+      mainAnswers.topValues,
+      mainAnswers.fulfillingProject,
+      mainAnswers.pastConsiderations,
+    ]);
+
     const crisisDetected = detectCrisisSignals([
       ...Object.values(followupAnswers).flatMap((qa) => Object.values(qa)),
       mainAnswers.dreamJob,
@@ -243,7 +259,10 @@ Please write the career roadmap now.
         messages: [
           {
             role: 'system',
-            content: crisisDetected ? SYSTEM_PROMPT + CRISIS_PROMPT_ADDENDUM : SYSTEM_PROMPT,
+            content:
+              SYSTEM_PROMPT +
+              (crisisDetected ? CRISIS_PROMPT_ADDENDUM : '') +
+              (unlawfulDetected ? UNLAWFUL_PROMPT_ADDENDUM : ''),
           },
           { role: 'user', content: userPrompt },
         ],
