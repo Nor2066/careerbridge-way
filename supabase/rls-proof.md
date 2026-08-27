@@ -1,108 +1,87 @@
 # Proving RLS actually holds
 
-Query 7 could not be answered from the SQL editor, and this is the reason:
-**the editor connects as the table owner, which bypasses row level security
-entirely.** Every check run there passes whether the policies are right or
-wrong. It is the single most common way people conclude their database is
-locked down when it is not.
+## Just run this
 
-So this has to run as an ordinary signed-in user, through the anon key — the
-same key that ships in the JavaScript of every page you serve.
-
----
-
-## Setup
-
-1. Create **two** accounts through your own signup form. Call them A and B.
-2. Sign in as **A** and take an assessment, so there is a row to try to steal.
-3. Find **B's** user id: Supabase dashboard → Authentication → Users.
-4. Sign in as **A** in the browser, open DevTools → Console, and stay on a page
-   of your own site so the Supabase client is loaded.
-
-If `supabase` is not defined in the console, paste this first — the URL and
-anon key are public by design, so there is no harm in having them there:
-
-```js
-const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-const supabase = createClient('YOUR_SUPABASE_URL', 'YOUR_ANON_KEY');
-// then sign in as A:
-await supabase.auth.signInWithPassword({ email: 'a@example.com', password: '…' });
+```bash
+node scripts/rls-proof.mjs
 ```
 
----
+Reads `.env.local`, connects with the **public anon key** — the one that ships
+in the JavaScript of every page you serve — and reports what it can reach.
 
-## Test 1 — can A read B's data?
+For the signed-in half:
 
-Replace `B_USER_ID` with B's uuid.
-
-```js
-const B = 'B_USER_ID';
-for (const table of ['user_results', 'ai_main_reports', 'ai_followup_reports',
-                     'subscriptions', 'payments', 'followup_answers',
-                     'user_progress', 'assessments']) {
-  const { data, error } = await supabase.from(table).select('*').eq('user_id', B);
-  console.log(table, '→', error ? `error: ${error.message}` : `${data.length} rows`);
-}
+```bash
+node scripts/rls-proof.mjs --email you@example.com --password 'your password'
 ```
 
-**Expected: `0 rows` on every line.** Any table returning rows is a live data
-leak. An error is also fine — it means the table refused outright.
+And to check one account cannot reach another's data, add a **different**
+user's uuid (Supabase → Authentication → Users):
 
----
-
-## Test 2 — can A grant themselves things?
-
-This is the half people forget. Reading is protected far more often than
-writing, and writing is where the money is.
-
-```js
-const me = (await supabase.auth.getUser()).data.user.id;
-
-// Attempts are what you sell. This must not work.
-console.log('attempts:', await supabase
-  .from('subscriptions').update({ main_attempts_remaining: 999 })
-  .eq('user_id', me).select());
-
-// The privilege escalation that was open until today. Must not work.
-console.log('role:', await supabase
-  .from('profiles').update({ role: 'superadmin' })
-  .eq('id', me).select());
-
-// Writing a row that claims to belong to somebody else.
-console.log('foreign insert:', await supabase
-  .from('user_results').insert({ user_id: B, top_clusters: [], raw_scores: {}, answers: {} }).select());
+```bash
+node scripts/rls-proof.mjs --email … --password … --other 00000000-0000-0000-0000-000000000000
 ```
 
-**Expected on all three: an error, or `data: []` with zero rows changed.**
-
-If the role one returns a row with `role: 'superadmin'`, block 1 of
-`security-fixes.sql` did not apply — check it again before doing anything else.
+Exit code is 0 when everything is locked down, 1 when something is not, so it
+can go into CI later.
 
 ---
 
-## Test 3 — the anon key with no session at all
+## Why not a browser console snippet
 
-Sign out first, then:
+The first version of this document asked you to import `supabase-js` from
+esm.sh in DevTools. That was wrong twice over, and the errors you got were both
+your own security working:
 
-```js
-await supabase.auth.signOut();
-for (const table of ['profiles', 'user_results', 'subscriptions', 'payments',
-                     'assessments', 'user_roles', 'audit_logs']) {
-  const { data, error } = await supabase.from(table).select('*').limit(5);
-  console.log(table, '→', error ? `blocked: ${error.message}` : `${data.length} rows LEAKED`);
-}
-```
+- **`script-src 'self'` blocked the import.** Your Content Security Policy does
+  not allow scripts from other hosts. Loading a third-party script into a page
+  that holds a live session is exactly what a CSP exists to prevent, and it
+  correctly refused.
 
-**Expected: every line blocked or `0 rows`.** This is what an attacker sees
-with nothing but the key from your page source.
+- **It could never have tested the signed-in half anyway.** The session is an
+  httpOnly cookie, deliberately unreadable by page JavaScript, so console code
+  has no access token to send. That is the point of the design.
+
+DevTools also warns before letting you paste — "this could allow attackers to
+steal your identity or take control of your computer" — and that warning is
+right. Do not paste code you have not read into a console on a site you are
+logged into, including code from me.
 
 ---
 
-## Afterwards
+## Result on 2026-08-26
 
-Delete the two test accounts (Authentication → Users), which also exercises
-your delete-account flow for free.
+All twelve tables refused an anonymous caller with **`42501`
+insufficient_privilege**.
 
-Worth re-running this after any change to policies, and after adding a table.
-A new table with RLS enabled and no policies is safe; a new table with RLS
-forgotten is not, and nothing in the application will tell you which you have.
+That code is worth understanding, because it is *stronger* than the answer I
+expected. `42501` means the `anon` role has no table-level SELECT grant at all
+— the request is rejected before row level security is even consulted. It
+matches the **API DISABLED** badges on your Policies page: these tables are not
+exposed through the Data API, so RLS is a second line of defence that nothing
+currently reaches.
+
+Two layers, and the outer one is holding. RLS still matters: it is what
+protects you the day a table gets exposed to the Data API by accident.
+
+---
+
+## What still needs a signed-in run
+
+The escalation checks are the ones that matter most, and they need credentials:
+
+- Can the account set its own `main_attempts_remaining` to 999?
+- Can it set its own `profiles.role` to `superadmin`? *(This is the hole that
+  was open until we dropped the policy — worth confirming it is really shut.)*
+- Can it flip `followup_bundle_purchased` to true for free?
+
+Reading is protected far more often than writing, and writing is where the
+attempts and the admin role live.
+
+---
+
+## Re-run this
+
+After any change to policies, and after adding a table. A new table with RLS
+enabled and no policies is safe; a new table with RLS forgotten is not, and
+nothing in the application will tell you which one you have.
