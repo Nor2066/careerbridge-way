@@ -135,7 +135,17 @@ function LoginForm() {
             />
             {/* Sits directly under the password field, where someone who has
                 just failed to remember it is already looking. */}
-            <div className="flex justify-end -mt-2">
+            <div className="flex flex-wrap justify-between gap-2 -mt-2">
+              {/* Sign-in says "invalid email or password" for every failure,
+                  including an unconfirmed address, so that it cannot be used
+                  to test which emails are registered. This is the door out for
+                  the person whose confirmation email never arrived. */}
+              <a
+                href="/resend-confirmation"
+                className="text-sm text-gray-400 hover:text-gray-200"
+              >
+                Never got your confirmation email?
+              </a>
               <a
                 href="/forgot-password"
                 className="text-sm text-indigo-400 hover:text-indigo-300"
