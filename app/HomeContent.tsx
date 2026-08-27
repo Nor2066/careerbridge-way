@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { getSubscriptionStatus, invalidateSubscriptionStatus } from '@/lib/subscription-client';
 import { track } from '@/lib/analytics';
 import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useAuth } from '@/lib/AuthContext';
@@ -323,9 +324,8 @@ export default function Home() {
         return;
       }
       try {
-        const res = await fetch('/api/subscription-status', { credentials: 'include' });
-        const data = await res.json();
-        if (isMounted) {
+        const data = await getSubscriptionStatus();
+        if (isMounted && data) {
           setSubStatus(data);
           // Only show the inline "awaiting followup decision" screen if we
           // already have `result` data in memory from THIS session (i.e. we
@@ -357,9 +357,10 @@ export default function Home() {
   const refetchSubStatus = async () => {
     if (!user) return;
     try {
-      const res = await fetch('/api/subscription-status', { credentials: 'include' });
-      const data = await res.json();
-      setSubStatus(data);
+      // force: this runs after something that changed entitlements, so the
+      // cache must not be allowed to answer.
+      const data = await getSubscriptionStatus({ force: true });
+      if (data) setSubStatus(data);
       return data;
     } catch (err) {
       console.error('Failed to refetch subscription status:', err);

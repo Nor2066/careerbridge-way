@@ -3,6 +3,8 @@
 // app/history/HistoryClient.tsx
 
 import { useEffect, useState } from 'react';
+import ProgressChecklist from '@/components/ProgressChecklist';
+import { getSubscriptionStatus } from '@/lib/subscription-client';
 import { useRouter } from 'next/navigation';
 import PricingContent from '@/components/PricingContent';
 
@@ -39,13 +41,13 @@ export default function HistoryClient({ userId }: { userId: string }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [historyRes, subRes, progressRes] = await Promise.all([
+        const [historyRes, sub, progressRes] = await Promise.all([
           fetch('/api/user-history', { credentials: 'include' }),
-          fetch('/api/subscription-status', { credentials: 'include' }),
+          getSubscriptionStatus(),
           fetch('/api/load-progress', { credentials: 'include' }),
         ]);
         if (historyRes.ok) setHistory(await historyRes.json());
-        if (subRes.ok) setSubStatus(await subRes.json());
+        if (sub) setSubStatus(sub);
         if (progressRes.ok) {
           const progressData = await progressRes.json();
           setHasSavedProgress(!!(progressData.step && progressData.step > 0));
@@ -79,8 +81,9 @@ export default function HistoryClient({ userId }: { userId: string }) {
         credentials: 'include',
       });
       if (res.ok) {
-        const subRes = await fetch('/api/subscription-status', { credentials: 'include' });
-        if (subRes.ok) setSubStatus(await subRes.json());
+        // Skipping a follow-up frees an attempt, so this must bypass the cache.
+        const sub = await getSubscriptionStatus({ force: true });
+        if (sub) setSubStatus(sub);
       } else {
         alert('Something went wrong. Please try again.');
       }
@@ -201,6 +204,10 @@ export default function HistoryClient({ userId }: { userId: string }) {
           </p>
         </div>
       )}
+
+      {/* Answers "what did I pay for, and what happens next" without anyone
+          having to email support. Derived from data this page already has. */}
+      <ProgressChecklist sub={subStatus} hasHistory={history.length > 0} className="mb-6" />
 
       {/* Attempt parked awaiting its followup — say what's holding things up
           and give both ways out, so this page is never a dead end. */}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/AuthContext';
+import { getSubscriptionStatus } from '@/lib/subscription-client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -16,9 +17,11 @@ export default function Navbar() {
     }
     const fetchStatus = async () => {
       try {
-        const res = await fetch('/api/subscription-status', { credentials: 'include' });
-        if (!res.ok) return;
-        const data = await res.json();
+        // Shared with whatever page component also wants this — see
+        // lib/subscription-client.ts. The Navbar renders on every page, so
+        // this used to double every page's request count on its own.
+        const data = await getSubscriptionStatus();
+        if (!data) return;
         if (isMounted) setInProgress(data.currentAttemptStatus === 'in_progress');
       } catch {
         // Non-critical — worst case the link just says "Full Assessment"

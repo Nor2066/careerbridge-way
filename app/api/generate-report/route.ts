@@ -16,6 +16,8 @@ import {
   restoreConsumedAttempt,
 } from '@/lib/subscription';
 import { supabaseServer } from '@/lib/supabase-server';
+import { sendReportReady } from '@/lib/email';
+import { siteOrigin } from '@/lib/auth-cookies';
 import { isDisabled, DISABLED_MESSAGE } from '@/lib/kill-switch';
 import {
   detectCrisisSignals,
@@ -276,6 +278,17 @@ Please write the career report now.
       });
 
       if (dbError) throw dbError;
+
+      // People close tabs, lose signal, and take this on a phone on a train.
+      // The report is already on screen; this is the way back to it. Fired
+      // and forgotten — it can never fail the request that produced it.
+      if (user.email) {
+        void sendReportReady({
+          to: user.email,
+          kind: 'report',
+          url: `${siteOrigin(request)}/history`,
+        });
+      }
     } catch (generationError) {
       await restoreConsumedAttempt(user.id, sub);
       Sentry.captureException(generationError);

@@ -10,6 +10,7 @@
 //     assessmentId — the client never needs to store or resend them
 
 import { useState, useEffect } from 'react';
+import { getSubscriptionStatus } from '@/lib/subscription-client';
 import { track } from '@/lib/analytics';
 import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useRouter } from 'next/navigation';
@@ -248,8 +249,8 @@ export default function FollowUpClient() {
 
     const recover = async () => {
       try {
-        const [subRes, histRes] = await Promise.all([
-          fetch('/api/subscription-status', { credentials: 'include' }),
+        const [sub, histRes] = await Promise.all([
+          getSubscriptionStatus(),
           fetch('/api/user-history', { credentials: 'include' }),
         ]);
 
@@ -265,8 +266,10 @@ export default function FollowUpClient() {
 
         let pendingId: string | null = null;
         let planUnlocksFollowups = false;
-        if (subRes.ok) {
-          const sub = await subRes.json();
+        // Null means the status request failed. Falling through leaves
+        // planUnlocksFollowups false and pendingId null, which is the cautious
+        // reading — the recovery below then relies on the history alone.
+        if (sub) {
           planUnlocksFollowups = sub.plan === 'full' || !!sub.followupBundlePurchased;
           if (sub.currentAttemptStatus === 'awaiting_followup_decision') {
             pendingId = sub.currentAttemptResultId ?? null;

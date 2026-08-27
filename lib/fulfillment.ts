@@ -26,6 +26,7 @@ if (typeof window !== 'undefined') {
 }
 
 import { createClient } from '@supabase/supabase-js';
+import { sendPurchaseReceipt } from '@/lib/email';
 import {
   ATTEMPTS_GRANTED,
   PLAN_FOR_PRODUCT,
@@ -87,6 +88,13 @@ export async function fulfillCheckoutSession(params: {
   }
 
   await grantPurchase(userId, productType);
+
+  // After the grant, never before: a receipt for something that failed to be
+  // credited is worse than no receipt. Not awaited for its result and it can
+  // never throw — the customer keeps their attempts whatever the mail
+  // provider is doing.
+  void sendReceiptFor(userId, productType, amountCents, currency);
+
   return 'granted';
 }
 
@@ -220,4 +228,32 @@ async function grantPurchase(userId: string, productType: ProductType) {
   throw new Error(
     `Could not apply ${productType} grant for ${userId} after ${MAX_GRANT_ATTEMPTS} attempts`
   );
+}
+
+
+/**
+ * Looks up the address and sends the receipt. Separated so the failure path is
+ * obvious: everything in here is best-effort, and nothing it does can affect
+ * whether the purchase was fulfilled.
+ */
+async function sendReceiptFor(
+  userId: string,
+  productType: ProductType,
+  amountCents: number,
+  currency: string
+): Promise<void> {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error || !data.user?.email) return;
+
+    await sendPurchaseReceipt({
+      to: data.user.email,
+      productType,
+      amountCents,
+      currency,
+      attemptsGranted: ATTEMPTS_GRANTED[productType] || undefined,
+    });
+  } catch (err) {
+    console.error('FULFILLMENT: receipt email failed (purchase unaffected):', err);
+  }
 }
