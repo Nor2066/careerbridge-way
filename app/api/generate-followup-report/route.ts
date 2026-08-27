@@ -94,6 +94,17 @@ WHAT YOUR ROADMAP MUST CONTAIN:
 
 You will now receive structured assessment and follow-up data. Write the career roadmap.` + LAWFUL_GUIDANCE_RULES;
 
+/**
+ * The stack, but only when there is one.
+ *
+ * A catch binding is `unknown`, not Error -- anything can be thrown. This
+ * used to be typed `any`, which let the code reach for .stack on a value
+ * that might be a string and silently produce undefined.
+ */
+function errorStack(err: unknown): string | undefined {
+  return err instanceof Error ? err.stack : undefined;
+}
+
 export async function POST(request: Request) {
   // Coarse IP gate first — this runs before the session is verified, so it is
   // what stops an unauthenticated flood from costing us a Supabase round trip
@@ -315,7 +326,7 @@ Please write the career roadmap now.
       report,
       ...(crisisDetected ? { support: buildSupportNotice() } : {}),
     });
-  } catch (err: any) {
+  } catch (err) {
     // An expired session is not a server fault — answer 401 so the client
     // can prompt a sign-in instead of showing an error.
     if (isUnauthorized(err)) return unauthorizedResponse();
@@ -325,7 +336,7 @@ Please write the career roadmap now.
     console.error('GENERATE FOLLOWUP REPORT ERROR:', err);
     const response: { error: string; stack?: string } = { error: 'Internal server error' };
     if (process.env.NODE_ENV === 'development') {
-      response.stack = err.stack;
+      response.stack = errorStack(err);
     }
     return NextResponse.json(response, { status: 500 });
   }

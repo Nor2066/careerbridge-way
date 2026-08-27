@@ -929,7 +929,7 @@ export default function Home() {
               </button>
             </div>
             <p className="text-center text-xs text-gray-400 mt-4">
-              Your progress is saved. After payment you'll continue exactly where you left off.
+              Your progress is saved. After payment you&apos;ll continue exactly where you left off.
             </p>
           </div>
         </div>
@@ -1603,7 +1603,7 @@ export default function Home() {
             </div>
           </div>
           <div className="glass-card">
-            <p className="text-center text-gray-200 mb-6">You've answered all questions.</p>
+            <p className="text-center text-gray-200 mb-6">You&apos;ve answered all questions.</p>
             {submitError && (
               <div className="mb-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100 text-center text-sm">
                 {submitError}

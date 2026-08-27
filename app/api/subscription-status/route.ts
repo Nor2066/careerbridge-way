@@ -29,12 +29,12 @@ export async function GET(request: Request) {
       canStartAssessment: startCheck.allowed,
       cannotStartReason: startCheck.reason ?? null,
     });
-  } catch (err: any) {
+  } catch (err) {
     // An expired session is not a server fault — answer 401 so the client
     // can prompt a sign-in instead of showing an error.
     if (isUnauthorized(err)) return unauthorizedResponse();
     Sentry.captureException(err);
-    const message = err?.message || String(err);
+    const message = err instanceof Error ? err.message : String(err);
     console.error('SUBSCRIPTION STATUS ERROR:', message);
     const errorMsg = process.env.NODE_ENV === 'development'
       ? message

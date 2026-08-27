@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+// This file is loaded by Next.js as CommonJS before any transpilation, so
+// require() is the only form that works here.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { withSentryConfig } = require("@sentry/nextjs");
 
 const nextConfig = {

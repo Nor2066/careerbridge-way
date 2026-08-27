@@ -55,6 +55,17 @@ const AnswersSchema = z.object({
   criticismHandling: z.string(),
 });
 
+/**
+ * The stack, but only when there is one.
+ *
+ * A catch binding is `unknown`, not Error -- anything can be thrown. This
+ * used to be typed `any`, which let the code reach for .stack on a value
+ * that might be a string and silently produce undefined.
+ */
+function errorStack(err: unknown): string | undefined {
+  return err instanceof Error ? err.stack : undefined;
+}
+
 export async function POST(request: Request) {
   const ip = getIP(request);
   const { success } = await assessLimiter.limit(ip);
@@ -75,12 +86,12 @@ export async function POST(request: Request) {
 
     const scores = calculateScores(result.data);
     return NextResponse.json(scores);
-  } catch (error: any) {
+  } catch (error) {
     Sentry.captureException(error);
     console.error('Scoring error:', error);
     const response: { error: string; stack?: string } = { error: 'Internal server error' };
     if (process.env.NODE_ENV === 'development') {
-      response.stack = error.stack;
+      response.stack = errorStack(error);
     }
     return NextResponse.json(response, { status: 500 });
   }

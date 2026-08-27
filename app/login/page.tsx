@@ -186,7 +186,7 @@ function LoginForm() {
           </button>
 
           <p className="mt-6 text-center text-gray-300 text-sm">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">Sign up</a>
           </p>
         </div>

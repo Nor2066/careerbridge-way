@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     await markAssessmentInProgress(user.id, data.id);
 
     return NextResponse.json({ success: true, id: data.id });
-  } catch (err: any) {
+  } catch (err) {
     // An expired session is not a server fault — answer 401 so the client
     // can prompt a sign-in instead of showing an error.
     if (isUnauthorized(err)) return unauthorizedResponse();

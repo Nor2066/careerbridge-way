@@ -263,9 +263,9 @@ export default function LandingPage() {
             <div className="glass-card mb-12">
               <h2 className="text-2xl font-bold text-white mb-6 text-center">Who We Are</h2>
               <div className="space-y-4 text-gray-200">
-                <p><strong className="text-white">We're students, just like you</strong>, currently at university. We've faced the same uncertainty, stress, and confusion about what comes next.</p>
-                <p>This questionnaire is <strong className="text-white">built from real, recent experience</strong>. It comes directly from the struggles we wish we'd had help with, and it's peer-driven, practical, and tested through our own career exploration.</p>
-                <p>It's <strong className="text-white">made by students, for students</strong>: no jargon, no judgment, and no expert distance. Just a clear, honest framework designed to help you avoid the trial-and-error we went through.</p>
+                <p><strong className="text-white">We&apos;re students, just like you</strong>, currently at university. We&apos;ve faced the same uncertainty, stress, and confusion about what comes next.</p>
+                <p>This questionnaire is <strong className="text-white">built from real, recent experience</strong>. It comes directly from the struggles we wish we&apos;d had help with, and it&apos;s peer-driven, practical, and tested through our own career exploration.</p>
+                <p>It&apos;s <strong className="text-white">made by students, for students</strong>: no jargon, no judgment, and no expert distance. Just a clear, honest framework designed to help you avoid the trial-and-error we went through.</p>
                 <p><strong className="text-white">Our mission</strong> is simple: make it easier for students to find a future career that actually fits. We built this hoping it would save you time, reduce anxiety, and give you a plan you can believe in.</p>
               </div>
             </div>
@@ -320,7 +320,7 @@ export default function LandingPage() {
                 Ready to Find Your Ideal Career Path?
               </h2>
               <p className="text-gray-300 mb-6">
-                Join students who've already discovered careers that fit their strengths and ambitions.
+                Join students who&apos;ve already discovered careers that fit their strengths and ambitions.
               </p>
               <button
                 onClick={handleFullAssessment}
@@ -332,10 +332,10 @@ export default function LandingPage() {
 
             {/* Contact */}
             <div className="glass-card mb-12">
-              <h2 className="text-2xl font-bold text-white mb-4 text-center">Still Feeling Unsure? We're Here to Help</h2>
+              <h2 className="text-2xl font-bold text-white mb-4 text-center">Still Feeling Unsure? We&apos;re Here to Help</h2>
               <p className="text-gray-200 text-center mb-6">
-                Every journey is different, and your situation might have unique challenges the questionnaire couldn't fully capture.
-                That's exactly why we've left the door open to talk. Reach out through any of the channels below and mention
+                Every journey is different, and your situation might have unique challenges the questionnaire couldn&apos;t fully capture.
+                That&apos;s exactly why we&apos;ve left the door open to talk. Reach out through any of the channels below and mention
                 that you took the questionnaire, so we have a little context.
               </p>
               <p className="text-gray-200 text-center italic">

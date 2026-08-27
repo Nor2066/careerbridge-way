@@ -27,6 +27,24 @@ type SubStatus = {
   currentAttemptResultId: string | null;
 };
 
+// Hoisted out of the render body for the same reason as FeedbackPopup in the
+// follow-up page: declared inline it was a new component type on every render,
+// so React discarded and rebuilt the entire page subtree each time -- losing
+// scroll position and any state inside it.
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+  <div
+    className="min-h-screen bg-cover bg-center bg-no-repeat relative"
+    style={{ backgroundImage: "url('/images/bg-history.webp')" }}
+  >
+    <div className="absolute inset-0 bg-black/55" />
+    <div className="relative z-10 max-w-4xl mx-auto px-4 py-10">
+      {children}
+    </div>
+  </div>
+);
+}
+
 export default function HistoryClient({ userId }: { userId: string }) {
   const router = useRouter();
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -99,17 +117,6 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const bonusAttemptGranted = subStatus?.bonusAttemptGranted ?? false;
   const followupBundlePurchased = subStatus?.followupBundlePurchased ?? false;
 
-  const PageWrapper = ({ children }: { children: React.ReactNode }) => (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat relative"
-      style={{ backgroundImage: "url('/images/bg-history.webp')" }}
-    >
-      <div className="absolute inset-0 bg-black/55" />
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-10">
-        {children}
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -168,7 +175,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 onClose={() => setShowBundleModal(false)}
               />
               <p className="text-center text-xs text-gray-400 mt-3">
-                After payment you'll be brought back here automatically.
+                After payment you&apos;ll be brought back here automatically.
               </p>
             </div>
           </div>
