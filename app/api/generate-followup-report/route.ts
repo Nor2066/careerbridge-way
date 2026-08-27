@@ -12,6 +12,7 @@ import {
 } from '@/lib/api-errors';
 import { getSubscription, canAccessFollowup, finishCurrentAttempt } from '@/lib/subscription';
 import { supabaseServer } from '@/lib/supabase-server';
+import { isDisabled, DISABLED_MESSAGE } from '@/lib/kill-switch';
 import {
   detectCrisisSignals,
   buildSupportNotice,
@@ -108,6 +109,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'You have generated several reports in a short time. Please wait a few minutes and try again.' },
         { status: 429 }
+      );
+    }
+
+    // Emergency brake — see lib/kill-switch.ts. Checked after the rate limit
+    // so a flood still costs nothing, and before any spend.
+    if (await isDisabled('reports')) {
+      return NextResponse.json(
+        { error: DISABLED_MESSAGE.reports, code: 'SERVICE_PAUSED' },
+        { status: 503 }
       );
     }
 

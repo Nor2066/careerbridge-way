@@ -35,6 +35,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.4,
     },
+    {
+      url: `${base}/sample-report`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
     // Legal pages belong in the sitemap: a buyer checking whether a site is
     // legitimate often searches for its terms, and search engines treat their
     // presence as a trust signal for a site that takes payment.

@@ -2,6 +2,7 @@
 
 // app/payment/success/PaymentSuccessClient.tsx
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { track } from '@/lib/analytics';
 import { useSearchParams } from 'next/navigation';
 
 type ProductType = 'basic' | 'full' | 'followup_unlock' | 'topup';
@@ -106,6 +107,7 @@ export default function PaymentSuccessClient() {
         if (data.productType) setProductType(data.productType);
 
         if (data.status === 'complete') {
+          track('purchase_complete', { product: data.productType ?? null });
           setState('complete');
           return;
         }

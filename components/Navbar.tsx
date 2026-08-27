@@ -41,15 +41,22 @@ export default function Navbar() {
               <Link href="/history" className="text-gray-300 hover:text-white transition text-sm font-medium">
                 History
               </Link>
-              {/* The email doubles as the link to account settings — that is
-                  where people look for it, and it saves a nav slot. */}
+              {/* Was: the email address itself, linked to /account. Nobody
+                  found it — a grey email in a navbar reads as a label, not a
+                  control, and "delete my account" is not something anyone
+                  should have to guess the location of. A word that says what
+                  it does, styled like the other nav items. */}
               <Link
                 href="/account"
-                className="text-sm text-gray-400 hover:text-white transition"
-                title="Account settings"
+                className="text-gray-300 hover:text-white transition text-sm font-medium"
               >
-                {user.email}
+                Account
               </Link>
+              {/* Kept, but demoted to what it always was: a reminder of who is
+                  signed in. Hidden on narrow screens where the nav is tight. */}
+              <span className="hidden lg:inline text-sm text-gray-500" title={user.email ?? ''}>
+                {user.email}
+              </span>
               <button onClick={() => signOut()} className="btn-secondary text-sm">
                 Logout
               </button>

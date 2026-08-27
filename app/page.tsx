@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { track } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import BaitQuiz from '@/components/BaitQuiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
@@ -117,8 +118,17 @@ export default function LandingPage() {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const router = useRouter();
 
-  const handleStartQuiz = () => setQuizStarted(true);
+  // The top of the funnel. Everything else is measured as a fraction of this.
+  useEffect(() => {
+    track('landing_view');
+  }, []);
+
+  const handleStartQuiz = () => {
+    track('demo_quiz_start');
+    setQuizStarted(true);
+  };
   const handleBaitComplete = () => {
+    track('demo_quiz_complete');
     setQuizStarted(false);
     setQuizCompleted(true);
   };

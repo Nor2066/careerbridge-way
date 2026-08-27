@@ -19,8 +19,12 @@ const LEGAL_LINKS = [
 
 const PRODUCT_LINKS = [
   { href: '/assess', label: 'Take the assessment' },
+  { href: '/sample-report', label: 'See a sample report' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/history', label: 'Your history' },
+  // Second route to the same place. Deleting your data should be findable
+  // from anywhere on the site, not only from a nav item you have to notice.
+  { href: '/account', label: 'Your account and data' },
 ];
 
 export default function Footer() {

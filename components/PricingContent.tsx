@@ -3,6 +3,7 @@
 // components/PricingContent.tsx
 
 import { useState } from 'react';
+import { track } from '@/lib/analytics';
 
 type ProductType = 'basic' | 'full' | 'topup' | 'followup_unlock';
 
@@ -59,6 +60,7 @@ export default function PricingContent({
     } catch {
       /* private mode — the server-side copy in the session metadata covers us */
     }
+    track('checkout_start', { product: productType });
     onBeforeCheckout?.(productType);
     // onBeforeCheckout may have rewritten the stored path (the followup
     // decision screen does exactly that), so re-read it before sending it

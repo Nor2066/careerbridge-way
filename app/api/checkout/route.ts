@@ -12,6 +12,7 @@ import {
 import { safeReturnTo } from '@/lib/auth-cookies';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
+import { isDisabled, DISABLED_MESSAGE } from '@/lib/kill-switch';
 import {
   STRIPE_PRICE_IDS,
   CHECKOUT_BRANDING,
@@ -53,6 +54,15 @@ export async function POST(request: Request) {
     const { success } = await readLimiter.limit(getUserIdentifier(user.id));
     if (!success) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    // Emergency brake — see lib/kill-switch.ts. Checked after the rate limit
+    // so a flood still costs nothing, and before any spend.
+    if (await isDisabled('checkout')) {
+      return NextResponse.json(
+        { error: DISABLED_MESSAGE.checkout, code: 'SERVICE_PAUSED' },
+        { status: 503 }
+      );
     }
 
     const body = await request.json();

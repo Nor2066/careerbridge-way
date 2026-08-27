@@ -10,6 +10,7 @@
 //     assessmentId — the client never needs to store or resend them
 
 import { useState, useEffect } from 'react';
+import { track } from '@/lib/analytics';
 import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useRouter } from 'next/navigation';
 
@@ -392,6 +393,7 @@ export default function FollowUpClient() {
   };
 
   const generateFollowupReport = async () => {
+    track('followup_complete');
     if (!assessmentId) {
       alert('Assessment ID not found. Please return to history and try again.');
       router.push('/history');
@@ -411,6 +413,7 @@ export default function FollowUpClient() {
 
       const data = await res.json();
       if (res.ok) {
+        track('report_view', { kind: 'followup' });
         setFollowupReport(data.report);
         setSupport(data.support ?? null);
         setReportGenerated(true);

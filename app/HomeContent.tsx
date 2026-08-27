@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { track } from '@/lib/analytics';
 import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -297,11 +298,20 @@ export default function Home() {
       !subStatus.canStartAssessment &&
       subStatus.currentAttemptStatus !== 'in_progress'
     ) {
+      track('paywall_view', { reason: 'no_attempts' });
       setShowPricingModal(true);
       return;
     }
     if (step === 9 && subLoading) return;
-    setStep(s => clampStep(s + 1));
+    setStep(s => {
+      const next = clampStep(s + 1);
+      // Leaving step 0 is the real "started" moment — before that they are
+      // still deciding. Every later step records how far they got, which is
+      // what turns "people drop out" into "people drop out at question 23".
+      if (s === 0) track('quiz_start');
+      track('quiz_question', { index: next });
+      return next;
+    });
   };
 
   // ---------- Fetch subscription status on mount ----------
@@ -582,6 +592,7 @@ export default function Home() {
   const updateSkill = (skillId: keyof Answers['skills'], value: number) => setAnswers(prev => ({ ...prev, skills: { ...prev.skills, [skillId]: value } }));
 
   const handleSubmit = async () => {
+    track('quiz_complete');
     setLoading(true);
     setSubmitError(null);
     const payload = {
@@ -637,6 +648,7 @@ export default function Home() {
 
   const generateAIReport = async () => {
     if (!result) return;
+    track('report_generate_start');
     const assessmentId = sessionStorage.getItem('lastAssessmentId');
     if (!assessmentId) {
       alert('Please wait a moment for the assessment to be saved, then try again.');
@@ -656,6 +668,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
+        track('report_view');
         setAiReport(data.report);
         setSupport(data.support ?? null);
         setReportGenerated(true);
@@ -673,6 +686,7 @@ export default function Home() {
         // compete with the report appearing on screen
         setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
+        track('report_failed', { code: data.code ?? null, status: res.status });
         alert('Failed to generate report: ' + (data.error || 'unknown error'));
       }
     } catch (err) {
