@@ -189,16 +189,32 @@ export function safeReturnTo(value: string | null | undefined, fallback = '/'): 
  * closes the gap for browsers that treat SameSite differently.
  */
 export function isSameOrigin(request: Request): boolean {
-  const expected = siteOrigin(request);
-  const origin = request.headers.get('origin');
+  // Two acceptable answers, and the first one is the important one.
+  //
+  // requestOrigin is the host the browser actually connected to. That is what
+  // "same origin" means, and checking against it is what makes this work on
+  // every deployment: preview URLs change with each branch, and a custom
+  // domain arrives before anyone remembers to update NEXT_PUBLIC_URL.
+  //
+  // Comparing only against the configured site origin — which is what this
+  // did — rejected every request from a preview deployment with a 403, so the
+  // one place you test changes before production was the one place sign-in,
+  // sign-up and password reset could not work.
+  //
+  // This is not a weakening. For CSRF to be worth attempting the request must
+  // reach OUR origin, because that is the only way our cookies are attached;
+  // and once it does, the browser sets Origin to the attacker's page, which
+  // cannot match. A hostile page on evil.com posting here still gets 403.
+  const accepted = new Set([requestOrigin(request), siteOrigin(request)]);
 
-  if (origin) return origin === expected;
+  const origin = request.headers.get('origin');
+  if (origin) return accepted.has(origin);
 
   // Some browsers omit Origin on same-origin requests; fall back to Referer.
   const referer = request.headers.get('referer');
   if (referer) {
     try {
-      return new URL(referer).origin === expected;
+      return accepted.has(new URL(referer).origin);
     } catch {
       return false;
     }

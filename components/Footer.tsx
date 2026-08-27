@@ -67,12 +67,17 @@ export default function Footer() {
                 {link.label}
               </Link>
             ))}
-            <a
-              href={`mailto:${CONTACT.support}`}
-              className="text-sm text-gray-300 transition hover:text-white"
-            >
-              Contact us
-            </a>
+            {/* Only rendered once a real address exists. A live "Contact us"
+                link opening a mail window addressed to TODO@example.com is
+                worse than no link — it looks like the site is abandoned. */}
+            {detailsReady && (
+              <a
+                href={`mailto:${CONTACT.support}`}
+                className="text-sm text-gray-300 transition hover:text-white"
+              >
+                Contact us
+              </a>
+            )}
           </nav>
         </div>
 
