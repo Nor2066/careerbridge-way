@@ -119,6 +119,18 @@ node scripts/rls-proof.mjs
 node scripts/rls-proof.mjs --email you@example.com --password '…'
 ```
 
+**Fix a customer who paid but cannot reach what they bought.** Usually someone
+who signed up with Google once and with email the next time, so the purchase
+sits on a different account. Signed in as an admin:
+
+```
+GET  /api/admin/regrant?email=them@example.com     # find the payment
+POST /api/admin/regrant  { paymentId, targetUserId, reason }
+```
+
+Lookup and grant are separate on purpose, so you see what you are about to do.
+Every regrant is written to `audit_logs`.
+
 **See where people give up.** `supabase/analytics-setup.sql` block 2 is the
 funnel; block 3 shows which question number loses people.
 

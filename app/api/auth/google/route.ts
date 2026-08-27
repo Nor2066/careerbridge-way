@@ -22,6 +22,7 @@ import {
   AUTH_COOKIE_FLAGS,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
+import { oauthLimiter, getIP } from '@/lib/rate-limit';
 
 // Never let this be prerendered or cached: each call must mint a fresh
 // verifier and a fresh Set-Cookie header. A cached copy would hand every
@@ -30,6 +31,16 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  // Unauthenticated by nature -- nobody is signed in yet -- and each call mints
+  // a fresh PKCE verifier cookie, so without a ceiling this is free cookie
+  // spray and free Supabase auth requests.
+  const { success: withinLimit } = await oauthLimiter.limit(getIP(request));
+  if (!withinLimit) {
+    return NextResponse.redirect(
+      new URL('/login?error=oauth_init_failed', siteOrigin(request))
+    );
+  }
+
   const requestUrl = new URL(request.url);
   const origin = siteOrigin(request);
   const returnTo = safeReturnTo(requestUrl.searchParams.get('returnTo'));

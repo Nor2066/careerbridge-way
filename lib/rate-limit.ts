@@ -138,3 +138,24 @@ export const readLimiter = new Ratelimit({
   analytics: true,
   prefix: "rl:read",
 });
+
+// Sign-in initiation and the OAuth callback. Both are unauthenticated by
+// nature — the whole point is that nobody is signed in yet — and /api/auth/google
+// mints a fresh PKCE verifier cookie on every call, so an unbounded caller can
+// spray cookies and burn Supabase auth requests for free.
+export const oauthLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, "10 m"),
+  analytics: true,
+  prefix: "rl:oauth",
+});
+
+// GET /api/auth/me runs on essentially every page load, so this is a ceiling
+// against a flood rather than a policy anyone should ever notice. Set well
+// above what normal browsing produces.
+export const sessionReadLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(120, "60 s"),
+  analytics: false,
+  prefix: "rl:me",
+});

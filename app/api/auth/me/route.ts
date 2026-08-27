@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { AUTH_COOKIE_FLAGS, NO_STORE_HEADERS } from '@/lib/auth-cookies';
 import { isEmailVerified } from '@/lib/auth';
+import { sessionReadLimiter, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,15 @@ function isDeadSession(error: unknown): boolean {
   return e.status === 400 || e.status === 401 || e.status === 403;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  // A ceiling, not a policy: this runs on essentially every page load, so the
+  // limit sits far above normal browsing and exists only so an unauthenticated
+  // flood cannot turn each request into a Supabase round trip.
+  const { success } = await sessionReadLimiter.limit(getIP(request));
+  if (!success) {
+    return NextResponse.json({ user: null }, { status: 429, headers: NO_STORE_HEADERS });
+  }
+
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
