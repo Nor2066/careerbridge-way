@@ -119,6 +119,12 @@ node scripts/rls-proof.mjs
 node scripts/rls-proof.mjs --email you@example.com --password '…'
 ```
 
+**Get into the admin area.** Nobody is an admin until a `profiles.role` is set
+to `admin` or `superadmin` — run `supabase/admin-setup.sql` block 1 once. The
+area is guarded three times over (proxy, server component, and the API route),
+all reading the same role from `profiles`. Note `profiles.is_admin` is a legacy
+column that nothing reads; setting it grants nothing.
+
 **Fix a customer who paid but cannot reach what they bought.** Usually someone
 who signed up with Google once and with email the next time, so the purchase
 sits on a different account. Signed in as an admin:
