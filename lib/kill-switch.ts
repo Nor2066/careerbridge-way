@@ -20,12 +20,20 @@
 //
 // HOW TO USE IT
 //
-//   Upstash console → your database → Data Browser → set:
-//     kill:reports  = "1"    stops report generation
-//     kill:checkout = "1"    stops new purchases
+//   node scripts/kill-switch.mjs status
+//   node scripts/kill-switch.mjs off reports     stops report generation
+//   node scripts/kill-switch.mjs on  reports     starts it again
 //
-//   Delete the key, or set anything other than "1", to turn it back on.
-//   Takes effect within CACHE_MS.
+// THE KEY EXISTING IS WHAT DISABLES THE SERVICE. Its value is ignored.
+//
+// That is deliberate, and it is the second design after the first one failed
+// in the obvious way: the original read the value and expected the string
+// "1", so a key created with the wrong name, or as a Redis Set instead of a
+// string, silently did nothing — and a kill switch you believe is armed when
+// it is not is worse than not having one. Presence is the one thing that
+// cannot be got subtly wrong.
+//
+// Takes effect within CACHE_MS.
 
 import { Redis } from '@upstash/redis';
 
@@ -69,9 +77,14 @@ export async function isDisabled(name: Switch): Promise<boolean> {
   if (!client) return false;
 
   try {
-    const raw = await client.get<string | number | null>(`kill:${name}`);
-    const value = raw === '1' || raw === 1;
+    // EXISTS rather than GET: it works whatever type the key was created as,
+    // so an operator reaching for this under pressure cannot arm it wrongly.
+    const present = await client.exists(`kill:${name}`);
+    const value = present > 0;
     cache.set(name, { value, at: Date.now() });
+    if (value) {
+      console.warn(`KILL SWITCH: "${name}" is OFF — kill:${name} exists in Redis.`);
+    }
     return value;
   } catch (err) {
     console.error(`KILL SWITCH: could not read kill:${name}, staying on —`, err);
