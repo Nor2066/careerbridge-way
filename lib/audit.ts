@@ -40,12 +40,16 @@ export async function logAudit({
   ipAddress,
 }: AuditOptions): Promise<void> {
   try {
-    await supabaseAdmin.from('audit_logs').insert({
+    // supabase-js reports a refused insert in `error` rather than throwing, so
+    // the catch below never saw one — audit_logs sat empty with no trace of
+    // why.
+    const { error } = await supabaseAdmin.from('audit_logs').insert({
       user_id: userId,
       action,
       metadata,
       ip_address: ipAddress,
     });
+    if (error) console.error('Audit log failed:', error.message);
   } catch (err) {
     // Audit logging should never crash the main request
     // Log to Sentry instead so we know if audit logging breaks
