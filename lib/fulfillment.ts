@@ -27,6 +27,7 @@ if (typeof window !== 'undefined') {
 
 import { createClient } from '@supabase/supabase-js';
 import { sendPurchaseReceipt } from '@/lib/email';
+import { TERMS_VERSION } from '@/lib/legal';
 import {
   ATTEMPTS_GRANTED,
   PLAN_FOR_PRODUCT,
@@ -53,6 +54,15 @@ export async function fulfillCheckoutSession(params: {
   // for the amount to stay correct.
   amountTotal?: number | null;
   currency?: string | null;
+  // Whether the customer ticked the checkout box carrying the regulation 37
+  // express consent and acknowledgement. Stripe reports this per session as
+  // 'accepted', or null when no box was shown.
+  //
+  // Recorded per payment rather than per account because the right is lost
+  // purchase by purchase: what matters when someone asks for a refund in
+  // eight months is whether THAT purchase captured it, not whether the
+  // feature was switched on at some point.
+  termsConsent?: string | null;
 }): Promise<FulfillOutcome> {
   const { userId, productType, sessionId, paymentIntentId } = params;
 
@@ -60,7 +70,11 @@ export async function fulfillCheckoutSession(params: {
   // never refuse to fulfil a paid session just because the amount is
   // missing, but do say so, because it means the record may be wrong.
   const amountCents = params.amountTotal ?? PRODUCT_AMOUNTS_CENTS[productType];
-  const currency = params.currency ?? 'eur';
+  // GBP, not EUR: the company is registered in England and Wales and the
+  // receipt built from this row names the currency back to the customer. The
+  // old default meant a session that arrived without a currency was recorded,
+  // and receipted, in euros.
+  const currency = params.currency ?? 'gbp';
   if (params.amountTotal == null) {
     console.warn(
       'FULFILLMENT: session', sessionId, 'had no amount_total — recording the',
@@ -76,6 +90,11 @@ export async function fulfillCheckoutSession(params: {
     amount_cents: amountCents,
     currency,
     status: 'completed',
+    // 'not_collected' rather than null when Stripe showed no box, so the two
+    // cases are distinguishable later. A null would be ambiguous between "no
+    // box" and "column added after this row was written".
+    consent_terms_of_service: params.termsConsent ?? 'not_collected',
+    terms_version: TERMS_VERSION,
   });
 
   if (paymentInsertError) {

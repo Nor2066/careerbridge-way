@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
-import { CONTACT, LAST_UPDATED } from '@/lib/legal';
+import { COMPANY, CONTACT, LAST_UPDATED } from '@/lib/legal';
 
 export const metadata: Metadata = {
   title: 'Refund and Cancellation Policy',
@@ -70,6 +70,45 @@ export default function RefundsPage() {
         </ul>
       </LegalSection>
 
+      <LegalSection id="faulty" title="Your separate rights if something is faulty">
+        <div className="rounded-lg border border-indigo-400/30 bg-indigo-400/10 p-4">
+          <p className="text-sm text-indigo-100">
+            <strong className="font-semibold">
+              The 14-day right and your faulty-content rights are two different things.
+            </strong>{' '}
+            The 14 days are about changing your mind. The rights below are about something
+            being wrong, and they are not limited to 14 days.
+          </p>
+        </div>
+        <p>
+          Under the <strong className="text-white">Consumer Rights Act 2015</strong>, digital
+          content you buy must be of satisfactory quality, fit for its purpose, and as
+          described. If it is not, you are entitled to:
+        </p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            a <strong className="text-white">repair or replacement</strong> &mdash; for us,
+            regenerating the report or restoring the attempt &mdash; within a reasonable time
+            and without significant inconvenience to you; and
+          </li>
+          <li>
+            a <strong className="text-white">price reduction of up to the full amount</strong>{' '}
+            if that does not work or is not possible.
+          </li>
+        </ul>
+        <p>
+          If our digital content damages your device or other content, and it would not have
+          done had we taken reasonable care, section 46 of that Act entitles you to a repair
+          or to compensation.
+        </p>
+        <p>
+          <strong className="text-white">
+            Nothing in this policy or in our terms takes those rights away
+          </strong>
+          , and we cannot ask you to give them up.
+        </p>
+      </LegalSection>
+
       <LegalSection id="beyond-the-rules" title="When we refund anyway">
         <p>
           The above is the legal minimum. We would rather have a person who felt fairly
@@ -122,10 +161,54 @@ export default function RefundsPage() {
 
       <LegalSection id="problems" title="If you are not happy with the outcome">
         <p>
-          Reply and say so, and a person will look at it again. If we still cannot agree, you
-          can contact your bank or card provider about a chargeback, or take the matter to a
-          consumer dispute body. We would much rather sort it out directly.
+          Reply and say so, and a different person will look at it again. Most disagreements
+          end here.
         </p>
+        <p>
+          You can get free, independent advice from{' '}
+          <strong className="text-white">Citizens Advice</strong> at{' '}
+          <a
+            className="text-indigo-300 underline"
+            href="https://www.citizensadvice.org.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            citizensadvice.org.uk
+          </a>
+          , or on <strong className="text-white">0808 223 1133</strong>.
+        </p>
+        <p>
+          You can also ask your bank or card provider about a chargeback. We would much rather
+          resolve it with you directly, and we will not close your account for raising one.
+          Nothing here stops you going to court.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="cancellation-form" title="Model cancellation form">
+        <p>
+          You do not have to use this. It is here because the Consumer Contracts Regulations
+          2013 require us to make it available &mdash; a plain email saying you want to cancel
+          works just as well, and is faster.
+        </p>
+        <div className="rounded-lg border border-white/15 bg-white/5 p-4 font-mono text-xs leading-relaxed text-gray-300">
+          <p>
+            To: {COMPANY.legalName}, {COMPANY.address}
+          </p>
+          <p>Email: {CONTACT.support}</p>
+          <p className="mt-3">
+            I hereby give notice that I cancel my contract for the supply of the following
+            service:
+          </p>
+          <p className="mt-3">Ordered on / received on: ................................</p>
+          <p className="mt-2">Name of consumer: ........................................</p>
+          <p className="mt-2">Address of consumer: .....................................</p>
+          <p className="mt-2">Email address on the account: ............................</p>
+          <p className="mt-2">
+            Signature (only if notifying on paper): ..................
+          </p>
+          <p className="mt-2">Date: ....................................................</p>
+        </div>
+        <p>Complete and return this form only if you wish to withdraw from the contract.</p>
       </LegalSection>
     </LegalPage>
   );

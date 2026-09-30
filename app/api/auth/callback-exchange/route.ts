@@ -22,6 +22,7 @@ import {
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
 import { oauthLimiter, getIP } from '@/lib/rate-limit';
+import { recordTermsAcceptance } from '@/lib/terms-acceptance';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,9 @@ export async function GET(request: Request) {
 
   const cookieStore = await cookies();
   const returnTo = safeReturnTo(cookieStore.get('oauth_return_to')?.value);
+  // Set by /api/auth/google when the age + terms box was ticked before the
+  // person left for Google. See the note there.
+  const acceptedTerms = cookieStore.get('oauth_terms_accepted')?.value === '1';
 
   const fail = (errorCode: string, logReason: string, detail?: string) => {
     console.error(`[oauth] ${errorCode}: ${logReason}`, detail ?? '');
@@ -75,7 +79,7 @@ export async function GET(request: Request) {
 
   const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: exchanged, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     // A single-use code that's already been spent lands here. If the earlier
@@ -94,6 +98,14 @@ export async function GET(request: Request) {
     return fail('oauth_no_session', 'exchange succeeded but produced no session cookies');
   }
 
+  // Google sign-in creates the account silently on first use, so this is the
+  // only moment an acceptance can be attached to it. Idempotent, so a
+  // returning user who happens to arrive with the cookie set does not have
+  // their original acceptance date rewritten.
+  if (acceptedTerms && exchanged?.user) {
+    await recordTermsAcceptance(exchanged.user.id);
+  }
+
   const response = NextResponse.redirect(new URL(returnTo, origin), {
     headers: NO_STORE_HEADERS,
   });
@@ -103,6 +115,7 @@ export async function GET(request: Request) {
   // Clean up our own short-lived cookies.
   response.cookies.set('oauth_return_to', '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
   response.cookies.set('oauth_code_verifier', '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
+  response.cookies.set('oauth_terms_accepted', '', { ...AUTH_COOKIE_FLAGS, maxAge: 0 });
 
   return response;
 }

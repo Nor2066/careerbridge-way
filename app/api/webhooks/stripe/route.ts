@@ -79,6 +79,10 @@ export async function POST(request: Request) {
       paymentIntentId,
       amountTotal: session.amount_total,
       currency: session.currency,
+      // Evidence that this purchase captured the regulation 37 consent.
+      // Whichever of the webhook and the verify call wins the race writes the
+      // row, so both have to carry it.
+      termsConsent: session.consent?.terms_of_service ?? null,
     });
 
     if (outcome === 'already_processed') {

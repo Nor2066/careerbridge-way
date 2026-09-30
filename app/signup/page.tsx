@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { MINIMUM_AGE } from '@/lib/legal';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,12 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  // The terms say an account is where the agreement is made, and that you
+  // must be at least MINIMUM_AGE. Neither was ever asked, so both sentences
+  // described something that did not happen. This is the box that makes them
+  // true, and it gates BOTH routes into an account — the form below and the
+  // Google button, which creates an account just as readily.
+  const [accepted, setAccepted] = useState(false);
   // Set once the account exists but the address is unconfirmed. Keeps the
   // person on this page instead of bouncing them to a sign-in they cannot
   // complete yet.
@@ -24,8 +31,12 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
     setMessage('');
+    if (!accepted) {
+      setError(`Please confirm you are ${MINIMUM_AGE} or over and accept the terms.`);
+      return;
+    }
     try {
-      const { needsConfirmation } = await signUp(email, password);
+      const { needsConfirmation } = await signUp(email, password, accepted);
       if (needsConfirmation) {
         // Deliberately no redirect to /login. Supabase refuses to sign in an
         // unconfirmed user, so sending them there would strand them on a form
@@ -63,10 +74,17 @@ export default function SignupPage() {
   // Guarded against firing twice — see the matching note on the login page.
   const handleGoogleSignUp = async () => {
     if (googleLoading) return;
+    // Same gate as the form. Google sign-up creates an account outright, so
+    // letting it through unticked would leave the one route into the product
+    // that never showed anyone the terms.
+    if (!accepted) {
+      setError(`Please confirm you are ${MINIMUM_AGE} or over and accept the terms.`);
+      return;
+    }
     setGoogleLoading(true);
     setError('');
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(undefined, accepted);
     } catch {
       setGoogleLoading(false);
       setError('Google sign-up failed. Please try again.');
@@ -133,9 +151,51 @@ export default function SignupPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />
+          {/* Ticking this is the moment the contract is made, so it is a real
+              checkbox rather than a line of small print under the button.
+              The privacy policy is deliberately NOT something you "agree" to
+              here — it is a notice about what we do, not a consent, and
+              bundling it into one tickbox would misdescribe both. */}
+          <div className="flex items-start gap-3 rounded-lg border border-white/15 bg-white/5 p-3">
+            <input
+              id="accept-terms"
+              type="checkbox"
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-indigo-500"
+            />
+            <label htmlFor="accept-terms" className="text-sm leading-relaxed text-gray-200">
+              I am {MINIMUM_AGE} or over, and I agree to the{' '}
+              <Link href="/terms" target="_blank" className="text-indigo-300 underline">
+                Terms of Service
+              </Link>{' '}
+              and the{' '}
+              <Link href="/acceptable-use" target="_blank" className="text-indigo-300 underline">
+                Acceptable Use Policy
+              </Link>
+              .
+            </label>
+          </div>
+
+          <p className="text-xs leading-relaxed text-gray-400">
+            Your report is written by AI and can be wrong &mdash; see the{' '}
+            <Link href="/ai-notice" target="_blank" className="text-indigo-300 underline">
+              AI Notice
+            </Link>
+            . What we do with your data is in the{' '}
+            <Link href="/privacy" target="_blank" className="text-indigo-300 underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+
           {error && <p className="text-red-400 text-sm">{error}</p>}
           {message && <p className="text-green-400 text-sm">{message}</p>}
-          <button type="submit" className="w-full btn-primary">
+          <button
+            type="submit"
+            disabled={!accepted}
+            className="w-full btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Sign Up
           </button>
         </form>
@@ -151,8 +211,8 @@ export default function SignupPage() {
 
         <button
           onClick={handleGoogleSignUp}
-          disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition disabled:opacity-50"
+          disabled={googleLoading || !accepted}
+          className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition disabled:cursor-not-allowed disabled:opacity-50"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

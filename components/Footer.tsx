@@ -11,10 +11,17 @@
 import Link from 'next/link';
 import { COMPANY, CONTACT, legalDetailsComplete } from '@/lib/legal';
 
+// "Written and linked" is the standard, so every document that forms part of
+// the agreement is listed here rather than only reachable from inside another
+// one. The AI notice is in this list deliberately: it is the one a customer
+// most needs before they buy, not after.
 const LEGAL_LINKS = [
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },
   { href: '/refunds', label: 'Refunds' },
+  { href: '/cookies', label: 'Cookies' },
+  { href: '/acceptable-use', label: 'Acceptable use' },
+  { href: '/ai-notice', label: 'AI notice' },
 ];
 
 const PRODUCT_LINKS = [

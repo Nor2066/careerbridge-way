@@ -37,6 +37,19 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_event_created
 CREATE INDEX IF NOT EXISTS idx_analytics_events_session
   ON public.analytics_events (session_id, created_at);
 
+-- Required, and easy to miss. A table created from the SQL Editor does not
+-- pick up the grants that Supabase applies to tables it creates itself, so
+-- service_role lands with no rights at all — and /api/events logs the refusal
+-- and returns 204 anyway, so the only symptom is an empty table.
+--
+-- The sequence grant is not optional either: id is a bigserial, and an insert
+-- that cannot use the sequence fails even with INSERT on the table.
+--
+-- Nothing for anon or authenticated, deliberately. RLS already denies them,
+-- and this table should never be reachable from a browser.
+GRANT SELECT, INSERT ON public.analytics_events TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.analytics_events_id_seq TO service_role;
+
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- BLOCK 2 of 3  —  the funnel, which is the whole point
@@ -92,8 +105,10 @@ ORDER BY 1;
 -- HOUSEKEEPING  —  do not keep these forever
 -- ═══════════════════════════════════════════════════════════════════════
 --
--- The privacy policy promises technical records are kept "up to 90 days".
--- Nothing enforces that on its own, so either run this occasionally or set it
--- up as a scheduled job under Database → Cron.
-
--- DELETE FROM public.analytics_events WHERE created_at < now() - interval '90 days';
+-- The privacy policy promises analytics events are kept for 90 days, and that
+-- promise is now enforced by a nightly scheduled job rather than by whoever
+-- remembers to read this comment.
+--
+-- See supabase/analytics-retention.sql. Run it once; it schedules the delete,
+-- clears the existing backlog, and gives you the query that proves the claim
+-- is still true.

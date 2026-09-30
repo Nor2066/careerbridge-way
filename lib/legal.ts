@@ -35,6 +35,30 @@ export const COMPANY = {
   country: 'United Kingdom',
 } as const;
 
+/**
+ * Minimum age for an account.
+ *
+ * 16 is a business choice rather than a legal floor — UK law sets the age of
+ * consent for information society services at 13 — but the assessment asks
+ * personal questions and the report is about life decisions, so the higher
+ * line is the defensible one. The signup form asks, and /api/auth/signup
+ * refuses without it.
+ */
+export const MINIMUM_AGE = 16;
+
+/**
+ * The version of the terms a new account is agreeing to.
+ *
+ * Recorded against the profile at signup. A tickbox that records nothing is
+ * weak evidence: what matters later is being able to say which wording the
+ * person accepted and when, and that is only possible if the version is
+ * stamped at the time rather than inferred from whatever is published now.
+ *
+ * Bump this whenever the terms change materially — the same day you move
+ * LAST_UPDATED.terms.
+ */
+export const TERMS_VERSION = '2026-09-30';
+
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
   support: 'TODO@example.com',
@@ -50,9 +74,12 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '26 August 2026',
-  terms: '26 August 2026',
-  refunds: '26 August 2026',
+  privacy: '30 September 2026',
+  terms: '30 September 2026',
+  refunds: '30 September 2026',
+  cookies: '30 September 2026',
+  acceptableUse: '30 September 2026',
+  aiNotice: '30 September 2026',
 } as const;
 
 /**
@@ -108,6 +135,18 @@ export const SUBPROCESSORS: Subprocessor[] = [
     data: 'A hashed identifier and a request count. No assessment content.',
     region: 'Europe',
   },
+  {
+    name: 'Resend',
+    purpose: 'Sending receipts, sign-in links and "report ready" emails',
+    data: 'Your email address and the contents of that email. No assessment answers.',
+    region: 'United States',
+  },
+  {
+    name: 'Google',
+    purpose: 'Sign in with Google, if you choose it',
+    data: 'The sign-in request. Google tells us your email address; we tell Google nothing about your answers.',
+    region: 'United States',
+  },
 ];
 
 /** How long we keep things, and why that long. */
@@ -126,6 +165,11 @@ export const RETENTION = [
     what: 'Error and security logs',
     how_long: 'Up to 90 days',
     why: 'Long enough to investigate a fault or a security incident, and no longer.',
+  },
+  {
+    what: 'Product analytics events',
+    how_long: '90 days',
+    why: 'To see which step of the assessment loses people. These never contain the content of your answers, and deleting your account detaches them from you rather than removing them. Enforced by a nightly job, not by hand — see supabase/analytics-retention.sql.',
   },
 ];
 

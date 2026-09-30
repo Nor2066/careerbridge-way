@@ -86,10 +86,34 @@ function signOff(): string {
   return `${contact}\n\n— ${COMPANY.tradingName}`;
 }
 
+/**
+ * Formats the amount on a receipt.
+ *
+ * Previously this mapped GBP to "£" and *everything else* to "€", which meant
+ * a UK company issuing a receipt in pounds printed euros whenever Stripe
+ * omitted the currency. A receipt naming the wrong currency is the document a
+ * customer forwards to their bank when they dispute the charge, so it is worth
+ * more care than a two-way symbol guess.
+ *
+ * Intl gets the symbol, the placement and the separators right for whatever
+ * Stripe actually charged. It throws RangeError on a code it does not know,
+ * hence the fallback — a receipt that reads "4.50 XYZ" is still a usable
+ * record, whereas an exception here would lose the email entirely.
+ *
+ * The default is GBP because that is where the company is registered. The
+ * divide by 100 assumes a two-decimal currency, which holds for everything
+ * Stripe is configured to take here; zero-decimal currencies (JPY, KRW) would
+ * need handling before enabling them.
+ */
 function money(amountCents: number | null | undefined, currency: string | null | undefined): string {
   if (amountCents == null) return 'your purchase';
-  const symbol = (currency ?? 'eur').toLowerCase() === 'gbp' ? '£' : '€';
-  return `${symbol}${(amountCents / 100).toFixed(2)}`;
+  const code = (currency ?? 'gbp').toUpperCase();
+  try {
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: code })
+      .format(amountCents / 100);
+  } catch {
+    return `${(amountCents / 100).toFixed(2)} ${code}`;
+  }
 }
 
 const PRODUCT_NAMES: Record<string, string> = {

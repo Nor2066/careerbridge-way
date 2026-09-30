@@ -18,6 +18,7 @@ import {
   CHECKOUT_BRANDING,
   CHECKOUT_SUBMIT_MESSAGE,
   IMMEDIATE_DELIVERY_NOTICE,
+  TERMS_ACCEPTANCE_MESSAGE,
   type ProductType,
 } from '@/lib/plans';
 import { checkPurchaseEligibility } from '@/lib/purchase-rules';
@@ -111,6 +112,21 @@ export async function POST(request: Request) {
     // other depending on the "Prefer logo over icon" toggle in the Dashboard.
     const iconUrl = process.env.STRIPE_CHECKOUT_ICON_URL;
 
+    // Whether the customer is asked to tick a box rather than merely shown a
+    // sentence. This is the difference between the refund policy resting on
+    // regulation 37 properly and resting on an assertion that someone read
+    // something, so a launch with it off is a compliance gap rather than a
+    // missing nicety — hence a warning on every session rather than silence.
+    const tosRequired = process.env.STRIPE_REQUIRE_TOS === 'true';
+    if (!tosRequired) {
+      console.warn(
+        'CHECKOUT: STRIPE_REQUIRE_TOS is not "true", so this session collects no ' +
+        'consent tickbox. The 14-day cancellation right is NOT reliably excluded ' +
+        'for these purchases. Set a terms-of-service URL in the Stripe Dashboard ' +
+        '(Settings → Checkout), then set STRIPE_REQUIRE_TOS=true.'
+      );
+    }
+
     const session = await getStripe().checkout.sessions.create({
       mode: 'payment',
       // payment_method_types is deliberately NOT set. Pinning it to ['card']
@@ -133,13 +149,20 @@ export async function POST(request: Request) {
         submit: {
           message: `${CHECKOUT_SUBMIT_MESSAGE[productType]} ${IMMEDIATE_DELIVERY_NOTICE}`,
         },
+        // Replaces Stripe's default "I agree to the terms of service" beside
+        // the tickbox with wording that also carries the regulation 37
+        // express consent and acknowledgement. Only rendered when the
+        // tickbox itself is, so it is gated on the same flag.
+        ...(tosRequired
+          ? { terms_of_service_acceptance: { message: TERMS_ACCEPTANCE_MESSAGE } }
+          : {}),
       },
-      // A tickbox tying the purchase to the published terms. Behind an env
-      // flag because Stripe rejects session creation if consent is required
-      // and no terms-of-service URL is set in the Dashboard — switching this
-      // on before that is configured would take checkout down entirely.
+      // The tickbox that makes the refund policy hold up. Behind an env flag
+      // because Stripe rejects session creation if consent is required and no
+      // terms-of-service URL is set in the Dashboard — switching this on
+      // before that is configured would take checkout down entirely.
       // Set the URL under Settings → Checkout, then STRIPE_REQUIRE_TOS=true.
-      ...(process.env.STRIPE_REQUIRE_TOS === 'true'
+      ...(tosRequired
         ? { consent_collection: { terms_of_service: 'required' as const } }
         : {}),
       // Metadata is read by the webhook and by /api/checkout/verify — this is

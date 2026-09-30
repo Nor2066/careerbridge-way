@@ -94,6 +94,7 @@ vi.mock('@supabase/supabase-js', () => ({
 
 const { fulfillCheckoutSession } = await import('@/lib/fulfillment');
 const { ATTEMPTS_GRANTED, PRODUCT_AMOUNTS_CENTS } = await import('@/lib/plans');
+const { TERMS_VERSION } = await import('@/lib/legal');
 
 type Product = 'basic' | 'full' | 'topup' | 'followup_unlock';
 
@@ -119,7 +120,11 @@ beforeEach(() => {
 const fulfill = (
   productType: Product,
   sessionId = 'cs_1',
-  extra: { amountTotal?: number | null; currency?: string | null } = {}
+  extra: {
+    amountTotal?: number | null;
+    currency?: string | null;
+    termsConsent?: string | null;
+  } = {}
 ) =>
   fulfillCheckoutSession({
     userId: 'user-1',
@@ -175,7 +180,9 @@ describe('the payments row', () => {
         stripe_session_id: `cs_${p}`,
         product_type: p,
         amount_cents: PRODUCT_AMOUNTS_CENTS[p],
-        currency: 'eur',
+        // GBP, not EUR — the company is registered in England and Wales, and
+        // this value is what the receipt email formats the amount with.
+        currency: 'gbp',
         status: 'completed',
       });
     }
@@ -223,6 +230,35 @@ describe('the recorded amount', () => {
     // would be recorded at full price.
     await fulfill('topup', 'cs_zero', { amountTotal: 0, currency: 'eur' });
     expect(stub.state.inserts[0].row.amount_cents).toBe(0);
+  });
+});
+
+// The evidence behind refusing a refund on the "you already received it"
+// ground. Under CCR 2013 reg 37 that only holds where the customer expressly
+// consented and acknowledged, so whether THIS purchase captured it has to
+// survive on the row rather than being inferred from a feature flag later.
+describe('the consumer-rights consent record', () => {
+  it("stores Stripe's value when the tickbox was shown and ticked", async () => {
+    await fulfill('basic', 'cs_consent', { termsConsent: 'accepted' });
+    expect(stub.state.inserts[0].row.consent_terms_of_service).toBe('accepted');
+  });
+
+  it("distinguishes 'no box shown' from a ticked box", async () => {
+    // null must not collapse to the same value as 'accepted', and must be
+    // recorded as a positive fact rather than left null — a null would be
+    // ambiguous with rows written before the column existed.
+    await fulfill('basic', 'cs_noconsent', { termsConsent: null });
+    expect(stub.state.inserts[0].row.consent_terms_of_service).toBe('not_collected');
+  });
+
+  it('defaults to not_collected when the caller omits it entirely', async () => {
+    await fulfill('full', 'cs_absent');
+    expect(stub.state.inserts[0].row.consent_terms_of_service).toBe('not_collected');
+  });
+
+  it('stamps the terms version in force at the time of the purchase', async () => {
+    await fulfill('topup', 'cs_version', { termsConsent: 'accepted' });
+    expect(stub.state.inserts[0].row.terms_version).toBe(TERMS_VERSION);
   });
 });
 

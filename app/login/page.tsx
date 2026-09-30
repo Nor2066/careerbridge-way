@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { MINIMUM_AGE } from '@/lib/legal';
 
 // Each code names a different failure, so the message can actually tell the
 // person something useful — and so the code in the address bar says which
@@ -96,7 +97,12 @@ function LoginForm() {
     if (googleLoading) return;
     setGoogleLoading(true);
     setError('');
-    signInWithGoogle(returnTo).catch(() => {
+    // `true` because Google sign-in creates an account when there isn't one,
+    // so this button is an account-creation route even on the login page, and
+    // the wording it is recording sits directly beneath it. The signup form
+    // uses a real tickbox; here a returning user should not be made to tick
+    // something on every visit, so the notice carries it instead.
+    signInWithGoogle(returnTo, true).catch(() => {
       setGoogleLoading(false);
       setError('Google sign-in failed. Please try again.');
     });
@@ -184,6 +190,15 @@ function LoginForm() {
           >
             {googleLoading ? 'Redirecting to Google...' : 'Sign in with Google'}
           </button>
+
+          {/* Google sign-in creates an account if there isn't one, so this
+              button can make the contract. The wording has to be next to it,
+              not only on the signup page a new Google user never visits. */}
+          <p className="mt-3 text-center text-xs leading-relaxed text-gray-400">
+            If you don&apos;t have an account yet, continuing with Google creates one. By
+            doing so you confirm you are {MINIMUM_AGE} or over and accept the{' '}
+            <a href="/terms" className="text-indigo-300 underline">Terms of Service</a>.
+          </p>
 
           <p className="mt-6 text-center text-gray-300 text-sm">
             Don&apos;t have an account?{' '}

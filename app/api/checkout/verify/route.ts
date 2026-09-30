@@ -87,6 +87,9 @@ export async function POST(request: Request) {
           : session.payment_intent?.id ?? null,
       amountTotal: session.amount_total,
       currency: session.currency,
+      // See the matching note in the Stripe webhook: this route and that one
+      // race for the insert, so both must supply it.
+      termsConsent: session.consent?.terms_of_service ?? null,
     });
 
     const sub = await getSubscription(user.id);

@@ -16,6 +16,8 @@ import {
 } from '@/lib/auth-cookies';
 import { authLimiter, getIP } from '@/lib/rate-limit';
 import { assessPassword, MAX_PASSWORD_LENGTH } from '@/lib/password';
+import { recordTermsAcceptance } from '@/lib/terms-acceptance';
+import { MINIMUM_AGE } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,13 @@ const SignUpSchema = z.object({
   // network call and so cannot live in a Zod schema. Here we only bound the
   // input so an enormous body never reaches the hashing step.
   password: z.string().min(1).max(MAX_PASSWORD_LENGTH),
+  // z.literal(true) rather than z.boolean(): the request is rejected unless
+  // the value is actually true, so a caller cannot create an account by
+  // sending false or leaving the field out. The form disables the button
+  // until the box is ticked, but the form is not the security boundary —
+  // anything can POST here.
+  acceptedTerms: z.literal(true),
+  confirmedAge: z.literal(true),
 });
 
 export async function POST(request: Request) {
@@ -49,15 +58,28 @@ export async function POST(request: Request) {
   }
 
   try {
-    const parsed = SignUpSchema.safeParse(await request.json());
+    const body = await request.json();
+    const parsed = SignUpSchema.safeParse(body);
     if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message ?? 'Invalid email or password';
+      // Zod renders a failed z.literal(true) as "Invalid literal value,
+      // expected true", which tells a person nothing. The two consent fields
+      // get their own message; everything else keeps Zod's.
+      const failedConsent = parsed.error.issues.some(
+        (issue) => issue.path[0] === 'acceptedTerms' || issue.path[0] === 'confirmedAge'
+      );
+      const message = failedConsent
+        ? `Please confirm you are ${MINIMUM_AGE} or over and accept the terms.`
+        : parsed.error.issues[0]?.message ?? 'Invalid email or password';
       return NextResponse.json({ error: message }, { status: 400, headers: NO_STORE_HEADERS });
     }
 
+    // Pulled out by name rather than spread into signUp below: the consent
+    // flags belong on our profile row, not in Supabase's auth payload.
+    const { email, password } = parsed.data;
+
     // Checked before Supabase is called: no point creating an account and
     // then telling someone the password is unacceptable.
-    const verdict = await assessPassword(parsed.data.password, parsed.data.email);
+    const verdict = await assessPassword(password, email);
     if (!verdict.ok) {
       return NextResponse.json(
         { error: verdict.reason },
@@ -69,7 +91,8 @@ export async function POST(request: Request) {
     const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
 
     const { data, error } = await supabase.auth.signUp({
-      ...parsed.data,
+      email,
+      password,
       options: { emailRedirectTo: `${siteOrigin(request)}/auth/callback` },
     });
 
@@ -82,6 +105,14 @@ export async function POST(request: Request) {
         { status: 400, headers: NO_STORE_HEADERS }
       );
     }
+
+    // Stamped now rather than on first sign-in: the agreement was made here,
+    // and with email confirmation on it could otherwise be days before the
+    // person comes back — or never. The profile row already exists by this
+    // point, created by the on_auth_user_created trigger.
+    //
+    // Awaited, but it cannot fail the request: see lib/terms-acceptance.ts.
+    if (data.user) await recordTermsAcceptance(data.user.id);
 
     const response = NextResponse.json(
       { needsConfirmation: !data.session },

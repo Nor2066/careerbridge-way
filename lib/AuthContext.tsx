@@ -30,9 +30,13 @@ export type SessionUser = {
 type AuthContextType = {
   user: SessionUser | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
+  signUp: (
+    email: string,
+    password: string,
+    accepted: boolean
+  ) => Promise<{ needsConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: (returnTo?: string) => Promise<void>;
+  signInWithGoogle: (returnTo?: string, accepted?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -116,12 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
-  const signUp = async (email: string, password: string) => {
+  // `accepted` carries the age + terms tickbox. The route rejects anything
+  // but true, so this is not an optional argument in practice — it is passed
+  // explicitly to make it obvious at every call site that an account cannot
+  // be created without it.
+  const signUp = async (email: string, password: string, accepted: boolean) => {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email,
+        password,
+        acceptedTerms: accepted,
+        confirmedAge: accepted,
+      }),
     });
 
     if (!res.ok) throw new Error(await readError(res, 'Signup failed. Please try again.'));
@@ -132,14 +145,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { needsConfirmation: Boolean(data.needsConfirmation) };
   };
 
-  const signInWithGoogle = async (returnTo?: string) => {
+  // `accepted` says the caller put the age + terms wording in front of the
+  // person before this ran. Google sign-in creates the account as a side
+  // effect, so if it is not captured here it is never captured at all.
+  const signInWithGoogle = async (returnTo?: string, accepted = false) => {
     // A full navigation, not fetch(): the server needs to set the PKCE
     // verifier cookie via a real Set-Cookie header that is committed before
     // the browser leaves for Google.
-    const target = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')
-      ? `/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`
-      : '/api/auth/google';
-    window.location.href = target;
+    const params = new URLSearchParams();
+    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+      params.set('returnTo', returnTo);
+    }
+    if (accepted) params.set('accepted', '1');
+    const query = params.toString();
+    window.location.href = query ? `/api/auth/google?${query}` : '/api/auth/google';
   };
 
   const signOut = async () => {

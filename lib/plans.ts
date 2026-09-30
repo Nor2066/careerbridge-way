@@ -77,6 +77,35 @@ export const CHECKOUT_BRANDING = {
 export const IMMEDIATE_DELIVERY_NOTICE =
   'Your purchase is available straight away, so your 14-day right to cancel ends once you generate a report with it. Anything you have not used stays refundable for 14 days.';
 
+/**
+ * The wording beside the tickbox at checkout.
+ *
+ * Regulation 37 of the Consumer Contracts Regulations 2013 takes away the
+ * 14-day cancellation right for digital content only where the consumer gave
+ * EXPRESS CONSENT to supply starting early AND ACKNOWLEDGED that they lose the
+ * right by doing so. A sentence displayed under the pay button — which is all
+ * IMMEDIATE_DELIVERY_NOTICE was — is arguably neither: nothing records that
+ * the person did anything, and an unread notice is not an affirmative act.
+ *
+ * So the same three things now hang off a box the customer has to tick:
+ * agreement to the terms, the request for immediate supply, and the
+ * acknowledgement. Stripe renders this next to its terms-of-service checkbox,
+ * and reports back on the session whether it was ticked — which is the part
+ * that turns this from wording into evidence.
+ *
+ * Deliberately short. This has to be read in the three seconds before someone
+ * clicks pay, and a paragraph of statute references would not be.
+ *
+ * Requires STRIPE_REQUIRE_TOS=true and a terms-of-service URL set in the
+ * Stripe Dashboard. Without the flag the box is not shown at all and the
+ * refund policy is resting on the weaker position — see the warning in
+ * app/api/checkout/route.ts.
+ */
+export const TERMS_ACCEPTANCE_MESSAGE =
+  'I agree to the Terms of Service. I ask for my purchase to be made available immediately, ' +
+  'and I understand that once I generate a report with it I lose my 14-day right to cancel ' +
+  'that part. Anything I have not used stays refundable for 14 days.';
+
 // Which plan a purchase sets the user to (only basic/full change the plan)
 export const PLAN_FOR_PRODUCT: Record<ProductType, 'basic' | 'full' | null> = {
   basic: 'basic',

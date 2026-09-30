@@ -45,6 +45,19 @@ export async function GET(request: Request) {
   const origin = siteOrigin(request);
   const returnTo = safeReturnTo(requestUrl.searchParams.get('returnTo'));
 
+  // Did the caller confirm their age and accept the terms before leaving?
+  //
+  // Google sign-in creates the account as a side effect of signing in, so this
+  // is the only chance to capture it — there is no later form. It travels as a
+  // short-lived httpOnly cookie for the same reason returnTo does: Supabase
+  // only redirects back to the single URL in its allow-list, so there is
+  // nowhere to hang a query parameter on the way home.
+  //
+  // It is not a security control. It records what the person was shown and
+  // clicked; the button that sets it is what actually puts the terms in front
+  // of them.
+  const acceptedTerms = requestUrl.searchParams.get('accepted') === '1';
+
   // The verifier cookie we're about to set belongs to whichever origin serves
   // THIS request, but the callback always lands on the canonical origin (it's
   // the only URL in Supabase's redirect allow-list). If those differ — which
@@ -59,6 +72,9 @@ export async function GET(request: Request) {
   if (here !== origin) {
     const target = new URL('/api/auth/google', origin);
     if (returnTo !== '/') target.searchParams.set('returnTo', returnTo);
+    // Must survive the bounce too, or a preview deployment loses the
+    // acceptance and the account is created without one.
+    if (acceptedTerms) target.searchParams.set('accepted', '1');
     return NextResponse.redirect(target, { headers: NO_STORE_HEADERS });
   }
 
@@ -93,6 +109,15 @@ export async function GET(request: Request) {
   response.cookies.set('oauth_return_to', returnTo, {
     ...AUTH_COOKIE_FLAGS,
     maxAge: 60 * 10,
+  });
+
+  // Written when accepted, actively cleared when not. Clearing matters: an
+  // abandoned sign-in from the signup page would otherwise leave a valid
+  // acceptance cookie sitting in the browser for ten minutes, ready to be
+  // picked up by a later sign-in that never showed anyone the terms.
+  response.cookies.set('oauth_terms_accepted', acceptedTerms ? '1' : '', {
+    ...AUTH_COOKIE_FLAGS,
+    maxAge: acceptedTerms ? 60 * 10 : 0,
   });
 
   // Clear the cookie the old hand-rolled implementation used, so browsers

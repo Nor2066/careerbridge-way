@@ -59,6 +59,14 @@ export async function POST(request: Request) {
         // works without NEXT_PUBLIC_URL set, and an unset var here used to
         // produce a link to "undefined/auth/callback".
         emailRedirectTo: `${siteOrigin(request)}/auth/callback`,
+        // Sign in only. This defaults to TRUE, which quietly made the login
+        // page's magic link a third way to create an account — one that never
+        // showed anyone the terms or asked their age, unlike the signup form.
+        //
+        // Safe to turn off precisely because of the neutral response below: an
+        // address with no account gets the same "check your email" as one with
+        // an account, and nothing is sent. No new enumeration surface.
+        shouldCreateUser: false,
       },
     });
 

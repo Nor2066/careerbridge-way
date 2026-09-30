@@ -79,6 +79,76 @@ export default function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
+      <LegalSection id="sensitive" title="Sensitive information, and what you write in free text">
+        <div className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-4">
+          <p className="text-sm text-amber-100">
+            <strong className="font-semibold">
+              Please avoid putting special category information in a free-text answer if you
+              can.
+            </strong>{' '}
+            You do not need to disclose a health condition, a disability, your religion, your
+            ethnicity, your sexual orientation, your political views or your trade union
+            membership to get a useful report.
+          </p>
+        </div>
+        <p>
+          The free-text questions ask what you have struggled with, what you are afraid of,
+          and what you want your life to look like. Some people answer those with information
+          that counts as <strong className="text-white">special category data</strong> under
+          Article 9 of the UK GDPR &mdash; most often about health or disability.
+        </p>
+        <p>
+          We do not ask for it, we do not want it, and nothing in the scoring model looks for
+          it. But if you volunteer it, we necessarily process it in order to produce the
+          report you asked for.
+        </p>
+        <p>
+          Where that happens we rely on{' '}
+          <strong className="text-white">your explicit consent</strong> under Article 9(2)(a),
+          given by choosing to include that information after being asked here not to. You can
+          withdraw it at any time by deleting the answer or your account.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="distress" title="Screening for signs of distress">
+        <p>
+          A questionnaire that asks students what they have failed at will sometimes receive
+          answers describing real distress. So that the service does not respond to a
+          disclosure of that kind by cheerfully listing job clusters,{' '}
+          <strong className="text-white">
+            your free-text answers are checked against a fixed list of phrases
+          </strong>{' '}
+          that may indicate self-harm or suicidal thoughts. If one matches, we show support
+          information above your report and instruct the AI to write in a gentler register.
+        </p>
+        <p>You should know exactly what this is and is not:</p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            It is a <strong className="text-white">keyword check, not an assessment</strong>.
+            It will miss things, and it will sometimes fire on innocent phrasing.
+          </li>
+          <li>
+            <strong className="text-white">The result is never stored.</strong> It exists for
+            the length of one request and is then gone &mdash; not written to our database,
+            not attached to your account, not visible to anyone.
+          </li>
+          <li>It does not block or delay your report, and it does not change your career results.</li>
+          <li>
+            <strong className="text-white">It does not alert us</strong>, and no human is
+            notified. We do not monitor individuals.
+          </li>
+        </ul>
+        <p>
+          We designed it this way deliberately: an inference about someone&rsquo;s mental
+          health is special category data, and storing one would create a record about you
+          that you never asked us to make.
+        </p>
+        <p>
+          If you are in danger right now, please call 999. Samaritans are free, 24 hours a
+          day, on 116 123.
+        </p>
+      </LegalSection>
+
       <LegalSection id="ai" title="We use AI to write your report">
         <p>
           <strong className="text-white">
@@ -158,6 +228,50 @@ export default function PrivacyPolicyPage() {
         </ul>
       </LegalSection>
 
+      <LegalSection
+        id="automated"
+        title="Automated processing, and whether a machine decides anything about you"
+      >
+        <p>
+          Two automated things happen to your answers: a{' '}
+          <strong className="text-white">fixed scoring model</strong> ranks career clusters,
+          and an <strong className="text-white">AI system</strong> writes a report. Both are
+          automated, and together they amount to profiling as the UK GDPR uses that word.
+        </p>
+        <p>
+          <strong className="text-white">Neither of them makes a decision about you.</strong>{' '}
+          Nothing here determines whether you get a job, a place on a course, credit, a
+          benefit or anything else. The output is information for you to consider, and every
+          decision stays with you.
+        </p>
+        <p>
+          For that reason we do not consider Article 22 &mdash; the right not to be subject to
+          a solely automated decision producing legal or similarly significant effects &mdash;
+          to be engaged. We are telling you our reasoning rather than asking you to take it on
+          trust, and if you disagree you are entitled to say so.
+        </p>
+        <p>Regardless of that analysis, and without accepting that we have to:</p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>we will explain the logic of the scoring model in plain English if you ask;</li>
+          <li>
+            you may ask a person here to review a report or a set of scores and give you their
+            own comment on it; and
+          </li>
+          <li>you may tell us you think a result is wrong, and we will look at it.</li>
+        </ul>
+        <p>
+          Ask at{' '}
+          <a className="text-indigo-300 underline" href={`mailto:${CONTACT.privacy}`}>
+            {CONTACT.privacy}
+          </a>
+          . The{' '}
+          <a className="text-indigo-300 underline" href="/ai-notice">
+            AI Transparency and Disclaimer Notice
+          </a>{' '}
+          explains what the AI can and cannot do.
+        </p>
+      </LegalSection>
+
       <LegalSection id="retention" title="How long we keep it">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[30rem] border-collapse text-sm">
@@ -208,8 +322,27 @@ export default function PrivacyPolicyPage() {
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.privacy}`}>
             {CONTACT.privacy}
           </a>{' '}
-          and we will respond within one month. If you think we have handled your data
-          badly, you can complain to the Information Commissioner&rsquo;s Office at{' '}
+          and we will respond <strong className="text-white">within one month</strong>. If
+          your request is complex, or you have made several, we may extend by up to two
+          further months &mdash; and we will tell you within the first month if we do.
+        </p>
+        <p>
+          Exercising these rights is free. We may charge a reasonable fee, or refuse, only if
+          a request is manifestly unfounded or excessive, and we will explain why if we ever
+          do. If we cannot tell that a request came from you, we may ask you to confirm it
+          from the address on the account &mdash; we will not demand identity documents.
+        </p>
+        <p>
+          Some rights have limits. We cannot delete payment records the law requires us to
+          keep, and we may keep a minimal note that you asked us to delete something, so we
+          can show that we did.
+        </p>
+        <p>
+          If you think we have handled your data badly, you can complain to the{' '}
+          <strong className="text-white">Information Commissioner&rsquo;s Office</strong> at
+          any time, and you do not have to come to us first &mdash; though we would rather you
+          told us so we can put it right. Wycliffe House, Water Lane, Wilmslow, Cheshire SK9
+          5AF. Helpline 0303 123 1113.{' '}
           <a
             className="text-indigo-300 underline"
             href="https://ico.org.uk"
@@ -218,19 +351,23 @@ export default function PrivacyPolicyPage() {
           >
             ico.org.uk
           </a>
-          . We would rather you told us first so we can put it right.
         </p>
       </LegalSection>
 
-      <LegalSection id="cookies" title="Cookies">
+      <LegalSection id="cookies" title="Cookies and what we store on your device">
         <p>
-          We use cookies to keep you signed in. That is the whole list. They are strictly
-          necessary for a service you asked for, so we are not required to ask permission
-          for them and we do not show you a banner about them.
+          We use a small number of strictly necessary cookies to keep you signed in, and a
+          little browser session storage to carry your answers between pages. We use no
+          advertising cookies and no cross-site tracking, which is why you do not see a
+          cookie banner.
         </p>
         <p>
-          We do not use advertising cookies, and we do not let anyone track you across other
-          websites. If that ever changes, we will ask you first and this page will say so.
+          The full list &mdash; names, purposes and lifetimes, including the cookies Stripe
+          and Google set on their own pages &mdash; is in our{' '}
+          <a className="text-indigo-300 underline" href="/cookies">
+            Cookie Policy
+          </a>
+          .
         </p>
       </LegalSection>
 
