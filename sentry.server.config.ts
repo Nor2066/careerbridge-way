@@ -13,7 +13,11 @@ Sentry.init({
   // Enable logs to be sent to Sentry
   enableLogs: true,
 
-  // Enable sending user PII (Personally Identifiable Information)
+  // Off. On the server this attaches each request's cookies, headers and IP
+  // address to every event, and the cookies include the httpOnly session
+  // token, which would then sit in a third party's logs for the whole
+  // retention period. The privacy policy promises Sentry "technical error
+  // details", not that.
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  sendDefaultPii: false,
 });

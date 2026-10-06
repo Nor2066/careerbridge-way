@@ -74,7 +74,7 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '30 September 2026',
+  privacy: '6 October 2026',
   terms: '30 September 2026',
   refunds: '30 September 2026',
   cookies: '30 September 2026',
@@ -103,7 +103,7 @@ export const SUBPROCESSORS: Subprocessor[] = [
     name: 'Supabase',
     purpose: 'Database and account authentication',
     data: 'Email address, account identifiers, assessment answers, generated reports',
-    region: 'See your project region in the Supabase dashboard',
+    region: 'European Union (Frankfurt, Germany)',
   },
   {
     name: 'OpenAI',
@@ -127,7 +127,7 @@ export const SUBPROCESSORS: Subprocessor[] = [
     name: 'Sentry',
     purpose: 'Recording errors so we can fix them',
     data: 'Technical error details, which may include your account identifier',
-    region: 'United States',
+    region: 'European Union (Germany)',
   },
   {
     name: 'Upstash',
