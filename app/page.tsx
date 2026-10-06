@@ -5,6 +5,7 @@ import { track } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import BaitQuiz from '@/components/BaitQuiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
+import { CONTACT } from '@/lib/legal';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -352,10 +353,16 @@ export default function LandingPage() {
                 <ContactLink href="https://www.instagram.com/careerbridgeway/" label="Instagram">
                   <InstagramIcon />
                 </ContactLink>
-                {/* Placeholder links — replace with your real handles/address */}
-                <ContactLink href="mailto:hello@careerbridgeway.com" label="Email">
-                  <EmailIcon />
-                </ContactLink>
+                {/* Appears once CONTACT.support in lib/legal.ts is a real
+                    address. It used to be hello@careerbridgeway.com, a domain
+                    owned by an unrelated business, so every message sent from
+                    here went to a stranger's inbox. */}
+                {!CONTACT.support.includes('TODO') && (
+                  <ContactLink href={`mailto:${CONTACT.support}`} label="Email">
+                    <EmailIcon />
+                  </ContactLink>
+                )}
+                {/* Placeholder links — replace with your real handles */}
                 <ContactLink href="https://www.tiktok.com/@careerbridgeway" label="TikTok">
                   <TikTokIcon />
                 </ContactLink>
