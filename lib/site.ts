@@ -1,0 +1,34 @@
+// lib/site.ts
+//
+// The site's public address, for everything that has to spell it out in full:
+// page metadata, the sitemap, robots.txt, structured data, and the URLs Stripe
+// sends customers back to.
+//
+// It comes from NEXT_PUBLIC_URL, so moving to a custom domain means changing
+// one environment variable and redeploying. Six files used to carry their
+// own copy of the vercel.app address, and every copy that got missed would
+// have kept pointing search engines and link previews at the old one.
+//
+// Not the same question as siteOrigin() in lib/auth-cookies.ts. That one asks
+// which origin the OAuth round trip has to stay on for a given request, and in
+// development the answer is localhost. This one asks for the site's public
+// address, so it never depends on a request.
+
+/** Used only when NEXT_PUBLIC_URL is unset or invalid. next.config.js has the
+ *  same fallback; it is CommonJS and cannot import this file. */
+const FALLBACK_URL = 'https://careerbridge-way.vercel.app';
+
+export function resolveSiteUrl(configured: string | undefined): string {
+  if (configured) {
+    try {
+      // .origin drops any path and trailing slash, so `${SITE_URL}/pricing`
+      // can never come out as "//pricing".
+      return new URL(configured).origin;
+    } catch {
+      console.error(`NEXT_PUBLIC_URL is not a valid URL; using ${FALLBACK_URL}`);
+    }
+  }
+  return FALLBACK_URL;
+}
+
+export const SITE_URL = resolveSiteUrl(process.env.NEXT_PUBLIC_URL);

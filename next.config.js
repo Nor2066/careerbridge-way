@@ -4,6 +4,17 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { withSentryConfig } = require("@sentry/nextjs");
 
+// The same answer as SITE_URL in lib/site.ts, which this file cannot import.
+// Keep the two fallbacks identical. .origin matters here: an Origin header
+// never has a trailing slash, so "https://x.com/" would match nothing.
+function siteOrigin() {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_URL).origin;
+  } catch {
+    return 'https://careerbridge-way.vercel.app';
+  }
+}
+
 const nextConfig = {
   async headers() {
     return [
@@ -53,7 +64,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NEXT_PUBLIC_URL || 'https://careerbridge-way.vercel.app',
+            value: siteOrigin(),
           },
           { key: 'Access-Control-Allow-Methods', value: 'GET,POST,OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },

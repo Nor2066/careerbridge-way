@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import BaitQuiz from '@/components/BaitQuiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
 import { CONTACT } from '@/lib/legal';
+import { SITE_URL } from '@/lib/site';
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'CareerBridge Way',
-  url: 'https://careerbridge-way.vercel.app',
+  url: SITE_URL,
   description: 'AI-powered career assessment platform that helps students and graduates discover their ideal career path through personalised questionnaires and reports.',
   applicationCategory: 'EducationalApplication',
   operatingSystem: 'Web',

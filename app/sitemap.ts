@@ -1,8 +1,9 @@
 // app/sitemap.ts
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://careerbridge-way.vercel.app';
+  const base = SITE_URL;
 
   return [
     {

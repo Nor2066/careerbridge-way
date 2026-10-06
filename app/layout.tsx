@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://careerbridge-way.vercel.app'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'CareerBridge Way — Free Career Assessment Test for Students',
     template: '%s | CareerBridge Way',
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://careerbridge-way.vercel.app',
+    url: SITE_URL,
     siteName: 'CareerBridge Way',
     title: 'CareerBridge Way — Free Career Assessment Test for Students',
     description:

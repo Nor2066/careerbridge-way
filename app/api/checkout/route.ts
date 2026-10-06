@@ -10,6 +10,7 @@ import {
   emailNotVerifiedResponse,
 } from '@/lib/api-errors';
 import { safeReturnTo } from '@/lib/auth-cookies';
+import { SITE_URL } from '@/lib/site';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
 import { isDisabled, DISABLED_MESSAGE } from '@/lib/kill-switch';
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
       throw new Error(`No Stripe price ID configured for product "${productType}"`);
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://careerbridge-way.vercel.app';
+    const baseUrl = SITE_URL;
     const returnPath = safeReturnTo(parsed.data.returnPath, '/assess');
 
     // A logo only appears if one is actually reachable — pointing Stripe at a
