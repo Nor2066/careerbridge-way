@@ -4,6 +4,7 @@
 // pricing rules live in exactly one place.
 
 import { BRAND_FULL } from '@/lib/site';
+import { PRICES_PENCE } from '@/lib/prices';
 
 export type ProductType = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
@@ -19,12 +20,10 @@ export const STRIPE_PRICE_IDS: Record<ProductType, string> = {
 // gives us nothing to record. They are not the source of truth for what a
 // customer is charged — the Price object in the Dashboard is — so a mismatch
 // here does not affect billing, only a fallback record.
-export const PRODUCT_AMOUNTS_CENTS: Record<ProductType, number> = {
-  basic: 300,
-  full: 450,
-  followup_unlock: 300, // was 150 — now ONE purchase that unlocks BOTH followups
-  topup: 300,           // was 100 — now a 3-pack of full attempts (main + followup)
-};
+// The same numbers the site displays, so they live in lib/prices.ts.
+// followup_unlock was 150 — now ONE purchase that unlocks BOTH followups.
+// topup was 100 — now a 3-pack of full attempts (main + followup).
+export const PRODUCT_AMOUNTS_CENTS: Record<ProductType, number> = PRICES_PENCE;
 
 // How many main-questionnaire attempts each product grants
 export const ATTEMPTS_GRANTED: Record<ProductType, number> = {

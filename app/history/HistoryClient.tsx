@@ -7,6 +7,7 @@ import ProgressChecklist from '@/components/ProgressChecklist';
 import { getSubscriptionStatus } from '@/lib/subscription-client';
 import { useRouter } from 'next/navigation';
 import PricingContent from '@/components/PricingContent';
+import { formatPrice } from '@/lib/prices';
 
 type HistoryItem = {
   id: string;
@@ -248,7 +249,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
             </p>
           </div>
           <button onClick={() => setShowBundleModal(true)} className="btn-primary whitespace-nowrap">
-            Unlock All Followups — €3.00
+            Unlock All Followups — {formatPrice('followup_unlock')}
           </button>
         </div>
       )}

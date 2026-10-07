@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { track } from '@/lib/analytics';
+import { formatPrice, TAX_NOTE } from '@/lib/prices';
 
 type ProductType = 'basic' | 'full' | 'topup' | 'followup_unlock';
 
@@ -214,12 +215,12 @@ export default function PricingContent({
             <div className="glass-card flex flex-col">
               <h3 className="text-xl font-bold text-white mb-1">Basic</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                €3.00 <span className="text-sm text-gray-400 font-normal">one-time</span>
+                {formatPrice('basic')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
                 <li>✓ 2 main assessment attempts</li>
                 <li>✓ AI career report for each attempt</li>
-                <li>✓ Unlock both followup roadmaps for €3.00</li>
+                <li>✓ Unlock both followup roadmaps for {formatPrice('followup_unlock')}</li>
               </ul>
               <button
                 onClick={() => startCheckout('basic')}
@@ -239,7 +240,7 @@ export default function PricingContent({
                 <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">Best value</span>
               </div>
               <p className="text-3xl font-bold text-white mb-4">
-                €4.50 <span className="text-sm text-gray-400 font-normal">one-time</span>
+                {formatPrice('full')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
                 <li>✓ 3 complete assessment attempts</li>
@@ -262,7 +263,7 @@ export default function PricingContent({
             <div className="glass-card flex flex-col">
               <h3 className="text-xl font-bold text-white mb-1">Unlock All Followups</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                €3.00 <span className="text-sm text-gray-400 font-normal">one-time</span>
+                {formatPrice('followup_unlock')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
                 <li>✓ Unlocks the followup questionnaire for both attempts</li>
@@ -275,7 +276,7 @@ export default function PricingContent({
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'followup_unlock' ? 'Redirecting...' : 'Unlock All Followups — €3.00'}
+                {loadingProduct === 'followup_unlock' ? 'Redirecting...' : `Unlock All Followups — ${formatPrice('followup_unlock')}`}
               </button>
             </div>
           )}
@@ -285,7 +286,7 @@ export default function PricingContent({
             <div className="glass-card flex flex-col">
               <h3 className="text-xl font-bold text-white mb-1">3 Extra Attempts</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                €3.00 <span className="text-sm text-gray-400 font-normal">one-time</span>
+                {formatPrice('topup')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
                 <li>✓ +3 complete attempts (main + followup each)</li>
@@ -297,7 +298,7 @@ export default function PricingContent({
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'topup' ? 'Redirecting...' : 'Buy 3 Attempts — €3.00'}
+                {loadingProduct === 'topup' ? 'Redirecting...' : `Buy 3 Attempts — ${formatPrice('topup')}`}
               </button>
             </div>
           )}

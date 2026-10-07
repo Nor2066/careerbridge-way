@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import PricingContent from '@/components/PricingContent';
 import { BRAND } from '@/lib/site';
+import { formatPrice } from '@/lib/prices';
 
 type Answers = {
   subjects: string[];
@@ -1172,7 +1173,7 @@ export default function Home() {
                 <p className="text-gray-300 mb-6 text-center">
                   Unlock the followup questionnaire and get a second, more detailed AI report
                   with concrete job titles, courses, and a 3-month action plan — one purchase
-                  covers both of your attempts, for €3.00.
+                  covers both of your attempts, for {formatPrice('followup_unlock')}.
                 </p>
                 <div className="flex flex-col gap-3">
                   <PricingContent

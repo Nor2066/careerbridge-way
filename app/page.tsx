@@ -7,6 +7,7 @@ import BaitQuiz from '@/components/BaitQuiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
 import { CONTACT } from '@/lib/legal';
 import { BRAND, BRAND_FULL, SITE_URL, SOCIAL } from '@/lib/site';
+import { formatPrice, PRICE_CURRENCY } from '@/lib/prices';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -20,8 +21,8 @@ const jsonLd = {
   offers: {
     '@type': 'Offer',
     price: '0',
-    priceCurrency: 'EUR',
-    description: 'Free demo assessment available. Full assessment from €3.',
+    priceCurrency: PRICE_CURRENCY,
+    description: `Free demo assessment available. Full assessment from ${formatPrice('basic')}.`,
   },
   audience: {
     '@type': 'Audience',
