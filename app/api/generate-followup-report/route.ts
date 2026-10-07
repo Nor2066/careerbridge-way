@@ -31,6 +31,7 @@ import {
   getIP,
   getUserIdentifier,
 } from '@/lib/rate-limit';
+import { BRAND } from '@/lib/site';
 
 // A hung OpenAI call used to hold the serverless function open for its whole
 // allowance while the customer stared at a spinner. Cap it: 25s per attempt,
@@ -69,7 +70,7 @@ function sanitize(str: string | undefined): string {
     .slice(0, MAX_TEXT);
 }
 
-const SYSTEM_PROMPT = `You are a career roadmap AI assistant for CareerBridge Way, a career guidance platform.
+const SYSTEM_PROMPT = `You are a career roadmap AI assistant for ${BRAND.name}, a career planning platform.
 
 YOUR ONLY FUNCTION:
 - Read the structured career assessment and follow-up data provided in the user message

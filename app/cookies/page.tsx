@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { CONTACT, LAST_UPDATED } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Cookie Policy',
   description:
-    'Everything CareerBridge Way stores on your device, why all of it is strictly necessary, and why there is no cookie banner.',
+    `Everything ${BRAND.name} stores on your device, why all of it is strictly necessary, and why there is no cookie banner.`,
 };
 
 /**

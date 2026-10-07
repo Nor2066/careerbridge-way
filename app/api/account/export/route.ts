@@ -15,6 +15,7 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { USER_DATA_TABLES, PAYMENTS_TABLE } from '@/lib/account-data';
 import { NO_STORE_HEADERS } from '@/lib/auth-cookies';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
+import { BRAND } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
 
     account.purchases = payments ?? [];
 
-    const filename = `careerbridge-data-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `${BRAND.name.toLowerCase()}-data-${new Date().toISOString().slice(0, 10)}.json`;
 
     return new NextResponse(JSON.stringify(account, null, 2), {
       status: 200,

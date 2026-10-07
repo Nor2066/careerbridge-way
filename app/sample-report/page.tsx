@@ -19,11 +19,12 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Sample career report',
   description:
-    'An example of the AI-generated career report CareerBridge Way produces, so you can see what you get before you buy.',
+    `An example of the AI-generated career report ${BRAND.name} produces, so you can see what you get before you buy.`,
 };
 
 const CLUSTERS = [

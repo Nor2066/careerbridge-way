@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { CONTACT, LAST_UPDATED } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'AI Transparency and Disclaimer Notice',
   description:
-    'Which parts of CareerBridge Way are AI and which are not, what AI-generated reports get wrong, and why none of it decides anything about you.',
+    `Which parts of ${BRAND.name} are AI and which are not, what AI-generated reports get wrong, and why none of it decides anything about you.`,
 };
 
 /**

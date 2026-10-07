@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { COMPANY, CONTACT, LAST_UPDATED, MINIMUM_AGE } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'The agreement between you and CareerBridge Way: what we provide, what we do not promise, and where you stand if something goes wrong.',
+    `The agreement between you and ${BRAND.name}: what we provide, what we do not promise, and where you stand if something goes wrong.`,
 };
 
 export default function TermsPage() {

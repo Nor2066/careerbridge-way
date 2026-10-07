@@ -7,11 +7,11 @@ import { resolveSiteUrl } from '@/lib/site';
 
 describe('resolveSiteUrl', () => {
   it('uses the configured address', () => {
-    expect(resolveSiteUrl('https://careerbridge.example')).toBe('https://careerbridge.example');
+    expect(resolveSiteUrl('https://adaqno.example')).toBe('https://adaqno.example');
   });
 
   it('drops a trailing slash so joined paths do not double up', () => {
-    expect(resolveSiteUrl('https://careerbridge.example/')).toBe('https://careerbridge.example');
+    expect(resolveSiteUrl('https://adaqno.example/')).toBe('https://adaqno.example');
   });
 
   it('keeps a port, which local development needs', () => {
@@ -25,7 +25,7 @@ describe('resolveSiteUrl', () => {
 
   it('falls back, loudly, when the value is not a URL', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(resolveSiteUrl('careerbridge.example')).toBe('https://careerbridge-way.vercel.app');
+    expect(resolveSiteUrl('adaqno.example')).toBe('https://careerbridge-way.vercel.app');
     expect(error).toHaveBeenCalledOnce();
     error.mockRestore();
   });

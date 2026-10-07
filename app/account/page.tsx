@@ -9,10 +9,11 @@ import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/lib/supabase-server-auth';
 import { isEmailVerified } from '@/lib/auth';
 import AccountClient from './AccountClient';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Your account',
-  description: 'Download or delete your CareerBridge Way data.',
+  description: `Download or delete your ${BRAND.name} data.`,
   // Nothing here should ever appear in a search result.
   robots: { index: false, follow: false },
 };

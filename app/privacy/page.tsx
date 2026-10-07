@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { COMPANY, CONTACT, LAST_UPDATED, SUBPROCESSORS, RETENTION } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'What CareerBridge Way collects, why, who we share it with, how long we keep it, and how to get it deleted.',
+    `What ${BRAND.name} collects, why, who we share it with, how long we keep it, and how to get it deleted.`,
 };
 
 export default function PrivacyPolicyPage() {

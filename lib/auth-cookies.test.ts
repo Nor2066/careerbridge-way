@@ -12,7 +12,7 @@ beforeEach(() => {
   // NODE_ENV is typed read-only; siteOrigin() branches on it, so the test
   // has to set it the way the runtime actually does.
   (process.env as Record<string, string>).NODE_ENV = 'production';
-  process.env.NEXT_PUBLIC_URL = 'https://careerbridge-way.vercel.app';
+  process.env.NEXT_PUBLIC_URL = 'https://adaqno.com';
 });
 
 afterEach(() => {
@@ -31,7 +31,7 @@ describe('accepting our own pages', () => {
   it('accepts the configured production origin', () => {
     expect(
       isSameOrigin(
-        req('careerbridge-way.vercel.app', { origin: 'https://careerbridge-way.vercel.app' })
+        req('adaqno.com', { origin: 'https://adaqno.com' })
       )
     ).toBe(true);
   });
@@ -40,18 +40,18 @@ describe('accepting our own pages', () => {
   // from a per-branch hostname that can never match NEXT_PUBLIC_URL, so every
   // sign-in and password reset there returned 403.
   it('accepts a preview deployment talking to itself', () => {
-    const host = 'careerbridge-5ijy9eeuw-nor2066s-projects.vercel.app';
+    const host = 'adaqno-5ijy9eeuw-nor2066s-projects.vercel.app';
     expect(isSameOrigin(req(host, { origin: `https://${host}` }))).toBe(true);
   });
 
   it('accepts a custom domain before NEXT_PUBLIC_URL has caught up', () => {
     expect(
-      isSameOrigin(req('careerbridge.co.uk', { origin: 'https://careerbridge.co.uk' }))
+      isSameOrigin(req('adaqno.co.uk', { origin: 'https://adaqno.co.uk' }))
     ).toBe(true);
   });
 
   it('falls back to Referer when Origin is absent', () => {
-    const host = 'careerbridge-way.vercel.app';
+    const host = 'adaqno.com';
     expect(isSameOrigin(req(host, { referer: `https://${host}/login` }))).toBe(true);
   });
 });
@@ -59,12 +59,12 @@ describe('accepting our own pages', () => {
 describe('rejecting everyone else', () => {
   it('rejects a hostile page posting to our production origin', () => {
     expect(
-      isSameOrigin(req('careerbridge-way.vercel.app', { origin: 'https://evil.example' }))
+      isSameOrigin(req('adaqno.com', { origin: 'https://evil.example' }))
     ).toBe(false);
   });
 
   it('rejects a hostile page posting to a preview deployment', () => {
-    const host = 'careerbridge-5ijy9eeuw-nor2066s-projects.vercel.app';
+    const host = 'adaqno-5ijy9eeuw-nor2066s-projects.vercel.app';
     expect(isSameOrigin(req(host, { origin: 'https://evil.example' }))).toBe(false);
   });
 
@@ -73,7 +73,7 @@ describe('rejecting everyone else', () => {
   it('rejects a lookalike domain', () => {
     expect(
       isSameOrigin(
-        req('careerbridge-way.vercel.app', { origin: 'https://careerbridge-way.vercel.app.evil.example' })
+        req('adaqno.com', { origin: 'https://adaqno.com.evil.example' })
       )
     ).toBe(false);
   });
@@ -81,18 +81,18 @@ describe('rejecting everyone else', () => {
   it('rejects http where we expect https', () => {
     expect(
       isSameOrigin(
-        req('careerbridge-way.vercel.app', { origin: 'http://careerbridge-way.vercel.app' })
+        req('adaqno.com', { origin: 'http://adaqno.com' })
       )
     ).toBe(false);
   });
 
   it('rejects a request carrying neither Origin nor Referer', () => {
-    expect(isSameOrigin(req('careerbridge-way.vercel.app'))).toBe(false);
+    expect(isSameOrigin(req('adaqno.com'))).toBe(false);
   });
 
   it('rejects an unparseable Referer', () => {
     expect(
-      isSameOrigin(req('careerbridge-way.vercel.app', { referer: 'not-a-url' }))
+      isSameOrigin(req('adaqno.com', { referer: 'not-a-url' }))
     ).toBe(false);
   });
 });

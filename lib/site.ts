@@ -14,6 +14,34 @@
 // development the answer is localhost. This one asks for the site's public
 // address, so it never depends on a request.
 
+/**
+ * The brand, in one place, because it has already changed once. Everything
+ * customer-facing reads from here or from COMPANY.tradingName, which is set
+ * from it.
+ */
+export const BRAND = {
+  name: 'ADAQNO',
+  /** The few words of explanation the name does not carry on its own. Used
+   *  where someone meets the brand cold: the homepage hero, the footer, link
+   *  previews, the Stripe checkout header and email sign-offs. */
+  descriptor: 'Career Planning',
+} as const;
+
+export const BRAND_FULL = `${BRAND.name} ${BRAND.descriptor}`;
+
+/**
+ * Social profiles, or null for one that is not ours yet.
+ *
+ * Null rather than a guessed URL: a link to a handle we have not claimed sends
+ * people to whoever claims it, which is the same mistake as the old homepage
+ * email address. The homepage shows only the ones set here.
+ */
+export const SOCIAL: Record<'instagram' | 'tiktok' | 'linkedin', string | null> = {
+  instagram: null,
+  tiktok: null,
+  linkedin: null,
+};
+
 /** Used only when NEXT_PUBLIC_URL is unset or invalid. next.config.js has the
  *  same fallback; it is CommonJS and cannot import this file. */
 const FALLBACK_URL = 'https://careerbridge-way.vercel.app';

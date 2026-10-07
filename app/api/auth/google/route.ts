@@ -62,7 +62,7 @@ export async function GET(request: Request) {
   // THIS request, but the callback always lands on the canonical origin (it's
   // the only URL in Supabase's redirect allow-list). If those differ — which
   // they do on every Vercel branch preview, e.g.
-  // careerbridge-way-git-main-*.vercel.app — the cookie is written on one
+  // <project>-git-main-*.vercel.app — the cookie is written on one
   // domain and read on another, so it is never found and sign-in fails with
   // oauth_no_verifier every single time.
   //

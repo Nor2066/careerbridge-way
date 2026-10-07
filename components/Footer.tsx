@@ -10,6 +10,7 @@
 
 import Link from 'next/link';
 import { COMPANY, CONTACT, legalDetailsComplete } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 // "Written and linked" is the standard, so every document that forms part of
 // the agreement is listed here rather than only reachable from inside another
@@ -43,7 +44,10 @@ export default function Footer() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <div className="flex flex-col gap-8 sm:flex-row sm:justify-between">
           <div className="max-w-xs">
-            <p className="text-base font-semibold text-white">{COMPANY.tradingName}</p>
+            <p className="text-base font-semibold tracking-wider text-white">
+              {COMPANY.tradingName}{' '}
+              <span className="font-normal tracking-normal text-gray-400">{BRAND.descriptor}</span>
+            </p>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
               An AI-assisted career assessment for students and graduates. Your report is
               information to think about, not professional careers advice.

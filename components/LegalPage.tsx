@@ -10,7 +10,7 @@
 // image competing with the text.
 
 import Link from 'next/link';
-import { legalDetailsComplete } from '@/lib/legal';
+import { COMPANY, legalDetailsComplete } from '@/lib/legal';
 
 export function LegalSection({
   id,
@@ -51,7 +51,7 @@ export default function LegalPage({
           href="/"
           className="text-sm text-indigo-300 underline underline-offset-4 hover:text-white"
         >
-          &larr; Back to CareerBridge Way
+          &larr; Back to {COMPANY.tradingName}
         </Link>
 
         <h1 className="mt-6 text-3xl font-bold text-white sm:text-4xl">{title}</h1>
@@ -76,7 +76,7 @@ export default function LegalPage({
         <div className="mt-10 border-t border-white/10 pt-8">{children}</div>
 
         <p className="mt-14 border-t border-white/10 pt-6 text-sm text-gray-500">
-          This page is part of the agreement between you and CareerBridge Way. If anything
+          This page is part of the agreement between you and {COMPANY.tradingName}. If anything
           here is unclear, ask us before you buy rather than after &mdash; we would rather
           explain it than argue about it later.
         </p>

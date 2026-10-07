@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { getSubscriptionStatus } from '@/lib/subscription-client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { BRAND } from '@/lib/site';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -34,7 +35,7 @@ export default function Navbar() {
   return (
     <nav className="bg-gray-900/70 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center py-4 px-6">
-        <Link href="/" className="text-xl font-bold text-white">CareerBridge Way</Link>
+        <Link href="/" className="text-xl font-bold tracking-wider text-white">{BRAND.name}</Link>
         <div className="flex items-center gap-6">
           <Link href="/assess" className="text-gray-300 hover:text-white transition text-sm font-medium">
             {inProgress ? 'Continue Assessment' : 'Full Assessment'}

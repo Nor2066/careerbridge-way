@@ -49,9 +49,8 @@ export const PasswordSchema = z
  * they would not necessarily appear in a generic breach list.
  */
 const SITE_SPECIFIC = [
-  'careerbridge',
-  'careerbridgeway',
-  'careerbridge123',
+  'adaqno',
+  'careerplanning',
 ];
 
 export type PasswordProblem =

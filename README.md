@@ -1,4 +1,4 @@
-# CareerBridge Way
+# ADAQNO Career Planning
 
 An AI-assisted career assessment for students and graduates. Someone answers a
 46-question assessment, gets a scored breakdown of their strongest career
@@ -24,7 +24,7 @@ rather than crashing.
 
 ```bash
 npm run build        # production build
-npm run test         # 152 tests
+npm run test         # 161 tests
 npx tsc --noEmit     # type check
 npx eslint .         # lint
 ```
@@ -35,6 +35,12 @@ npx eslint .         # lint
 
 These are the decisions that look wrong until you know why. Each one has a
 longer explanation in the file itself.
+
+**The brand lives in `lib/site.ts`.** `BRAND` holds the name and the short
+descriptor shown beside it; `COMPANY.tradingName` in `lib/legal.ts` is set from
+it, and every page, email, prompt and the Stripe checkout header read from one
+or the other. The images (icon, favicon, link previews, Stripe logo) are drawn
+by `scripts/generate-brand-assets.mjs`; run it again after changing either.
 
 **The session is httpOnly and OAuth stays on one origin.** Browser JavaScript
 never sees the access token; the client learns who it is from

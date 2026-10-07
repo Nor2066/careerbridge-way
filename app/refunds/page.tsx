@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { COMPANY, CONTACT, LAST_UPDATED } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Refund and Cancellation Policy',
   description:
-    'Your 14-day cancellation right, when it applies, and how to get a refund from CareerBridge Way.',
+    `Your 14-day cancellation right, when it applies, and how to get a refund from ${BRAND.name}.`,
 };
 
 export default function RefundsPage() {

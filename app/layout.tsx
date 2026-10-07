@@ -2,14 +2,14 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { SITE_URL } from '@/lib/site';
+import { BRAND, BRAND_FULL, SITE_URL } from '@/lib/site';
 import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'CareerBridge Way — Free Career Assessment Test for Students',
-    template: '%s | CareerBridge Way',
+    default: `${BRAND.name} — Free Career Assessment Test for Students`,
+    template: `%s | ${BRAND.name}`,
   },
   description:
     'Not sure what career suits you? Take our free AI-powered career assessment test and discover the best career path based on your skills, interests, and values. Built for students and graduates.',
@@ -25,31 +25,26 @@ export const metadata: Metadata = {
     'career quiz for students',
     'best career for me',
   ],
-  authors: [{ name: 'CareerBridge Way' }],
-  creator: 'CareerBridge Way',
+  authors: [{ name: BRAND.name }],
+  creator: BRAND.name,
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: SITE_URL,
-    siteName: 'CareerBridge Way',
-    title: 'CareerBridge Way — Free Career Assessment Test for Students',
+    siteName: BRAND_FULL,
+    title: `${BRAND_FULL} — Free Career Assessment Test for Students`,
     description:
       'Discover your ideal career path with our AI-powered assessment. Answer a few questions and get a personalised career report — free for students.',
-    images: [
-      {
-        url: '/images/og-image.webp',
-        width: 1200,
-        height: 630,
-        alt: 'CareerBridge Way — Career Assessment',
-      },
-    ],
+    // No images here: app/opengraph-image.png and app/twitter-image.png are
+    // picked up by file convention, with their size and alt text. This used
+    // to point at /images/og-image.webp, which did not exist, so every shared
+    // link went out with no preview picture.
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CareerBridge Way — Free Career Assessment Test',
+    title: `${BRAND_FULL} — Free Career Assessment Test`,
     description:
       'Not sure what career suits you? Get a free AI-powered career report in minutes.',
-    images: ['/images/og-image.webp'],
   },
   robots: {
     index: true,

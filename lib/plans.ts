@@ -3,6 +3,8 @@
 // Both the checkout route and webhook route import from here so the
 // pricing rules live in exactly one place.
 
+import { BRAND_FULL } from '@/lib/site';
+
 export type ProductType = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
 export const STRIPE_PRICE_IDS: Record<ProductType, string> = {
@@ -50,11 +52,14 @@ export const CHECKOUT_SUBMIT_MESSAGE: Record<ProductType, string> = {
 };
 
 // Brand colours mirror --btn-primary-bg-start and --card-bg in globals.css.
+// display_name carries the descriptor: the checkout header is where someone
+// paying needs to recognise who they are paying, and the name alone does not
+// say what we sell.
 // Stripe takes solid colours only, so the indigo end of the site's gradient
 // stands in for it. font_family 'inter' is the closest supported match to
 // the Tailwind default sans stack the rest of the site uses.
 export const CHECKOUT_BRANDING = {
-  display_name: 'CareerBridge Way',
+  display_name: BRAND_FULL,
   button_color: '#4f46e5',
   background_color: '#ffffff',
   border_style: 'rounded',

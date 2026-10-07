@@ -13,7 +13,7 @@
 // client JavaScript, so a flag there proves nothing. This is set server-side,
 // is httpOnly, and cannot be read or forged by any script on the page.
 
-export const RECOVERY_COOKIE = 'cbw-pw-recovery';
+export const RECOVERY_COOKIE = 'adaqno-pw-recovery';
 
 /**
  * Fifteen minutes. Long enough to read the email, click through, and choose a

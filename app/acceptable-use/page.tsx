@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { CONTACT, LAST_UPDATED } from '@/lib/legal';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Acceptable Use Policy',
   description:
-    'What you must not do with CareerBridge Way, what happens if you do, and how to report a security problem.',
+    `What you must not do with ${BRAND.name}, what happens if you do, and how to report a security problem.`,
 };
 
 /**

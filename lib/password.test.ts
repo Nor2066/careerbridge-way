@@ -49,7 +49,7 @@ describe('app-specific rejections', () => {
 
   it('refuses a password based on the site name', async () => {
     stubHibp();
-    const result = await assessPassword('careerbridge2026', 'someone@example.com');
+    const result = await assessPassword('adaqno2026!', 'someone@example.com');
     expect(result.ok).toBe(false);
   });
 

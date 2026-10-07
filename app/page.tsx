@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import BaitQuiz from '@/components/BaitQuiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
 import { CONTACT } from '@/lib/legal';
-import { SITE_URL } from '@/lib/site';
+import { BRAND, BRAND_FULL, SITE_URL, SOCIAL } from '@/lib/site';
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'CareerBridge Way',
+  name: BRAND.name,
+  alternateName: BRAND_FULL,
   url: SITE_URL,
   description: 'AI-powered career assessment platform that helps students and graduates discover their ideal career path through personalised questionnaires and reports.',
   applicationCategory: 'EducationalApplication',
@@ -27,6 +28,12 @@ const jsonLd = {
     audienceType: 'Students and graduates seeking career guidance',
   },
 };
+
+// The "Reach Us" card shows only channels we have confirmed are ours, and
+// disappears entirely while there are none. See SOCIAL in lib/site.ts and
+// CONTACT in lib/legal.ts.
+const emailReady = !CONTACT.support.includes('TODO');
+const hasContactChannel = emailReady || Object.values(SOCIAL).some(Boolean);
 
 // ── Step icon set (unchanged from before) ───────────────────────────────
 const ConstellationIcon = () => (
@@ -275,7 +282,7 @@ export default function LandingPage() {
             {/* Why This Questionnaire */}
             <div className="glass-card mb-12">
               <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                Why Use CareerBridge Way?
+                Why Use {BRAND.name}?
               </h2>
               <div className="grid md:grid-cols-2 gap-6 text-gray-200">
                 <div>
@@ -346,32 +353,39 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Reach Us Anywhere */}
-            <div className="glass-card">
-              <h2 className="text-2xl font-bold text-white mb-2 text-center">Reach Us Anywhere</h2>
-              <p className="text-gray-300 text-center mb-8 text-sm">Say hello, ask a question, or just follow along.</p>
-              <div className="flex flex-wrap justify-center gap-8">
-                <ContactLink href="https://www.instagram.com/careerbridgeway/" label="Instagram">
-                  <InstagramIcon />
-                </ContactLink>
-                {/* Appears once CONTACT.support in lib/legal.ts is a real
-                    address. It used to be hello@careerbridgeway.com, a domain
-                    owned by an unrelated business, so every message sent from
-                    here went to a stranger's inbox. */}
-                {!CONTACT.support.includes('TODO') && (
-                  <ContactLink href={`mailto:${CONTACT.support}`} label="Email">
-                    <EmailIcon />
-                  </ContactLink>
-                )}
-                {/* Placeholder links — replace with your real handles */}
-                <ContactLink href="https://www.tiktok.com/@careerbridgeway" label="TikTok">
-                  <TikTokIcon />
-                </ContactLink>
-                <ContactLink href="https://www.linkedin.com/company/careerbridgeway" label="LinkedIn">
-                  <LinkedInIcon />
-                </ContactLink>
+            {/* Reach Us Anywhere — only once there is somewhere real to reach
+                us. Every channel here is a link we have confirmed is ours. */}
+            {hasContactChannel && (
+              <div className="glass-card">
+                <h2 className="text-2xl font-bold text-white mb-2 text-center">Reach Us Anywhere</h2>
+                <p className="text-gray-300 text-center mb-8 text-sm">Say hello, ask a question, or just follow along.</p>
+                <div className="flex flex-wrap justify-center gap-8">
+                  {SOCIAL.instagram && (
+                    <ContactLink href={SOCIAL.instagram} label="Instagram">
+                      <InstagramIcon />
+                    </ContactLink>
+                  )}
+                  {/* Appears once CONTACT.support in lib/legal.ts is a real
+                      address on a domain we own. A guessed address sends
+                      people's messages to whoever owns that domain. */}
+                  {emailReady && (
+                    <ContactLink href={`mailto:${CONTACT.support}`} label="Email">
+                      <EmailIcon />
+                    </ContactLink>
+                  )}
+                  {SOCIAL.tiktok && (
+                    <ContactLink href={SOCIAL.tiktok} label="TikTok">
+                      <TikTokIcon />
+                    </ContactLink>
+                  )}
+                  {SOCIAL.linkedin && (
+                    <ContactLink href={SOCIAL.linkedin} label="LinkedIn">
+                      <LinkedInIcon />
+                    </ContactLink>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { PASSWORD_HINT, MIN_PASSWORD_LENGTH } from '@/lib/password';
+import { BRAND } from '@/lib/site';
 
 export default function AccountClient({
   email,
@@ -99,7 +100,7 @@ export default function AccountClient({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `careerbridge-data-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `${BRAND.name.toLowerCase()}-data-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

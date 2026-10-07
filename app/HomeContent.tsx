@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import PricingContent from '@/components/PricingContent';
+import { BRAND } from '@/lib/site';
 
 type Answers = {
   subjects: string[];
@@ -780,7 +781,7 @@ export default function Home() {
       <div className={containerClasses}>      <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
-            <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
+            <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
           </div>
           <span className="text-sm font-medium text-gray-300 block mb-4">
             Step {step + 1} of {totalSteps}
@@ -1124,7 +1125,7 @@ export default function Home() {
         <FeedbackPopup />
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">{BRAND.name}</h1>
             <p className="text-gray-300">Your personalized career assessment results</p>
           </div>
 
@@ -1220,7 +1221,7 @@ export default function Home() {
         <FeedbackPopup />
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">CareerBridge Way</h1>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">{BRAND.name}</h1>
             <p className="text-gray-300">Your personalized career assessment results</p>
           </div>
           <div className="glass-card mb-8">
@@ -1332,7 +1333,7 @@ export default function Home() {
       <div className={containerClasses}>
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
+            <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
             <span className="text-sm font-medium text-gray-300 block mb-4">Step {step + 1} of {totalSteps}</span>
             <div className="w-full bg-gray-600 rounded-full h-2">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
@@ -1595,7 +1596,7 @@ export default function Home() {
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <div className="flex items-center justify-center mb-4">
-              <h1 className="text-3xl font-bold text-white">CareerBridge Way</h1>
+              <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
             </div>
             <span className="text-sm font-medium text-gray-300 block mb-4">Ready to see your results?</span>
             <div className="w-full bg-gray-600 rounded-full h-2">

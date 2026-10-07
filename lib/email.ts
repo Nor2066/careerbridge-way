@@ -28,6 +28,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { COMPANY, CONTACT } from '@/lib/legal';
+import { BRAND_FULL } from '@/lib/site';
 
 const API = 'https://api.resend.com/emails';
 
@@ -83,7 +84,7 @@ async function send({ to, subject, text }: SendArgs): Promise<void> {
 
 function signOff(): string {
   const contact = CONTACT.support.includes('TODO') ? '' : `\nQuestions? Just reply to this email, or write to ${CONTACT.support}.`;
-  return `${contact}\n\n— ${COMPANY.tradingName}`;
+  return `${contact}\n\n— ${BRAND_FULL}`;
 }
 
 /**

@@ -10,11 +10,14 @@
 // impossible to miss on the rendered page.
 // ─────────────────────────────────────────────────────────────────────────
 
-export const COMPANY = {
-  /** Trading name shown to customers. */
-  tradingName: 'CareerBridge Way',
+import { BRAND } from '@/lib/site';
 
-  /** Registered company name, exactly as it appears at Companies House. */
+export const COMPANY = {
+  /** Trading name shown to customers. Set in lib/site.ts. */
+  tradingName: BRAND.name,
+
+  /** Registered company name, exactly as it appears at Companies House.
+   *  Expected to be ADAQNO LTD, which was free in October 2026. */
   legalName: 'TODO — registered company name',
 
   /** Companies House registration number. */
@@ -57,7 +60,7 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-09-30';
+export const TERMS_VERSION = '2026-10-07';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
@@ -74,12 +77,12 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '6 October 2026',
-  terms: '30 September 2026',
-  refunds: '30 September 2026',
-  cookies: '30 September 2026',
-  acceptableUse: '30 September 2026',
-  aiNotice: '30 September 2026',
+  privacy: '7 October 2026',
+  terms: '7 October 2026',
+  refunds: '7 October 2026',
+  cookies: '7 October 2026',
+  acceptableUse: '7 October 2026',
+  aiNotice: '7 October 2026',
 } as const;
 
 /**
