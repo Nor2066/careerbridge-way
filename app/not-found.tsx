@@ -8,27 +8,28 @@
 // is a route back to the two places they were probably trying to reach.
 
 import Link from 'next/link';
+import { getTranslator } from '@/lib/i18n/server';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const { t } = await getTranslator();
   return (
     <main className="flex min-h-[70vh] flex-col items-center justify-center bg-slate-950 px-5 py-20 text-center">
       <p className="font-mono text-sm uppercase tracking-widest text-indigo-300">404</p>
 
       <h1 className="mt-4 text-3xl font-bold text-white sm:text-4xl">
-        That page isn&rsquo;t here
+        {t('notFound.title')}
       </h1>
 
       <p className="mt-4 max-w-md text-gray-400">
-        The link may be out of date, or the page may have moved. Your account and any
-        reports you have generated are unaffected.
+        {t('notFound.body')}
       </p>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link href="/" className="btn-primary text-sm">
-          Go to the homepage
+          {t('notFound.home')}
         </Link>
         <Link href="/assess" className="btn-secondary text-sm">
-          Take the assessment
+          {t('notFound.assess')}
         </Link>
       </div>
 
@@ -36,7 +37,7 @@ export default function NotFound() {
         href="/history"
         className="mt-6 text-sm text-indigo-300 underline underline-offset-4 hover:text-white"
       >
-        Looking for a report you already generated?
+        {t('notFound.history')}
       </Link>
     </main>
   );

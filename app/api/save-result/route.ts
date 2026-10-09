@@ -7,6 +7,7 @@ import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { supabaseServer } from '@/lib/supabase-server';
 import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
 import { getSubscription, canStartAssessment, markAssessmentInProgress } from '@/lib/subscription';
+import { getLicence } from '@/lib/institutions';
 
 const SaveResultSchema = z.object({
   topClusters: z.array(
@@ -29,8 +30,9 @@ export async function POST(request: Request) {
     }
 
     // ─── Subscription / attempt check ──────────────────────────────────
-    const sub = await getSubscription(user.id);
-    const check = canStartAssessment(sub);
+    // The student's own attempts plus any their university has paid for.
+    const [sub, licence] = await Promise.all([getSubscription(user.id), getLicence(user)]);
+    const check = canStartAssessment(sub, licence?.attemptsRemaining ?? 0);
     if (!check.allowed) {
       return NextResponse.json({ error: check.reason, code: 'SUBSCRIPTION_REQUIRED' }, { status: 403 });
     }

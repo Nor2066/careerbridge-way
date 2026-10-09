@@ -2,6 +2,8 @@
 
 // app/payment/cancelled/PaymentCancelledClient.tsx
 import { useSearchParams } from 'next/navigation';
+import { useI18n } from '@/components/I18nProvider';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 // Same-site paths only — this value reaches us through a query string, so
 // "https://evil.com" and protocol-relative "//evil.com" must not be followed.
@@ -13,15 +15,16 @@ function safePath(value: string | null | undefined): string | null {
   return value;
 }
 
-const DESTINATION_LABELS: Record<string, string> = {
-  '/assess': 'Back to my assessment',
-  '/followup': 'Back to my followup',
-  '/history': 'Back to my history',
-  '/pricing': 'Back to Pricing',
+const DESTINATION_LABELS: Record<string, MessageKey> = {
+  '/assess': 'payment.cancelled.back./assess',
+  '/followup': 'payment.cancelled.back./followup',
+  '/history': 'payment.cancelled.back./history',
+  '/pricing': 'payment.cancelled.back./pricing',
 };
 
 export default function PaymentCancelledClient() {
   const searchParams = useSearchParams();
+  const { t } = useI18n();
 
   // The query string is the reliable copy — it came back from Stripe with the
   // redirect, so it survives even when the return trip lands in a fresh tab
@@ -54,13 +57,12 @@ export default function PaymentCancelledClient() {
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10 max-w-md w-full">
         <div className="glass-card text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Payment Cancelled</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">{t('payment.cancelled.title')}</h1>
           <p className="text-gray-300 mb-6">
-            No charge was made, and nothing you&apos;ve already answered was lost.
-            You can pick up right where you left off whenever you&apos;re ready.
+            {t('payment.cancelled.body')}
           </p>
           <button onClick={handleBack} className="btn-primary w-full">
-            {(queryPath && DESTINATION_LABELS[queryPath]) || 'Go back'}
+            {t((queryPath && DESTINATION_LABELS[queryPath]) || 'payment.cancelled.goBack')}
           </button>
         </div>
       </div>

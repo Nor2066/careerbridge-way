@@ -14,6 +14,8 @@
 // Stripe stays the source of truth for what is actually charged. Changing a
 // price means a new Price in the Dashboard AND the number here, together.
 
+import { INTL_LOCALE, type Locale } from '@/lib/i18n/config';
+
 export type PricedProduct = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
 export const PRICE_CURRENCY = 'GBP';
@@ -25,16 +27,21 @@ export const PRICES_PENCE: Record<PricedProduct, number> = {
   topup: 300,
 };
 
-const formatter = new Intl.NumberFormat('en-GB', {
-  style: 'currency',
-  currency: PRICE_CURRENCY,
-});
+const formatters: Record<Locale, Intl.NumberFormat> = {
+  en: new Intl.NumberFormat(INTL_LOCALE.en, { style: 'currency', currency: PRICE_CURRENCY }),
+  es: new Intl.NumberFormat(INTL_LOCALE.es, { style: 'currency', currency: PRICE_CURRENCY }),
+};
 
-/** "£3.00" — the full amount the customer pays, tax included. */
-export function formatPrice(product: PricedProduct): string {
-  return formatter.format(PRICES_PENCE[product] / 100);
+/**
+ * "£3.00" — the full amount the customer pays, tax included. The amount and
+ * currency never change with the language; only how they are written does
+ * ("3,00 £" in Spanish).
+ */
+export function formatPrice(product: PricedProduct, locale: Locale = 'en'): string {
+  return formatters[locale].format(PRICES_PENCE[product] / 100);
 }
 
 /** Shown beside a price wherever there is room, so nobody wonders whether
  *  tax is added later. */
 export const TAX_NOTE = 'tax included';
+export const TAX_NOTES: Record<Locale, string> = { en: TAX_NOTE, es: 'impuestos incluidos' };

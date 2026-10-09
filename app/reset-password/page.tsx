@@ -11,10 +11,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PASSWORD_HINT, MIN_PASSWORD_LENGTH } from '@/lib/password';
+import { MIN_PASSWORD_LENGTH } from '@/lib/password';
+import { useI18n } from '@/components/I18nProvider';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,7 +29,7 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
-      setError('The two passwords do not match.');
+      setError(t('auth.reset.mismatch'));
       return;
     }
 
@@ -53,14 +55,14 @@ export default function ResetPasswordPage() {
 
       if (data.code === 'CURRENT_PASSWORD_REQUIRED') {
         setError(
-          'This reset link has expired. Please request a new one — they are valid for one hour.'
+          t('auth.reset.expired')
         );
         return;
       }
 
-      setError(data.error ?? 'We could not update your password. Please try again.');
+      setError(locale === 'en' && data.error ? data.error : t('auth.reset.failed'));
     } catch {
-      setError('Network error. Please check your connection and try again.');
+      setError(t('auth.networkCheck'));
     } finally {
       setSaving(false);
     }
@@ -69,23 +71,22 @@ export default function ResetPasswordPage() {
   return (
     <main className="flex min-h-[80vh] items-center justify-center bg-slate-950 px-5 py-16">
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white">Choose a new password</h1>
+        <h1 className="text-2xl font-bold text-white">{t('auth.reset.title')}</h1>
 
         {done ? (
           <div className="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/5 p-6">
             <p className="text-[15px] text-gray-200">
-              Your password has been updated, and anyone else signed in to your account has been
-              signed out. Taking you back to the site…
+              {t('auth.reset.done')}
             </p>
           </div>
         ) : (
           <>
-            <p className="mt-2 text-[15px] leading-relaxed text-gray-400">{PASSWORD_HINT}</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-gray-400">{t('auth.passwordHint', { min: MIN_PASSWORD_LENGTH })}</p>
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <div>
                 <label htmlFor="password" className="block text-sm text-gray-300">
-                  New password
+                  {t('auth.reset.new')}
                 </label>
                 <input
                   id="password"
@@ -98,15 +99,14 @@ export default function ResetPasswordPage() {
                 />
                 {tooShort && (
                   <p className="mt-1 text-xs text-amber-300/80">
-                    {MIN_PASSWORD_LENGTH - password.length} more character
-                    {MIN_PASSWORD_LENGTH - password.length === 1 ? '' : 's'} to go.
+                    {t('auth.reset.toGo', { count: MIN_PASSWORD_LENGTH - password.length })}
                   </p>
                 )}
               </div>
 
               <div>
                 <label htmlFor="confirm" className="block text-sm text-gray-300">
-                  Type it again
+                  {t('auth.reset.again')}
                 </label>
                 <input
                   id="confirm"
@@ -118,7 +118,7 @@ export default function ResetPasswordPage() {
                   className="mt-2 w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white focus:border-indigo-400/60 focus:outline-none"
                 />
                 {mismatch && (
-                  <p className="mt-1 text-xs text-red-300">These do not match yet.</p>
+                  <p className="mt-1 text-xs text-red-300">{t('auth.reset.mismatchLive')}</p>
                 )}
               </div>
 
@@ -129,7 +129,7 @@ export default function ResetPasswordPage() {
                 disabled={saving || mismatch || password.length < MIN_PASSWORD_LENGTH}
                 className="btn-primary disabled:opacity-50"
               >
-                {saving ? 'Saving…' : 'Set new password'}
+                {saving ? t('auth.saving') : t('auth.reset.submit')}
               </button>
             </form>
 
@@ -137,7 +137,7 @@ export default function ResetPasswordPage() {
               href="/forgot-password"
               className="mt-6 inline-block text-sm text-indigo-300 underline underline-offset-4 hover:text-white"
             >
-              Need a new link?
+              {t('auth.reset.newLink')}
             </Link>
           </>
         )}

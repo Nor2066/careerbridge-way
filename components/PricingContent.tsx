@@ -4,11 +4,18 @@
 
 import { useState } from 'react';
 import { track } from '@/lib/analytics';
-import { formatPrice, TAX_NOTE } from '@/lib/prices';
+import { formatPrice as formatPriceIn, TAX_NOTES } from '@/lib/prices';
+import { useI18n } from '@/components/I18nProvider';
 
 type ProductType = 'basic' | 'full' | 'topup' | 'followup_unlock';
 
 type AttemptStatus = 'none' | 'in_progress' | 'awaiting_followup_decision';
+
+const PLAN_NAME_KEYS = {
+  free: 'pricing.planName.free',
+  basic: 'pricing.planName.basic',
+  full: 'pricing.planName.full',
+} as const;
 
 interface PricingContentProps {
   compact?: boolean;
@@ -43,6 +50,10 @@ export default function PricingContent({
   returnPath,
   showReasonNotice = false,
 }: PricingContentProps) {
+  const { t, locale } = useI18n();
+  const formatPrice = (product: ProductType) => formatPriceIn(product, locale);
+  const TAX_NOTE = TAX_NOTES[locale];
+  const oneTime = t('pricing.oneTime');
   const [loadingProduct, setLoadingProduct] = useState<ProductType | null>(null);
   const [error, setError] = useState('');
   const [needsSignIn, setNeedsSignIn] = useState(false);
@@ -85,23 +96,23 @@ export default function PricingContent({
       if (!res.ok) {
         if (res.status === 401) {
           setNeedsSignIn(true);
-          setError(data.error || 'Your session has expired. Please sign in again.');
+          setError(t('pricing.error.session'));
         } else {
-          setError(data.error || 'Could not start checkout. Please try again.');
+          setError(locale === 'en' && data.error ? data.error : t('pricing.error.checkout'));
         }
         setLoadingProduct(null);
         return;
       }
 
       if (!data.url) {
-        setError('Could not start checkout. Please try again.');
+        setError(t('pricing.error.checkout'));
         setLoadingProduct(null);
         return;
       }
 
       window.location.href = data.url;
     } catch {
-      setError('Network error. Please try again.');
+      setError(t('common.error.network'));
       setLoadingProduct(null);
     }
   };
@@ -135,29 +146,13 @@ export default function PricingContent({
   let notice: { title: string; body: string } | null = null;
   if (showReasonNotice) {
     if (awaitingFollowup) {
-      notice = {
-        title: 'Finish your last assessment first',
-        body:
-          'One of your attempts still has its followup questionnaire waiting. Complete that followup (or skip it from your history page) and you can start a new assessment.',
-      };
+      notice = { title: t('pricing.notice.finishTitle'), body: t('pricing.notice.finishBody') };
     } else if (hasPlan && outOfAttempts && !followupsUnlocked) {
-      notice = {
-        title: "You've used all the attempts on your Basic plan",
-        body:
-          'Top-ups aren’t available to you yet. Your followup questionnaires are still locked, so every attempt you’ve done is only half finished — you need to unlock and complete your followups before buying more attempts. The bundle below unlocks the followup for every attempt, adds a bonus attempt straight away, and opens up top-ups afterwards.',
-      };
+      notice = { title: t('pricing.notice.basicUsedTitle'), body: t('pricing.notice.basicUsedBody') };
     } else if (hasPlan && outOfAttempts) {
-      notice = {
-        title: "You've used all your attempts",
-        body:
-          'Every attempt on your plan is done. A top-up pack adds 3 more complete attempts — main questionnaire and followup for each.',
-      };
+      notice = { title: t('pricing.notice.allUsedTitle'), body: t('pricing.notice.allUsedBody') };
     } else if (!hasPlan) {
-      notice = {
-        title: 'Choose a plan to see your results',
-        body:
-          'Your answers are saved. Pick a plan and you’ll pick up at exactly the question you left off on.',
-      };
+      notice = { title: t('pricing.notice.choosePlanTitle'), body: t('pricing.notice.choosePlanBody') };
     }
   }
 
@@ -166,16 +161,16 @@ export default function PricingContent({
       <div className={compact ? '' : 'max-w-4xl mx-auto'}>
         {!compact && (
           <div className="text-center mb-10">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Choose Your Plan</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">{t('pricing.title')}</h1>
             <p className="text-gray-300">
-              Unlock your personalized career assessment and AI-powered career roadmap.
+              {t('pricing.subtitle')}
             </p>
           </div>
         )}
 
         {compact && onClose && (
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Choose Your Plan</h2>
+            <h2 className="text-xl font-bold text-white">{t('pricing.title')}</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none">
               &times;
             </button>
@@ -201,7 +196,7 @@ export default function PricingContent({
                   )}`}
                   className="underline font-semibold hover:text-white"
                 >
-                  Sign in
+                  {t('pricing.signIn')}
                 </a>
               </>
             )}
@@ -213,21 +208,21 @@ export default function PricingContent({
           {/* ─── Basic Plan ─────────────────────────────────────────────── */}
           {showBasePlans && (
             <div className="glass-card flex flex-col">
-              <h3 className="text-xl font-bold text-white mb-1">Basic</h3>
+              <h3 className="text-xl font-bold text-white mb-1">{t('pricing.basic.name')}</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                {formatPrice('basic')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
+                {formatPrice('basic')} <span className="text-sm text-gray-400 font-normal">{oneTime} · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
-                <li>✓ 2 main assessment attempts</li>
-                <li>✓ AI career report for each attempt</li>
-                <li>✓ Unlock both followup roadmaps for {formatPrice('followup_unlock')}</li>
+                <li>{t('pricing.basic.f1')}</li>
+                <li>{t('pricing.basic.f2')}</li>
+                <li>{t('pricing.basic.f3', { price: formatPrice('followup_unlock') })}</li>
               </ul>
               <button
                 onClick={() => startCheckout('basic')}
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'basic' ? 'Redirecting...' : 'Choose Basic'}
+                {loadingProduct === 'basic' ? t('pricing.redirecting') : t('pricing.basic.cta')}
               </button>
             </div>
           )}
@@ -236,24 +231,24 @@ export default function PricingContent({
           {showBasePlans && (
             <div className="glass-card flex flex-col border-2 border-indigo-400">
               <div className="flex justify-between items-start mb-1">
-                <h3 className="text-xl font-bold text-white">Full</h3>
-                <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">Best value</span>
+                <h3 className="text-xl font-bold text-white">{t('pricing.full.name')}</h3>
+                <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">{t('pricing.full.badge')}</span>
               </div>
               <p className="text-3xl font-bold text-white mb-4">
-                {formatPrice('full')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
+                {formatPrice('full')} <span className="text-sm text-gray-400 font-normal">{oneTime} · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
-                <li>✓ 3 complete assessment attempts</li>
-                <li>✓ Main + followup questionnaires included</li>
-                <li>✓ Both AI reports for every attempt</li>
-                <li>✓ No additional unlocks needed</li>
+                <li>{t('pricing.full.f1')}</li>
+                <li>{t('pricing.full.f2')}</li>
+                <li>{t('pricing.full.f3')}</li>
+                <li>{t('pricing.full.f4')}</li>
               </ul>
               <button
                 onClick={() => startCheckout('full')}
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'full' ? 'Redirecting...' : 'Choose Full'}
+                {loadingProduct === 'full' ? t('pricing.redirecting') : t('pricing.full.cta')}
               </button>
             </div>
           )}
@@ -261,22 +256,22 @@ export default function PricingContent({
           {/* ─── Followup Bundle (account-wide) ────────────────────────── */}
           {showFollowupBundle && (
             <div className="glass-card flex flex-col">
-              <h3 className="text-xl font-bold text-white mb-1">Unlock All Followups</h3>
+              <h3 className="text-xl font-bold text-white mb-1">{t('pricing.bundle.name')}</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                {formatPrice('followup_unlock')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
+                {formatPrice('followup_unlock')} <span className="text-sm text-gray-400 font-normal">{oneTime} · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
-                <li>✓ Unlocks the followup questionnaire for both attempts</li>
-                <li>✓ Get your detailed career roadmap for each</li>
-                <li>✓ Includes +1 bonus attempt, instantly</li>
-                <li>✓ Required before top-up packs become available</li>
+                <li>{t('pricing.bundle.f1')}</li>
+                <li>{t('pricing.bundle.f2')}</li>
+                <li>{t('pricing.bundle.f3')}</li>
+                <li>{t('pricing.bundle.f4')}</li>
               </ul>
               <button
                 onClick={() => startCheckout('followup_unlock')}
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'followup_unlock' ? 'Redirecting...' : `Unlock All Followups — ${formatPrice('followup_unlock')}`}
+                {loadingProduct === 'followup_unlock' ? t('pricing.redirecting') : t('pricing.bundle.cta', { price: formatPrice('followup_unlock') })}
               </button>
             </div>
           )}
@@ -284,21 +279,21 @@ export default function PricingContent({
           {/* ─── Top-up ─────────────────────────────────────────────────── */}
           {showTopup && (
             <div className="glass-card flex flex-col">
-              <h3 className="text-xl font-bold text-white mb-1">3 Extra Attempts</h3>
+              <h3 className="text-xl font-bold text-white mb-1">{t('pricing.topup.name')}</h3>
               <p className="text-3xl font-bold text-white mb-4">
-                {formatPrice('topup')} <span className="text-sm text-gray-400 font-normal">one-time · {TAX_NOTE}</span>
+                {formatPrice('topup')} <span className="text-sm text-gray-400 font-normal">{oneTime} · {TAX_NOTE}</span>
               </p>
               <ul className="text-gray-300 text-sm space-y-2 mb-6 flex-1">
-                <li>✓ +3 complete attempts (main + followup each)</li>
-                <li>✓ Buy as many packs as you need</li>
-                <li>✓ Use anytime, no expiry</li>
+                <li>{t('pricing.topup.f1')}</li>
+                <li>{t('pricing.topup.f2')}</li>
+                <li>{t('pricing.topup.f3')}</li>
               </ul>
               <button
                 onClick={() => startCheckout('topup')}
                 disabled={loadingProduct !== null}
                 className="btn-primary w-full"
               >
-                {loadingProduct === 'topup' ? 'Redirecting...' : `Buy 3 Attempts — ${formatPrice('topup')}`}
+                {loadingProduct === 'topup' ? t('pricing.redirecting') : t('pricing.topup.cta', { price: formatPrice('topup') })}
               </button>
             </div>
           )}
@@ -310,31 +305,29 @@ export default function PricingContent({
           {nothingToBuy && (
             <div className="glass-card text-center py-8 sm:col-span-2 md:col-span-2">
               <p className="text-white font-medium mb-1">
-                Your <span className="capitalize">{currentPlan}</span> plan is active.
+                {t('pricing.active.plan', { plan: t(PLAN_NAME_KEYS[currentPlan]) })}
               </p>
               <p className="text-gray-300 text-sm mb-1">
-                {mainAttemptsRemaining} attempt{mainAttemptsRemaining !== 1 ? 's' : ''} remaining
-                {followupsUnlocked ? ' · followups unlocked' : ''}
+                {t('pricing.active.attempts', { count: mainAttemptsRemaining })}
+                {followupsUnlocked ? t('pricing.active.followupsUnlocked') : ''}
               </p>
               <p className="text-gray-400 text-sm">
-                {awaitingFollowup
-                  ? 'There’s nothing to buy — finishing that followup is all that’s left.'
-                  : 'There’s nothing to buy right now — more options appear here once you run out of attempts.'}
+                {awaitingFollowup ? t('pricing.active.finishFollowup') : t('pricing.active.nothing')}
               </p>
               {/* Never offer "continue to my assessment" to someone who is
                   blocked from starting one — history is where the pending
                   followup actually lives. */}
               {awaitingFollowup ? (
                 <a href="/history" className="btn-primary mt-5 inline-block">
-                  Go to my history
+                  {t('pricing.active.goHistory')}
                 </a>
               ) : onClose ? (
                 <button onClick={onClose} className="btn-primary mt-5">
-                  Continue
+                  {t('pricing.active.continue')}
                 </button>
               ) : (
                 <a href="/assess" className="btn-primary mt-5 inline-block">
-                  Continue to my assessment
+                  {t('pricing.active.continueAssessment')}
                 </a>
               )}
             </div>

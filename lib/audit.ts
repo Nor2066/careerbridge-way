@@ -24,7 +24,8 @@ type AuditAction =
   | 'progress_saved'
   | 'result_saved'
   | 'admin_viewed_assessments'
-  | 'admin_login';
+  | 'admin_login'
+  | 'admin_institution_change';
 
 interface AuditOptions {
   userId: string | null;

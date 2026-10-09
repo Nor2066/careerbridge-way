@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/auth';
 import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { supabaseServer } from '@/lib/supabase-server';
 import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
+import { memberInstitutionId } from '@/lib/institutions';
 
 // topClusters, rawScores, and answers are now optional — the feedback popup
 // on the followup page only sends feedbackRating + feedbackComment, with no
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
 
     const { feedbackRating, feedbackComment, topClusters, rawScores, answers } = parsed.data;
 
-    const { error: dbError } = await supabaseServer.from('assessments').insert([{
+    const row = {
       email: user.email,
       user_id: user.id,
       feedback_rating: feedbackRating ?? null,
@@ -49,7 +50,21 @@ export async function POST(request: Request) {
       top_clusters: topClusters ?? null,
       raw_scores: rawScores ?? null,
       answers: answers ?? null,
-    }]);
+    };
+
+    // Feedback from a university's student carries its id, so the average
+    // rating can appear on that university's dashboard (as a total only).
+    const institutionId = await memberInstitutionId(user.id);
+    let { error: dbError } = await supabaseServer
+      .from('assessments')
+      .insert([institutionId ? { ...row, institution_id: institutionId } : row]);
+
+    // Never lose the feedback over the tag: if the column is missing, save it
+    // without one.
+    if (dbError && institutionId) {
+      console.error('SAVE RESULTS: could not tag feedback with institution:', dbError.message);
+      ({ error: dbError } = await supabaseServer.from('assessments').insert([row]));
+    }
 
     if (dbError) throw dbError;
 

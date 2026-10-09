@@ -14,7 +14,15 @@ import {
   getSubscription,
   consumeAttemptAndAwaitFollowup,
   restoreConsumedAttempt,
+  markAwaitingFollowup,
+  revertAwaitingFollowup,
 } from '@/lib/subscription';
+import {
+  getLicence,
+  reserveLicenceAttempt,
+  releaseLicenceAttempt,
+  setResultInstitution,
+} from '@/lib/institutions';
 import { supabaseServer } from '@/lib/supabase-server';
 import { sendReportReady } from '@/lib/email';
 import { siteOrigin } from '@/lib/auth-cookies';
@@ -36,6 +44,8 @@ import {
   getUserIdentifier,
 } from '@/lib/rate-limit';
 import { BRAND } from '@/lib/site';
+import { localeFromRequest } from '@/lib/i18n/config';
+import { reportContextInstruction, clusterForPrompt, supportCountry } from '@/lib/report-locale';
 
 // A hung OpenAI call used to hold the serverless function open for its whole
 // allowance while the customer stared at a spinner. Cap it: 25s per attempt,
@@ -215,13 +225,67 @@ export async function POST(request: Request) {
     // A false return means a concurrent request already claimed this attempt —
     // two tabs, or a retry racing the original. Refusing here is what stops
     // the same assessment consuming two attempts.
-    const reserved = await consumeAttemptAndAwaitFollowup(user.id, sub);
-    if (!reserved) {
+    //
+    // University attempts are spent before the student's own: the university
+    // has paid for them, and they lapse with the licence while the student's
+    // purchases do not.
+    const licence = await getLicence(user);
+    const useLicence = Boolean(licence && licence.active && licence.attemptsRemaining > 0);
+
+    // The language the student is reading the site in, and the country of
+    // their university when they came through one.
+    const locale = localeFromRequest(request);
+    const institutionCountry = licence?.institution.country ?? null;
+
+    // The start gate in save-result checked for an attempt, but a licence can
+    // lapse between starting the questionnaire and asking for the report.
+    // Scoped to university students so nothing changes for anyone else.
+    if (licence && !useLicence && sub.main_attempts_remaining <= 0) {
       return NextResponse.json(
-        { error: 'This report is already being generated. Please wait a moment and refresh.' },
-        { status: 409 }
+        {
+          error: 'You have no attempts remaining. Please purchase a plan or top-up.',
+          code: 'SUBSCRIPTION_REQUIRED',
+        },
+        { status: 403 }
       );
     }
+
+    const alreadyRunning = NextResponse.json(
+      { error: 'This report is already being generated. Please wait a moment and refresh.' },
+      { status: 409 }
+    );
+
+    if (useLicence && licence) {
+      // Two steps that cannot share one statement, ordered so the attempt
+      // state is claimed first: only the request that wins it goes on to take
+      // the university's counter, so a lost race never costs an attempt.
+      if (!(await markAwaitingFollowup(user.id, sub))) return alreadyRunning;
+      if (!(await reserveLicenceAttempt(licence))) {
+        await revertAwaitingFollowup(user.id, sub);
+        return alreadyRunning;
+      }
+      try {
+        await setResultInstitution(assessmentId, licence.institution.id);
+      } catch (tagError) {
+        await releaseLicenceAttempt(licence);
+        await revertAwaitingFollowup(user.id, sub);
+        throw tagError;
+      }
+    } else {
+      const reserved = await consumeAttemptAndAwaitFollowup(user.id, sub);
+      if (!reserved) return alreadyRunning;
+    }
+
+    // Hands back whichever attempt was taken above.
+    const restoreAttempt = async () => {
+      if (useLicence && licence) {
+        await releaseLicenceAttempt(licence);
+        await setResultInstitution(assessmentId, null).catch(() => {});
+        await revertAwaitingFollowup(user.id, sub);
+      } else {
+        await restoreConsumedAttempt(user.id, sub);
+      }
+    };
 
     // Screen the raw answers, before sanitize() strips bracketed text and code
     // fences — those could remove the very phrase we need to see. Nothing about
@@ -243,8 +307,10 @@ export async function POST(request: Request) {
       answers.pastConsiderations,
     ]);
 
+    // Cluster names in the reader's language, so the report and the screen
+    // around it agree on what each area is called.
     const clusterSummary = topClusters
-      .map((c) => `- ${sanitize(c.cluster)}: ${c.percentage}%`)
+      .map((c) => `- ${sanitize(clusterForPrompt(locale, c.cluster))}: ${c.percentage}%`)
       .join('\n');
 
     const userPrompt = `
@@ -286,6 +352,7 @@ Please write the career report now.
             role: 'system',
             content:
               SYSTEM_PROMPT +
+              reportContextInstruction(locale, institutionCountry) +
               (crisisDetected ? CRISIS_PROMPT_ADDENDUM : '') +
               (unlawfulDetected ? UNLAWFUL_PROMPT_ADDENDUM : ''),
           },
@@ -320,7 +387,7 @@ Please write the career report now.
         });
       }
     } catch (generationError) {
-      await restoreConsumedAttempt(user.id, sub);
+      await restoreAttempt();
       Sentry.captureException(generationError);
       console.error('GENERATE REPORT: generation failed, attempt restored:', generationError);
       return NextResponse.json(
@@ -338,7 +405,9 @@ Please write the career report now.
     // would be a punishment. The UI puts this above the report body.
     return NextResponse.json({
       report,
-      ...(crisisDetected ? { support: buildSupportNotice() } : {}),
+      ...(crisisDetected
+        ? { support: buildSupportNotice({ country: supportCountry(request, { institutionCountry, locale }), locale }) }
+        : {}),
     });
   } catch (err) {
     // An expired session is not a server fault — answer 401 so the client

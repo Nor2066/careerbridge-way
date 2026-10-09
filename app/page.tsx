@@ -8,6 +8,7 @@ import GlassTextLogo from '@/components/GlassTextLogo';
 import { CONTACT } from '@/lib/legal';
 import { BRAND, BRAND_FULL, SITE_URL, SOCIAL } from '@/lib/site';
 import { formatPrice, PRICE_CURRENCY } from '@/lib/prices';
+import { useI18n } from '@/components/I18nProvider';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -127,6 +128,7 @@ export default function LandingPage() {
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const router = useRouter();
+  const { t } = useI18n();
 
   // The top of the funnel. Everything else is measured as a fraction of this.
   useEffect(() => {
@@ -162,15 +164,13 @@ export default function LandingPage() {
           <GlassTextLogo />
           <div className="mt-8 space-y-4">
             <h1 className="text-3xl md:text-4xl font-bold text-white">
-              Free Career Assessment Test for Students & Graduates
+              {t('home.hero.title')}
             </h1>
             <p className="text-gray-200 text-lg max-w-2xl mx-auto">
-              Not sure what career suits you? Answer a few questions and get an
-              AI-powered career report that matches your skills, interests, and
-              values to real career paths.
+              {t('home.hero.lead')}
             </p>
             <p className="text-indigo-300 font-medium">
-              Trusted by students exploring their future. It takes under 15 minutes.
+              {t('home.hero.trust')}
             </p>
 
             {!quizStarted && !quizCompleted && (
@@ -179,13 +179,13 @@ export default function LandingPage() {
                   onClick={handleStartQuiz}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-8 py-3 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  Try Our Demo Quiz For Free →
+                  {t('home.cta.demo')}
                 </button>
                 <button
                   onClick={handleFullAssessment}
                   className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold px-8 py-3 rounded-full transition-all backdrop-blur-sm"
                 >
-                  Take Full Assessment
+                  {t('home.cta.full')}
                 </button>
               </div>
             )}
@@ -198,15 +198,15 @@ export default function LandingPage() {
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-3xl font-bold text-indigo-300">15+</p>
-                <p className="text-gray-300 text-sm mt-1">Career clusters analysed</p>
+                <p className="text-gray-300 text-sm mt-1">{t('home.stats.clusters')}</p>
               </div>
               <div>
                 <p className="text-3xl font-bold text-indigo-300">46</p>
-                <p className="text-gray-300 text-sm mt-1">In-depth questions</p>
+                <p className="text-gray-300 text-sm mt-1">{t('home.stats.questions')}</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-indigo-300">AI</p>
-                <p className="text-gray-300 text-sm mt-1">Personalised report</p>
+                <p className="text-3xl font-bold text-indigo-300">{t('home.stats.ai')}</p>
+                <p className="text-gray-300 text-sm mt-1">{t('home.stats.report')}</p>
               </div>
             </div>
           </div>
@@ -225,18 +225,15 @@ export default function LandingPage() {
         {quizCompleted && (
           <div className="w-full max-w-2xl mx-auto mb-16">
             <div className="glass-card text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">Great work! Ready for the real thing?</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">{t('home.demoDone.title')}</h2>
               <p className="text-gray-200 mb-6">
-                The demo gives you a taste. Our full career assessment goes
-                much deeper: it analyses your skills, learning style, values, and
-                ambitions across 46 questions, then generates a personalised AI
-                career report with your top career clusters and why they fit you.
+                {t('home.demoDone.body')}
               </p>
               <button
                 onClick={handleFullAssessment}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-8 py-3 rounded-full transition-all"
               >
-                Start Full Career Assessment →
+                {t('home.demoDone.cta')}
               </button>
             </div>
           </div>
@@ -248,78 +245,78 @@ export default function LandingPage() {
             {/* How it works */}
             <div className="glass-card mb-12">
               <h2 className="text-2xl font-bold text-white mb-8 text-center">
-                How the Career Assessment Works
+                {t('home.how.title')}
               </h2>
               <div className="grid md:grid-cols-3 gap-8 text-center">
                 <div>
                   <StepBadge><ConstellationIcon /></StepBadge>
-                  <h3 className="text-white font-semibold mb-2">1. Answer Questions</h3>
-                  <p className="text-gray-300 text-sm">46 questions covering your skills, interests, work preferences, and values.</p>
+                  <h3 className="text-white font-semibold mb-2">{t('home.how.step1.title')}</h3>
+                  <p className="text-gray-300 text-sm">{t('home.how.step1.body')}</p>
                 </div>
                 <div>
                   <StepBadge><GuidingStarIcon /></StepBadge>
-                  <h3 className="text-white font-semibold mb-2">2. Get Your AI Report</h3>
-                  <p className="text-gray-300 text-sm">Our AI matches your profile to 15+ career clusters and explains why each fits you.</p>
+                  <h3 className="text-white font-semibold mb-2">{t('home.how.step2.title')}</h3>
+                  <p className="text-gray-300 text-sm">{t('home.how.step2.body')}</p>
                 </div>
                 <div>
                   <StepBadge><TrailIcon /></StepBadge>
-                  <h3 className="text-white font-semibold mb-2">3. Get Your Roadmap</h3>
-                  <p className="text-gray-300 text-sm">Unlock a detailed career roadmap with job titles, courses, and a 3-month action plan.</p>
+                  <h3 className="text-white font-semibold mb-2">{t('home.how.step3.title')}</h3>
+                  <p className="text-gray-300 text-sm">{t('home.how.step3.body')}</p>
                 </div>
               </div>
             </div>
 
             {/* Who We Are */}
             <div className="glass-card mb-12">
-              <h2 className="text-2xl font-bold text-white mb-6 text-center">Who We Are</h2>
+              <h2 className="text-2xl font-bold text-white mb-6 text-center">{t('home.who.title')}</h2>
               <div className="space-y-4 text-gray-200">
-                <p><strong className="text-white">We&apos;re students, just like you</strong>, currently at university. We&apos;ve faced the same uncertainty, stress, and confusion about what comes next.</p>
-                <p>This questionnaire is <strong className="text-white">built from real, recent experience</strong>. It comes directly from the struggles we wish we&apos;d had help with, and it&apos;s peer-driven, practical, and tested through our own career exploration.</p>
-                <p>It&apos;s <strong className="text-white">made by students, for students</strong>: no jargon, no judgment, and no expert distance. Just a clear, honest framework designed to help you avoid the trial-and-error we went through.</p>
-                <p><strong className="text-white">Our mission</strong> is simple: make it easier for students to find a future career that actually fits. We built this hoping it would save you time, reduce anxiety, and give you a plan you can believe in.</p>
+                <p><strong className="text-white">{t('home.who.p1.strong')}</strong>{t('home.who.p1.rest')}</p>
+                <p>{t('home.who.p2.before')}<strong className="text-white">{t('home.who.p2.strong')}</strong>{t('home.who.p2.rest')}</p>
+                <p>{t('home.who.p3.before')}<strong className="text-white">{t('home.who.p3.strong')}</strong>{t('home.who.p3.rest')}</p>
+                <p><strong className="text-white">{t('home.who.p4.strong')}</strong>{t('home.who.p4.rest')}</p>
               </div>
             </div>
 
             {/* Why This Questionnaire */}
             <div className="glass-card mb-12">
               <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                Why Use {BRAND.name}?
+                {t('home.why.title', { brand: BRAND.name })}
               </h2>
               <div className="grid md:grid-cols-2 gap-6 text-gray-200">
                 <div>
                   <p className="font-semibold text-indigo-300 flex items-center gap-2">
                     <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
-                    A Clear Career Roadmap, Not Just Advice
+                    {t('home.why.1.title')}
                   </p>
-                  <p className="text-sm mt-1">Instead of vague suggestions, you get a structured, step-by-step plan tailored to your unique goals and situation.</p>
+                  <p className="text-sm mt-1">{t('home.why.1.body')}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-indigo-300 flex items-center gap-2">
                     <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
-                    Turn Uncertainty into a Concrete Plan
+                    {t('home.why.2.title')}
                   </p>
-                  <p className="text-sm mt-1">We capture your interests and build a complete blueprint so you know exactly what to do next.</p>
+                  <p className="text-sm mt-1">{t('home.why.2.body')}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-indigo-300 flex items-center gap-2">
                     <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
-                    Eliminate Career Confusion and Self-Doubt
+                    {t('home.why.3.title')}
                   </p>
-                  <p className="text-sm mt-1">The in-depth analysis removes guesswork, giving you confidence that every step is informed and intentional.</p>
+                  <p className="text-sm mt-1">{t('home.why.3.body')}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-indigo-300 flex items-center gap-2">
                     <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
-                    Uncover Hidden Strengths & Opportunities
+                    {t('home.why.4.title')}
                   </p>
-                  <p className="text-sm mt-1">Go beyond surface-level thinking. Get a nuanced breakdown of your strengths and the career paths most people overlook.</p>
+                  <p className="text-sm mt-1">{t('home.why.4.body')}</p>
                 </div>
                 <div className="md:col-span-2">
                   <p className="font-semibold text-indigo-300 flex items-center gap-2">
                     <Spark className="w-3.5 h-3.5 text-purple-300 flex-shrink-0" />
-                    Stop Wasting Time on Trial & Error
+                    {t('home.why.5.title')}
                   </p>
-                  <p className="text-sm mt-1">With a personalised, AI-powered roadmap, you move faster, avoid common mistakes, and stay focused on what truly matters for your career.</p>
+                  <p className="text-sm mt-1">{t('home.why.5.body')}</p>
                 </div>
               </div>
             </div>
@@ -327,30 +324,27 @@ export default function LandingPage() {
             {/* CTA before contact */}
             <div className="glass-card mb-12 text-center">
               <h2 className="text-2xl font-bold text-white mb-3">
-                Ready to Find Your Ideal Career Path?
+                {t('home.cta2.title')}
               </h2>
               <p className="text-gray-300 mb-6">
-                Join students who&apos;ve already discovered careers that fit their strengths and ambitions.
+                {t('home.cta2.body')}
               </p>
               <button
                 onClick={handleFullAssessment}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-10 py-3 rounded-full transition-all shadow-lg hover:shadow-xl"
               >
-                Start Your Free Career Assessment →
+                {t('home.cta2.button')}
               </button>
             </div>
 
             {/* Contact */}
             <div className="glass-card mb-12">
-              <h2 className="text-2xl font-bold text-white mb-4 text-center">Still Feeling Unsure? We&apos;re Here to Help</h2>
+              <h2 className="text-2xl font-bold text-white mb-4 text-center">{t('home.contact.title')}</h2>
               <p className="text-gray-200 text-center mb-6">
-                Every journey is different, and your situation might have unique challenges the questionnaire couldn&apos;t fully capture.
-                That&apos;s exactly why we&apos;ve left the door open to talk. Reach out through any of the channels below and mention
-                that you took the questionnaire, so we have a little context.
+                {t('home.contact.body')}
               </p>
               <p className="text-gray-200 text-center italic">
-                We genuinely want to help. This project came from our own struggles, and if it helps even one student feel
-                more confident about their future, it was worth it.
+                {t('home.contact.closing')}
               </p>
             </div>
 
@@ -358,8 +352,8 @@ export default function LandingPage() {
                 us. Every channel here is a link we have confirmed is ours. */}
             {hasContactChannel && (
               <div className="glass-card">
-                <h2 className="text-2xl font-bold text-white mb-2 text-center">Reach Us Anywhere</h2>
-                <p className="text-gray-300 text-center mb-8 text-sm">Say hello, ask a question, or just follow along.</p>
+                <h2 className="text-2xl font-bold text-white mb-2 text-center">{t('home.reach.title')}</h2>
+                <p className="text-gray-300 text-center mb-8 text-sm">{t('home.reach.body')}</p>
                 <div className="flex flex-wrap justify-center gap-8">
                   {SOCIAL.instagram && (
                     <ContactLink href={SOCIAL.instagram} label="Instagram">
@@ -370,7 +364,7 @@ export default function LandingPage() {
                       address on a domain we own. A guessed address sends
                       people's messages to whoever owns that domain. */}
                   {emailReady && (
-                    <ContactLink href={`mailto:${CONTACT.support}`} label="Email">
+                    <ContactLink href={`mailto:${CONTACT.support}`} label={t('home.reach.email')}>
                       <EmailIcon />
                     </ContactLink>
                   )}

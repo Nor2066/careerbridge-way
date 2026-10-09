@@ -260,6 +260,9 @@ export function calculateScores(answers: UserAnswers) {
   const dealbreakers = answers.dealbreakerJobs.map(j => dealbreakerMap[j]).filter(Boolean) as Cluster[];
   let recommended = sorted;
   let warning = null;
+  // The same three cases as a code, so the screen can word them in the
+  // reader's language; warningMessage stays as the English fallback.
+  let warningCode: 'EXCLUDED' | 'RAN_OUT' | 'ALL_EXCLUDED' | null = null;
 
   if (dealbreakers.length) {
     const safe = sorted.filter(item => !dealbreakers.includes(item.cluster));
@@ -267,16 +270,19 @@ export function calculateScores(answers: UserAnswers) {
     if (safe.length >= 3) {
       recommended = safe;
       warning = `You indicated you wouldn't want to work in: ${excluded.map(e => e.cluster).join(", ")}. These were excluded from your top recommendations.`;
+      warningCode = 'EXCLUDED';
     } else if (safe.length > 0 && safe.length < 3) {
       const needed = 3 - safe.length;
       const leastBad = excluded.slice(0, needed);
       recommended = [...safe, ...leastBad];
       warning = `You rejected many fields. Some of your top matches include fields you said you wouldn't want, because we ran out of options.`;
+      warningCode = 'RAN_OUT';
     } else {
       warning = `You indicated you wouldn't want to work in ALL career fields. Showing your top 3 anyway.`;
+      warningCode = 'ALL_EXCLUDED';
     }
   }
 
   const top3 = recommended.slice(0, 3);
-  return { rawScores: scores, percentages, top3, excludedClusters: dealbreakers, warningMessage: warning };
+  return { rawScores: scores, percentages, top3, excludedClusters: dealbreakers, warningMessage: warning, warningCode };
 }

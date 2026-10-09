@@ -11,33 +11,36 @@
 import Link from 'next/link';
 import { COMPANY, CONTACT, legalDetailsComplete } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
+import { getTranslator } from '@/lib/i18n/server';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 // "Written and linked" is the standard, so every document that forms part of
 // the agreement is listed here rather than only reachable from inside another
 // one. The AI notice is in this list deliberately: it is the one a customer
 // most needs before they buy, not after.
-const LEGAL_LINKS = [
-  { href: '/privacy', label: 'Privacy' },
-  { href: '/terms', label: 'Terms' },
-  { href: '/refunds', label: 'Refunds' },
-  { href: '/cookies', label: 'Cookies' },
-  { href: '/acceptable-use', label: 'Acceptable use' },
-  { href: '/ai-notice', label: 'AI notice' },
+const LEGAL_LINKS: { href: string; label: MessageKey }[] = [
+  { href: '/privacy', label: 'footer.link.privacy' },
+  { href: '/terms', label: 'footer.link.terms' },
+  { href: '/refunds', label: 'footer.link.refunds' },
+  { href: '/cookies', label: 'footer.link.cookies' },
+  { href: '/acceptable-use', label: 'footer.link.acceptableUse' },
+  { href: '/ai-notice', label: 'footer.link.aiNotice' },
 ];
 
-const PRODUCT_LINKS = [
-  { href: '/assess', label: 'Take the assessment' },
-  { href: '/sample-report', label: 'See a sample report' },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/history', label: 'Your history' },
+const PRODUCT_LINKS: { href: string; label: MessageKey }[] = [
+  { href: '/assess', label: 'footer.link.assess' },
+  { href: '/sample-report', label: 'footer.link.sample' },
+  { href: '/pricing', label: 'footer.link.pricing' },
+  { href: '/history', label: 'footer.link.history' },
   // Second route to the same place. Deleting your data should be findable
   // from anywhere on the site, not only from a nav item you have to notice.
-  { href: '/account', label: 'Your account and data' },
+  { href: '/account', label: 'footer.link.account' },
 ];
 
-export default function Footer() {
+export default async function Footer() {
   const year = new Date().getFullYear();
   const detailsReady = legalDetailsComplete();
+  const { t, locale } = await getTranslator();
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-slate-950/80 px-5 py-10 backdrop-blur-sm">
@@ -49,14 +52,13 @@ export default function Footer() {
               <span className="font-normal tracking-normal text-gray-400">{BRAND.descriptor}</span>
             </p>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
-              An AI-assisted career assessment for students and graduates. Your report is
-              information to think about, not professional careers advice.
+              {t('footer.blurb')}
             </p>
           </div>
 
-          <nav aria-label="Product" className="flex flex-col gap-2">
+          <nav aria-label={t('footer.product')} className="flex flex-col gap-2">
             <p className="font-mono text-xs uppercase tracking-widest text-gray-500">
-              Product
+              {t('footer.product')}
             </p>
             {PRODUCT_LINKS.map((link) => (
               <Link
@@ -64,14 +66,14 @@ export default function Footer() {
                 href={link.href}
                 className="text-sm text-gray-300 transition hover:text-white"
               >
-                {link.label}
+                {t(link.label)}
               </Link>
             ))}
           </nav>
 
-          <nav aria-label="Legal" className="flex flex-col gap-2">
+          <nav aria-label={t('footer.legal')} className="flex flex-col gap-2">
             <p className="font-mono text-xs uppercase tracking-widest text-gray-500">
-              Legal
+              {t('footer.legal')}
             </p>
             {LEGAL_LINKS.map((link) => (
               <Link
@@ -79,9 +81,15 @@ export default function Footer() {
                 href={link.href}
                 className="text-sm text-gray-300 transition hover:text-white"
               >
-                {link.label}
+                {t(link.label)}
               </Link>
             ))}
+            {/* The legal documents are drafts under review and exist in English
+                only; a translation of an unreviewed draft would be a second
+                unreviewed document. Said plainly rather than left to surprise. */}
+            {locale !== 'en' && (
+              <p className="max-w-[12rem] text-xs leading-snug text-gray-500">{t('footer.legalEnglishOnly')}</p>
+            )}
             {/* Only rendered once a real address exists. A live "Contact us"
                 link opening a mail window addressed to TODO@example.com is
                 worse than no link — it looks like the site is abandoned. */}
@@ -90,7 +98,7 @@ export default function Footer() {
                 href={`mailto:${CONTACT.support}`}
                 className="text-sm text-gray-300 transition hover:text-white"
               >
-                Contact us
+                {t('footer.link.contact')}
               </a>
             )}
           </nav>
@@ -101,18 +109,19 @@ export default function Footer() {
         <div className="border-t border-white/10 pt-6 text-xs leading-relaxed text-gray-500">
           {detailsReady ? (
             <p>
-              {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, registered in{' '}
-              {COMPANY.jurisdiction} (company no. {COMPANY.companyNumber}). Registered
-              office: {COMPANY.address}.
-              {COMPANY.vatNumber ? ` VAT no. ${COMPANY.vatNumber}.` : ''}
+              {t('footer.company', {
+                trading: COMPANY.tradingName,
+                legal: COMPANY.legalName,
+                jurisdiction: COMPANY.jurisdiction,
+                number: COMPANY.companyNumber,
+                address: COMPANY.address,
+              })}
+              {COMPANY.vatNumber ? ` ${t('footer.vat', { vat: COMPANY.vatNumber })}` : ''}
             </p>
           ) : (
-            <p className="text-amber-300/80">
-              Company details are still placeholders &mdash; fill them in at{' '}
-              <code>lib/legal.ts</code> before launch.
-            </p>
+            <p className="text-amber-300/80">{t('footer.placeholders')}</p>
           )}
-          <p className="mt-2">&copy; {year} {COMPANY.tradingName}. All rights reserved.</p>
+          <p className="mt-2">{t('footer.rights', { year, trading: COMPANY.tradingName })}</p>
         </div>
       </div>
     </footer>

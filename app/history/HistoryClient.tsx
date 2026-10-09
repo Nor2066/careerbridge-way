@@ -4,10 +4,12 @@
 
 import { useEffect, useState } from 'react';
 import ProgressChecklist from '@/components/ProgressChecklist';
-import { getSubscriptionStatus } from '@/lib/subscription-client';
+import { getSubscriptionStatus, type SubscriptionStatus } from '@/lib/subscription-client';
 import { useRouter } from 'next/navigation';
 import PricingContent from '@/components/PricingContent';
 import { formatPrice } from '@/lib/prices';
+import { useI18n } from '@/components/I18nProvider';
+import { INTL_LOCALE } from '@/lib/i18n/config';
 
 type HistoryItem = {
   id: string;
@@ -18,15 +20,13 @@ type HistoryItem = {
   followupUnlocked: boolean;
 };
 
-type SubStatus = {
-  plan: 'free' | 'basic' | 'full';
-  followupsPaidCount: number;
-  mainAttemptsRemaining: number;
-  bonusAttemptGranted: boolean;
-  followupBundlePurchased: boolean;
-  currentAttemptStatus: string;
-  currentAttemptResultId: string | null;
-};
+type SubStatus = SubscriptionStatus;
+
+const PLAN_NAME_KEYS = {
+  free: 'pricing.planName.free',
+  basic: 'pricing.planName.basic',
+  full: 'pricing.planName.full',
+} as const;
 
 // Hoisted out of the render body for the same reason as FeedbackPopup in the
 // follow-up page: declared inline it was a new component type on every render,
@@ -48,6 +48,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 export default function HistoryClient({ userId }: { userId: string }) {
   const router = useRouter();
+  const { t, tCluster, locale } = useI18n();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [subStatus, setSubStatus] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,10 +105,10 @@ export default function HistoryClient({ userId }: { userId: string }) {
         const sub = await getSubscriptionStatus({ force: true });
         if (sub) setSubStatus(sub);
       } else {
-        alert('Something went wrong. Please try again.');
+        alert(t('common.error.generic'));
       }
     } catch {
-      alert('Network error. Please try again.');
+      alert(t('common.error.network'));
     } finally {
       setSkipping(false);
     }
@@ -122,7 +123,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
   if (loading) {
     return (
       <PageWrapper>
-        <div className="text-center text-gray-300 pt-20">Loading...</div>
+        <div className="text-center text-gray-300 pt-20">{t('common.loading')}</div>
       </PageWrapper>
     );
   }
@@ -131,10 +132,10 @@ export default function HistoryClient({ userId }: { userId: string }) {
     return (
       <PageWrapper>
         <div className="text-center pt-20">
-          <h1 className="text-3xl font-bold text-white mb-4">Your History</h1>
-          <p className="text-gray-300 mb-6">No assessments found. Take the full assessment first!</p>
+          <h1 className="text-3xl font-bold text-white mb-4">{t('history.title')}</h1>
+          <p className="text-gray-300 mb-6">{t('history.empty')}</p>
           <button onClick={() => router.push('/assess')} className="btn-primary">
-            Start Assessment
+            {t('history.start')}
           </button>
         </div>
       </PageWrapper>
@@ -176,7 +177,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
                 onClose={() => setShowBundleModal(false)}
               />
               <p className="text-center text-xs text-gray-400 mt-3">
-                After payment you&apos;ll be brought back here automatically.
+                {t('history.afterPayment')}
               </p>
             </div>
           </div>
@@ -184,15 +185,15 @@ export default function HistoryClient({ userId }: { userId: string }) {
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white drop-shadow-lg">Your Assessment History</h1>
+        <h1 className="text-3xl font-bold text-white drop-shadow-lg">{t('history.heading')}</h1>
         {/* Hidden while an attempt is parked awaiting its followup decision:
             /assess would just bounce them straight back here. */}
         {!awaitingFollowup &&
           (mainAttemptsRemaining > 0 || hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress') && (
             <button onClick={() => router.push('/assess')} className="btn-primary">
               {hasSavedProgress || subStatus?.currentAttemptStatus === 'in_progress'
-                ? 'Continue Last Attempt'
-                : 'Start New Assessment'}
+                ? t('history.continueLast')
+                : t('history.startNew')}
             </button>
           )}
       </div>
@@ -201,12 +202,21 @@ export default function HistoryClient({ userId }: { userId: string }) {
       {subStatus && (
         <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
           <p className="text-white text-sm">
-            <span className="font-semibold capitalize">{plan}</span> plan
+            {/* A university student sees who is paying, not a plan they never bought. */}
+            {subStatus.institution && plan === 'free' ? (
+              <span className="font-semibold">
+                {subStatus.institution.active && subStatus.institution.attemptsRemaining > 0
+                  ? t('history.banner.university', { university: subStatus.institution.name })
+                  : t('history.banner.universityEnded', { university: subStatus.institution.name })}
+              </span>
+            ) : (
+              <span className="font-semibold">{t('history.banner.plan', { plan: t(PLAN_NAME_KEYS[plan]) })}</span>
+            )}
             {' · '}
-            <span>{mainAttemptsRemaining} attempt{mainAttemptsRemaining !== 1 ? 's' : ''} remaining</span>
+            <span>{t('history.banner.attempts', { count: mainAttemptsRemaining })}</span>
             {plan === 'basic' && (
               <span className="text-gray-300">
-                {' · '}Followups: {followupBundlePurchased ? 'unlocked ✓' : 'not yet unlocked'}
+                {' · '}{t('history.banner.followups', { state: followupBundlePurchased ? t('history.banner.unlocked') : t('history.banner.locked') })}
               </span>
             )}
           </p>
@@ -221,19 +231,19 @@ export default function HistoryClient({ userId }: { userId: string }) {
           and give both ways out, so this page is never a dead end. */}
       {awaitingFollowup && (
         <div className="mb-6 p-5 bg-amber-900/30 border border-amber-400/50 rounded-xl">
-          <p className="text-white font-semibold mb-1">One attempt is waiting on its followup</p>
+          <p className="text-white font-semibold mb-1">{t('history.waiting.title')}</p>
           <p className="text-gray-200 text-sm leading-relaxed">
-            You can&apos;t start a new assessment until this one is wrapped up.
-            {plan === 'full' || followupBundlePurchased
-              ? ' Use “Start Followup Questionnaire” on the attempt below to finish it.'
-              : ' Unlock your followups below to finish it — or skip it if you’d rather move on.'}
+            {t('history.waiting.body')}
+            {plan === 'full' || followupBundlePurchased || subStatus?.currentAttemptFollowupIncluded
+              ? t('history.waiting.useButton')
+              : t('history.waiting.unlockOrSkip')}
           </p>
           <button
             onClick={handleSkipPendingFollowup}
             disabled={skipping}
             className="mt-3 text-sm text-amber-200 hover:text-white underline disabled:opacity-50"
           >
-            {skipping ? 'Please wait...' : 'Skip this followup and free up a new assessment'}
+            {skipping ? t('common.pleaseWait') : t('history.waiting.skip')}
           </button>
         </div>
       )}
@@ -242,14 +252,13 @@ export default function HistoryClient({ userId }: { userId: string }) {
       {plan === 'basic' && !followupBundlePurchased && hasItemNeedingBundle && (
         <div className="mb-6 p-5 bg-indigo-900/40 border border-indigo-400/50 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <p className="text-white font-semibold">Unlock your detailed career roadmaps</p>
+            <p className="text-white font-semibold">{t('history.bundle.title')}</p>
             <p className="text-gray-300 text-sm mt-1">
-              One purchase unlocks the followup questionnaire for both of your attempts,
-              plus an instant bonus attempt.
+              {t('history.bundle.body')}
             </p>
           </div>
           <button onClick={() => setShowBundleModal(true)} className="btn-primary whitespace-nowrap">
-            Unlock All Followups — {formatPrice('followup_unlock')}
+            {t('history.bundle.cta', { price: formatPrice('followup_unlock', locale) })}
           </button>
         </div>
       )}
@@ -271,15 +280,17 @@ export default function HistoryClient({ userId }: { userId: string }) {
           return (
             <div key={item.id} className="glass-card">
               <p className="text-sm text-gray-300 mb-4">
-                {new Date(item.createdAt).toLocaleDateString()} at{' '}
-                {new Date(item.createdAt).toLocaleTimeString()}
+                {t('history.item.when', {
+                  date: new Date(item.createdAt).toLocaleDateString(INTL_LOCALE[locale]),
+                  time: new Date(item.createdAt).toLocaleTimeString(INTL_LOCALE[locale]),
+                })}
               </p>
-              <h2 className="text-lg font-bold text-white mb-4">Your Top 3 Career Clusters</h2>
+              <h2 className="text-lg font-bold text-white mb-4">{t('history.item.top3')}</h2>
               <div className="space-y-3 mb-6">
                 {item.topClusters.map((cluster) => (
                   <div key={cluster.cluster}>
                     <div className="flex justify-between text-sm font-semibold text-white mb-1">
-                      <span>{cluster.cluster}</span>
+                      <span>{tCluster(cluster.cluster)}</span>
                       <span className="text-indigo-300">{cluster.percentage}%</span>
                     </div>
                     <div className="w-full bg-white/20 rounded-full h-2">
@@ -297,12 +308,12 @@ export default function HistoryClient({ userId }: { userId: string }) {
                   onClick={() => toggleFirst(item.id)}
                   className="flex justify-between w-full text-left font-medium text-gray-200 hover:text-white transition-colors"
                 >
-                  <span>📄 First AI Report</span>
+                  <span>{t('history.item.firstReport')}</span>
                   <span>{expanded[item.id]?.first ? '▲' : '▼'}</span>
                 </button>
                 {expanded[item.id]?.first && (
                   <div className="mt-3 p-4 bg-black/30 rounded-xl text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-                    {item.firstAIReport || <em className="text-gray-400">No AI report was generated for this assessment.</em>}
+                    {item.firstAIReport || <em className="text-gray-400">{t('history.item.noReport')}</em>}
                   </div>
                 )}
               </div>
@@ -312,18 +323,18 @@ export default function HistoryClient({ userId }: { userId: string }) {
                   onClick={() => toggleSecond(item.id)}
                   className="flex justify-between w-full text-left font-medium text-gray-200 hover:text-white transition-colors"
                 >
-                  <span>🚀 Detailed Career Roadmap</span>
+                  <span>{t('history.item.roadmap')}</span>
                   <span>{expanded[item.id]?.second ? '▲' : '▼'}</span>
                 </button>
                 {expanded[item.id]?.second && (
                   <div className="mt-3 p-4 bg-black/30 rounded-xl text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-                    {item.detailedRoadmap || <em className="text-gray-400">No detailed roadmap yet.</em>}
+                    {item.detailedRoadmap || <em className="text-gray-400">{t('history.item.noRoadmap')}</em>}
                   </div>
                 )}
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
                   {showStartFollowup && (
                     <button onClick={() => handleStartFollowup(item)} className="btn-primary">
-                      📋 Start Followup Questionnaire
+                      {t('history.item.startFollowup')}
                     </button>
                   )}
                 </div>

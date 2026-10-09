@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MINIMUM_AGE } from '@/lib/legal';
+import { useI18n } from '@/components/I18nProvider';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -25,6 +26,7 @@ export default function SignupPage() {
   const [resending, setResending] = useState(false);
   const [resendNote, setResendNote] = useState('');
   const { signUp, signInWithGoogle } = useAuth();
+  const { t, locale } = useI18n();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +34,7 @@ export default function SignupPage() {
     setError('');
     setMessage('');
     if (!accepted) {
-      setError(`Please confirm you are ${MINIMUM_AGE} or over and accept the terms.`);
+      setError(t('auth.signup.acceptFirst', { age: MINIMUM_AGE }));
       return;
     }
     try {
@@ -48,7 +50,9 @@ export default function SignupPage() {
         router.refresh();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
+      // Server errors are worded in English; other languages get the general
+      // message rather than a sentence in the wrong language.
+      setError(locale === 'en' && err instanceof Error ? err.message : t('auth.signup.failed'));
     }
   };
 
@@ -63,9 +67,13 @@ export default function SignupPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json().catch(() => ({}));
-      setResendNote(data.message ?? data.error ?? 'Something went wrong. Please try again.');
+      setResendNote(
+        res.ok
+          ? locale === 'en' && data.message ? data.message : t('auth.resend.sent')
+          : locale === 'en' && data.error ? data.error : t('common.error.generic')
+      );
     } catch {
-      setResendNote('Network error. Please check your connection and try again.');
+      setResendNote(t('auth.networkCheck'));
     } finally {
       setResending(false);
     }
@@ -78,7 +86,7 @@ export default function SignupPage() {
     // letting it through unticked would leave the one route into the product
     // that never showed anyone the terms.
     if (!accepted) {
-      setError(`Please confirm you are ${MINIMUM_AGE} or over and accept the terms.`);
+      setError(t('auth.signup.acceptFirst', { age: MINIMUM_AGE }));
       return;
     }
     setGoogleLoading(true);
@@ -87,7 +95,7 @@ export default function SignupPage() {
       await signInWithGoogle(undefined, accepted);
     } catch {
       setGoogleLoading(false);
-      setError('Google sign-up failed. Please try again.');
+      setError(t('auth.signup.googleFailed'));
     }
   };
 
@@ -98,14 +106,12 @@ export default function SignupPage() {
       <div className="relative z-10 max-w-md w-full glass-card">
         {awaitingConfirmation ? (
           <div className="space-y-4">
-            <h1 className="text-2xl font-bold text-white text-center">Check your email</h1>
+            <h1 className="text-2xl font-bold text-white text-center">{t('auth.signup.checkEmail')}</h1>
             <p className="text-gray-200 text-sm leading-relaxed">
-              We sent a confirmation link to <span className="text-white">{email}</span>. Click
-              it and you will be signed in. You cannot sign in until you do.
+              {t('auth.signup.sentTo.before')}<span className="text-white">{email}</span>{t('auth.signup.sentTo.after')}
             </p>
             <p className="text-gray-400 text-sm leading-relaxed">
-              It can take a minute to arrive, and it often lands in spam. If it never turns up,
-              send it again below.
+              {t('auth.signup.spam')}
             </p>
 
             <button
@@ -113,13 +119,13 @@ export default function SignupPage() {
               disabled={resending}
               className="btn-secondary w-full text-sm disabled:opacity-50"
             >
-              {resending ? 'Sending…' : 'Send the email again'}
+              {resending ? t('auth.sending') : t('auth.signup.resend')}
             </button>
 
             {resendNote && <p className="text-gray-300 text-sm">{resendNote}</p>}
 
             <p className="text-gray-400 text-sm text-center">
-              Typed the wrong address?{' '}
+              {t('auth.signup.wrongAddress')}{' '}
               <button
                 onClick={() => {
                   setAwaitingConfirmation(false);
@@ -127,17 +133,18 @@ export default function SignupPage() {
                 }}
                 className="text-indigo-400 hover:text-indigo-300 underline"
               >
-                Start again
+                {t('auth.signup.startAgain')}
               </button>
             </p>
           </div>
         ) : (
         <>
-        <h1 className="text-2xl font-bold text-white text-center mb-6">Sign Up</h1>
+        <h1 className="text-2xl font-bold text-white text-center mb-3">{t('auth.signup.title')}</h1>
+        <p className="mb-5 text-center text-xs leading-relaxed text-indigo-200/80">{t('auth.university.hint')}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t('auth.email')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -145,7 +152,7 @@ export default function SignupPage() {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t('auth.password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -165,26 +172,26 @@ export default function SignupPage() {
               className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-indigo-500"
             />
             <label htmlFor="accept-terms" className="text-sm leading-relaxed text-gray-200">
-              I am {MINIMUM_AGE} or over, and I agree to the{' '}
+              {t('auth.signup.ageTerms.before', { age: MINIMUM_AGE })}
               <Link href="/terms" target="_blank" className="text-indigo-300 underline">
-                Terms of Service
-              </Link>{' '}
-              and the{' '}
+                {t('auth.signup.terms')}
+              </Link>
+              {t('auth.signup.ageTerms.and')}
               <Link href="/acceptable-use" target="_blank" className="text-indigo-300 underline">
-                Acceptable Use Policy
+                {t('auth.signup.aup')}
               </Link>
               .
             </label>
           </div>
 
           <p className="text-xs leading-relaxed text-gray-400">
-            Your report is written by AI and can be wrong &mdash; see the{' '}
+            {t('auth.signup.ai.before')}
             <Link href="/ai-notice" target="_blank" className="text-indigo-300 underline">
-              AI Notice
+              {t('auth.signup.ai.notice')}
             </Link>
-            . What we do with your data is in the{' '}
+            {t('auth.signup.ai.middle')}
             <Link href="/privacy" target="_blank" className="text-indigo-300 underline">
-              Privacy Policy
+              {t('auth.signup.privacy')}
             </Link>
             .
           </p>
@@ -196,7 +203,7 @@ export default function SignupPage() {
             disabled={!accepted}
             className="w-full btn-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Sign Up
+            {t('auth.signup.submit')}
           </button>
         </form>
 
@@ -205,7 +212,7 @@ export default function SignupPage() {
             <div className="w-full border-t border-gray-500"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-transparent text-gray-300">Or</span>
+            <span className="px-2 bg-transparent text-gray-300">{t('auth.or')}</span>
           </div>
         </div>
 
@@ -220,13 +227,13 @@ export default function SignupPage() {
             <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
             <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          {googleLoading ? 'Redirecting to Google...' : 'Sign up with Google'}
+          {googleLoading ? t('auth.login.googleRedirecting') : t('auth.signup.google')}
         </button>
 
         <p className="mt-4 text-center text-gray-300">
-          Already have an account?{' '}
+          {t('auth.signup.haveAccount')}{' '}
           <Link href="/login" className="text-indigo-400 hover:text-indigo-300">
-            Login
+            {t('auth.signup.login')}
           </Link>
         </p>
         </>

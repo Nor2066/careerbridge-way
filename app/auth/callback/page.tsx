@@ -14,16 +14,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { useI18n } from '@/components/I18nProvider';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
   const { refresh } = useAuth();
-  const [error, setError] = useState('');
+  const { t } = useI18n();
+  // A code rather than a sentence, so the effect below does not depend on
+  // the language and the message follows the switcher at render.
+  const [error, setError] = useState<'' | 'invalid' | 'failed'>('');
 
   useEffect(() => {
     let cancelled = false;
 
-    const failOut = (message: string) => {
+    const failOut = (message: 'invalid' | 'failed') => {
       if (cancelled) return;
       setError(message);
       setTimeout(() => { if (!cancelled) router.push('/login'); }, 2500);
@@ -33,7 +37,7 @@ export default function AuthCallbackPage() {
       try {
         const hash = typeof window !== 'undefined' ? window.location.hash : '';
         if (!hash) {
-          failOut('This sign-in link is invalid or has expired. Please try again.');
+          failOut('invalid');
           return;
         }
 
@@ -46,7 +50,7 @@ export default function AuthCallbackPage() {
         const linkType = hashParams.get('type');
 
         if (!access_token || !refresh_token) {
-          failOut('This sign-in link is invalid or has expired. Please try again.');
+          failOut('invalid');
           return;
         }
 
@@ -61,7 +65,7 @@ export default function AuthCallbackPage() {
         });
 
         if (!res.ok) {
-          failOut('This sign-in link is invalid or has expired. Please try again.');
+          failOut('invalid');
           return;
         }
 
@@ -73,7 +77,7 @@ export default function AuthCallbackPage() {
         router.push(linkType === 'recovery' ? '/reset-password' : '/');
       } catch (err) {
         console.error('Auth callback error:', err);
-        failOut('Something went wrong signing you in. Please try again.');
+        failOut('failed');
       }
     };
 
@@ -84,7 +88,13 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white px-4">
       <div className="text-center">
-        <p className="text-lg">{error || 'Signing you in...'}</p>
+        <p className="text-lg">
+          {error === 'invalid'
+            ? t('auth.callback.invalid')
+            : error === 'failed'
+              ? t('auth.callback.failed')
+              : t('auth.callback.signingIn')}
+        </p>
       </div>
     </div>
   );

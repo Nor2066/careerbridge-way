@@ -4,23 +4,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { track } from '@/lib/analytics';
 import { useSearchParams } from 'next/navigation';
+import { useI18n } from '@/components/I18nProvider';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 type ProductType = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
 type VerifyState = 'verifying' | 'complete' | 'pending' | 'error' | 'unauthenticated';
 
-const PRODUCT_LABELS: Record<ProductType, string> = {
-  basic: 'Basic plan — 2 assessment attempts added',
-  full: 'Full plan — 3 complete attempts added',
-  followup_unlock: 'All followups unlocked, plus 1 bonus attempt',
-  topup: '3 extra attempts added',
+const PRODUCT_LABELS: Record<ProductType, MessageKey> = {
+  basic: 'payment.product.basic',
+  full: 'payment.product.full',
+  followup_unlock: 'payment.product.followup_unlock',
+  topup: 'payment.product.topup',
 };
 
-const DESTINATION_LABELS: Record<string, string> = {
-  '/assess': 'your assessment',
-  '/followup': 'your followup questionnaire',
-  '/history': 'your history',
-  '/pricing': 'the pricing page',
+const DESTINATION_LABELS: Record<string, MessageKey> = {
+  '/assess': 'payment.dest./assess',
+  '/followup': 'payment.dest./followup',
+  '/history': 'payment.dest./history',
+  '/pricing': 'payment.dest./pricing',
 };
 
 // Polling schedule for the verify call, in ms. Stripe's webhook normally
@@ -31,6 +33,7 @@ const RETRY_DELAYS = [1500, 2000, 3000, 4000, 6000, 8000];
 export default function PaymentSuccessClient() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const { t, locale } = useI18n();
 
   const [state, setState] = useState<VerifyState>(sessionId ? 'verifying' : 'complete');
   const [productType, setProductType] = useState<ProductType | null>(null);
@@ -98,7 +101,9 @@ export default function PaymentSuccessClient() {
         }
 
         if (!res.ok) {
-          setErrorMessage(data.error || 'We could not confirm your payment automatically.');
+          // Kept as the server's English text; worded at render, where the
+          // language is known.
+          setErrorMessage(data.error || 'VERIFY');
           setState('error');
           return;
         }
@@ -127,7 +132,7 @@ export default function PaymentSuccessClient() {
           attemptRef.current += 1;
           timer = setTimeout(verify, delay);
         } else {
-          setErrorMessage('We could not reach the server to confirm your payment.');
+          setErrorMessage('UNREACHABLE');
           setState('error');
         }
       }
@@ -152,35 +157,38 @@ export default function PaymentSuccessClient() {
   // Before the verify call answers, the destination is still unknown — the
   // neutral wording covers that, and the click handler resolves the real
   // path from sessionStorage if the server never supplied one.
-  const destinationLabel = (returnPath && DESTINATION_LABELS[returnPath]) || 'where you left off';
+  const destinationLabel = t((returnPath && DESTINATION_LABELS[returnPath]) || 'payment.dest.default');
 
   const heading =
     state === 'error' || state === 'unauthenticated'
-      ? 'Payment received'
-      : 'Payment Successful!';
+      ? t('payment.heading.received')
+      : t('payment.heading.success');
+
+  const errorText =
+    errorMessage === 'UNREACHABLE'
+      ? t('payment.error.unreachable')
+      : errorMessage === 'VERIFY' || locale !== 'en'
+        ? t('payment.error.verify')
+        : errorMessage;
 
   let bodyText: string;
   switch (state) {
     case 'verifying':
-      bodyText = 'Confirming your payment and setting up your account...';
+      bodyText = t('payment.body.verifying');
       break;
     case 'complete':
       bodyText = productType
-        ? `${PRODUCT_LABELS[productType]}. Taking you back to ${destinationLabel}...`
-        : `Your purchase has been applied to your account. Taking you back to ${destinationLabel}...`;
+        ? t('payment.body.completeProduct', { product: t(PRODUCT_LABELS[productType]), destination: destinationLabel })
+        : t('payment.body.complete', { destination: destinationLabel });
       break;
     case 'pending':
-      bodyText =
-        "Your payment is still being processed by your bank. It usually clears within a few minutes — you can carry on, and your purchase will appear on your account as soon as it settles.";
+      bodyText = t('payment.body.pending');
       break;
     case 'unauthenticated':
-      bodyText =
-        'Your payment went through, but your sign-in session expired while you were on Stripe. Sign in again and your purchase will be waiting on your account.';
+      bodyText = t('payment.body.unauthenticated');
       break;
     default:
-      bodyText =
-        errorMessage +
-        ' Your payment was not lost — if the purchase does not show up within a few minutes, contact us with your receipt and we will sort it out.';
+      bodyText = errorText + t('payment.error.reassure');
   }
 
   return (
@@ -224,7 +232,7 @@ export default function PaymentSuccessClient() {
               href={`/login?returnTo=${encodeURIComponent(returnPath || '/assess')}`}
               className="btn-primary w-full block"
             >
-              Sign in again
+              {t('payment.signInAgain')}
             </a>
           ) : (
             <button
@@ -232,7 +240,7 @@ export default function PaymentSuccessClient() {
               disabled={state === 'verifying'}
               className="btn-primary w-full"
             >
-              {state === 'verifying' ? 'Please wait...' : `Continue to ${destinationLabel}`}
+              {state === 'verifying' ? t('common.pleaseWait') : t('payment.continueTo', { destination: destinationLabel })}
             </button>
           )}
         </div>

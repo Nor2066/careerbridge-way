@@ -175,6 +175,32 @@ export default function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
+      {/* Added with university licences. Drafted to match what the code does;
+          like the rest of this page it needs the legal review, in particular
+          who is controller for students who come through a university. */}
+      <LegalSection id="universities" title="If your university gives you access">
+        <p>
+          Some universities pay for their students to use {BRAND.name}. If you sign up with a
+          confirmed email address on one of a partner university&apos;s domains, you are given
+          that university&apos;s free access automatically. We use the domain of your email
+          address to do this, and nothing else about you.
+        </p>
+        <p>
+          <strong className="text-white">
+            Your university never sees your answers, your reports, or your name.
+          </strong>{' '}
+          Its staff see only totals for all of its students together: how many have joined,
+          how many reports were generated, which career areas come up most often, and the
+          average rating people gave. Any group of fewer than five students is hidden, so a
+          number can never point at one person.
+        </p>
+        <p>
+          Your university is not given a way to look you up, and we do not send it anything
+          about you individually. If you would rather it did not count you in its totals, use
+          a personal email address instead and buy access yourself.
+        </p>
+      </LegalSection>
+
       <LegalSection id="third-parties" title="Who else touches your data">
         <p>
           These are every third party we send personal data to, and what each of them gets.

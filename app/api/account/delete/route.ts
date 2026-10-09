@@ -24,7 +24,12 @@ import * as Sentry from '@sentry/nextjs';
 import { requireAuth } from '@/lib/auth';
 import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { supabaseServer } from '@/lib/supabase-server';
-import { USER_DATA_TABLES, PAYMENTS_TABLE, AUDIT_TABLE } from '@/lib/account-data';
+import {
+  USER_DATA_TABLES,
+  PAYMENTS_TABLE,
+  AUDIT_TABLE,
+  isMissingTableError,
+} from '@/lib/account-data';
 import {
   isSameOrigin,
   AUTH_COOKIE_FLAGS,
@@ -87,6 +92,10 @@ export async function POST(request: Request) {
     // ── 1. Content tables ───────────────────────────────────────────────
     for (const { table, userColumn } of USER_DATA_TABLES) {
       const { error } = await supabaseServer.from(table).delete().eq(userColumn, user.id);
+      if (error && isMissingTableError(error)) {
+        console.warn(`DELETE ACCOUNT: ${table} does not exist yet — nothing to delete there.`);
+        continue;
+      }
       if (error) {
         Sentry.captureException(error);
         console.error(`DELETE ACCOUNT: failed on ${table}:`, error.message);

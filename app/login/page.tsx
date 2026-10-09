@@ -4,21 +4,22 @@ import { Suspense, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MINIMUM_AGE } from '@/lib/legal';
+import { useI18n } from '@/components/I18nProvider';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 // Each code names a different failure, so the message can actually tell the
 // person something useful — and so the code in the address bar says which
 // branch of the callback failed.
-const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  oauth_init_failed: 'Could not start Google sign-in. Please try again.',
-  oauth_provider: 'Google could not complete the sign-in. Please try again.',
-  oauth_no_code: 'Google sign-in did not complete. Please try again.',
-  oauth_no_verifier:
-    'Your browser blocked a cookie needed to finish signing in. Turn off tracker/cookie blocking for this site, or try a normal (non-private) window.',
-  oauth_exchange: 'Google sign-in could not be verified. Please try again.',
-  oauth_no_session: 'Signed in with Google, but the session could not be saved. Please try again.',
+const OAUTH_ERROR_MESSAGES: Record<string, MessageKey> = {
+  oauth_init_failed: 'auth.oauth.init',
+  oauth_provider: 'auth.oauth.provider',
+  oauth_no_code: 'auth.oauth.incomplete',
+  oauth_no_verifier: 'auth.oauth.cookie',
+  oauth_exchange: 'auth.oauth.exchange',
+  oauth_no_session: 'auth.oauth.session',
   // Kept so links from the previous build still show something sensible.
-  oauth_failed: 'Google sign-in did not complete. Please try again.',
-  missing_code: 'Google sign-in did not complete. Please try again.',
+  oauth_failed: 'auth.oauth.incomplete',
+  missing_code: 'auth.oauth.incomplete',
 };
 
 function LoginForm() {
@@ -29,6 +30,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -47,9 +49,9 @@ function LoginForm() {
   useEffect(() => {
     const oauthError = searchParams.get('error');
     if (oauthError) {
-      setError(OAUTH_ERROR_MESSAGES[oauthError] || 'Sign-in failed. Please try again.');
+      setError(t(OAUTH_ERROR_MESSAGES[oauthError] ?? 'auth.login.failed'));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +62,21 @@ function LoginForm() {
       router.push(returnTo);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid email or password');
+      // The server words its errors in English. The common one has a
+      // translation; anything else is shown as-is in English, or as a general
+      // failure in other languages.
+      const message = err instanceof Error ? err.message : '';
+      setError(
+        !message || message === 'Invalid email or password'
+          ? t('auth.login.invalid')
+          : locale === 'en' ? message : t('auth.login.failed')
+      );
     }
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) { setError('Please enter your email address'); return; }
+    if (!email) { setError(t('auth.login.enterEmail')); return; }
     setError('');
     setMessage('');
     setLoading(true);
@@ -77,13 +87,13 @@ function LoginForm() {
         body: JSON.stringify({ email }),
       });
       if (res.ok) {
-        setMessage('Check your email for the login link!');
+        setMessage(t('auth.login.magicSent'));
       } else {
         const data = await res.json();
-        setError(data.error || 'Failed to send magic link');
+        setError(locale === 'en' && data.error ? data.error : t('auth.login.magicFailed'));
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError(t('common.error.network'));
     } finally {
       setLoading(false);
     }
@@ -104,7 +114,7 @@ function LoginForm() {
     // something on every visit, so the notice carries it instead.
     signInWithGoogle(returnTo, true).catch(() => {
       setGoogleLoading(false);
-      setError('Google sign-in failed. Please try again.');
+      setError(t('auth.login.googleFailed'));
     });
   };
 
@@ -116,14 +126,15 @@ function LoginForm() {
       <div className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 w-full max-w-md">
         <div className="glass-card">
-          <h1 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h1>
+          <h1 className="text-2xl font-bold text-white mb-6 text-center">{t('auth.login.title')}</h1>
+          <p className="-mt-3 mb-5 text-center text-xs leading-relaxed text-indigo-200/80">{t('auth.university.hint')}</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="email"
               id="email"
               name="email"
-              placeholder="Email"
+              placeholder={t('auth.email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -133,7 +144,7 @@ function LoginForm() {
               type="password"
               id="password"
               name="password"
-              placeholder="Password"
+              placeholder={t('auth.password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 bg-black/30 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -150,19 +161,19 @@ function LoginForm() {
                 href="/resend-confirmation"
                 className="text-sm text-gray-400 hover:text-gray-200"
               >
-                Never got your confirmation email?
+                {t('auth.login.noConfirmation')}
               </a>
               <a
                 href="/forgot-password"
                 className="text-sm text-indigo-400 hover:text-indigo-300"
               >
-                Forgot your password?
+                {t('auth.login.forgot')}
               </a>
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             {message && <p className="text-green-400 text-sm">{message}</p>}
             <button type="submit" className="btn-primary w-full">
-              Login with Password
+              {t('auth.login.submit')}
             </button>
           </form>
 
@@ -171,7 +182,7 @@ function LoginForm() {
               <div className="w-full border-t border-white/20"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-transparent text-gray-400" style={{ backgroundColor: 'rgba(17, 24, 39, 0.6)' }}>Or</span>
+              <span className="px-3 bg-transparent text-gray-400" style={{ backgroundColor: 'rgba(17, 24, 39, 0.6)' }}>{t('auth.or')}</span>
             </div>
           </div>
 
@@ -180,7 +191,7 @@ function LoginForm() {
             disabled={loading}
             className="w-full p-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? 'Sending...' : 'Send Magic Link'}
+            {loading ? t('auth.sending') : t('auth.login.magic')}
           </button>
 
           <button
@@ -188,21 +199,20 @@ function LoginForm() {
             disabled={googleLoading}
             className="w-full p-3 mt-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
           >
-            {googleLoading ? 'Redirecting to Google...' : 'Sign in with Google'}
+            {googleLoading ? t('auth.login.googleRedirecting') : t('auth.login.google')}
           </button>
 
           {/* Google sign-in creates an account if there isn't one, so this
               button can make the contract. The wording has to be next to it,
               not only on the signup page a new Google user never visits. */}
           <p className="mt-3 text-center text-xs leading-relaxed text-gray-400">
-            If you don&apos;t have an account yet, continuing with Google creates one. By
-            doing so you confirm you are {MINIMUM_AGE} or over and accept the{' '}
-            <a href="/terms" className="text-indigo-300 underline">Terms of Service</a>.
+            {t('auth.login.googleNotice', { age: MINIMUM_AGE })}
+            <a href="/terms" className="text-indigo-300 underline">{t('auth.login.terms')}</a>.
           </p>
 
           <p className="mt-6 text-center text-gray-300 text-sm">
-            Don&apos;t have an account?{' '}
-            <a href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">Sign up</a>
+            {t('auth.login.noAccount')}{' '}
+            <a href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">{t('auth.login.signUp')}</a>
           </p>
         </div>
       </div>
@@ -210,13 +220,18 @@ function LoginForm() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useI18n();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-300">
+      {t('common.loading')}
+    </div>
+  );
+}
+
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-gray-300">
-        Loading...
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <LoginForm />
     </Suspense>
   );

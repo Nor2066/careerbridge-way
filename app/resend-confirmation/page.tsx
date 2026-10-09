@@ -13,8 +13,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/components/I18nProvider';
 
 export default function ResendConfirmationPage() {
+  const { t, locale } = useI18n();
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [note, setNote] = useState('');
@@ -31,9 +33,13 @@ export default function ResendConfirmationPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json().catch(() => ({}));
-      setNote(data.message ?? data.error ?? 'Something went wrong. Please try again.');
+      setNote(
+        res.ok
+          ? locale === 'en' && data.message ? data.message : t('auth.resend.sent')
+          : locale === 'en' && data.error ? data.error : t('common.error.generic')
+      );
     } catch {
-      setNote('Network error. Please check your connection and try again.');
+      setNote(t('auth.networkCheck'));
     } finally {
       setSending(false);
     }
@@ -42,16 +48,15 @@ export default function ResendConfirmationPage() {
   return (
     <main className="flex min-h-[80vh] items-center justify-center bg-slate-950 px-5 py-16">
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white">Resend your confirmation email</h1>
+        <h1 className="text-2xl font-bold text-white">{t('auth.resend.title')}</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-gray-400">
-          If you signed up but never confirmed your address, you will not be able to sign in
-          yet. Enter your email and we will send the link again.
+          {t('auth.resend.intro')}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <div>
             <label htmlFor="email" className="block text-sm text-gray-300">
-              Email address
+              {t('auth.emailAddress')}
             </label>
             <input
               id="email"
@@ -60,13 +65,13 @@ export default function ResendConfirmationPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('auth.emailPlaceholder')}
               className="mt-2 w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white placeholder:text-gray-600 focus:border-indigo-400/60 focus:outline-none"
             />
           </div>
 
           <button type="submit" disabled={sending} className="btn-primary disabled:opacity-50">
-            {sending ? 'Sending…' : 'Send the link again'}
+            {sending ? t('auth.sending') : t('auth.resend.submit')}
           </button>
         </form>
 
@@ -77,13 +82,13 @@ export default function ResendConfirmationPage() {
             href="/login"
             className="text-indigo-300 underline underline-offset-4 hover:text-white"
           >
-            Back to sign in
+            {t('auth.backToSignIn')}
           </Link>
           <Link
             href="/forgot-password"
             className="text-indigo-300 underline underline-offset-4 hover:text-white"
           >
-            Forgot your password instead?
+            {t('auth.resend.forgot')}
           </Link>
         </div>
       </div>

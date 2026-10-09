@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useI18n } from '@/components/I18nProvider';
 
 type Question = {
   id: number;
@@ -158,6 +159,7 @@ type BaitQuizProps = {
 };
 
 export default function BaitQuiz({ onComplete }: BaitQuizProps) {
+  const { t, tOption } = useI18n();
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -192,21 +194,21 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
   const progress = ((current + 1) / questions.length) * 100;
   const q = questions[current];
   if (!q) {
-    return <div className="p-6 text-white">Loading...</div>;
+    return <div className="p-6 text-white">{t('common.loading')}</div>;
   }
   const hoverImage = q.hoverImages && hoveredIndex !== null ? `/images/${q.hoverImages[hoveredIndex].replace('.webp', '.webp')}` : null;
 
   return (
     <div className="p-6 md:p-8">
       <div className="flex justify-between items-center mb-2 text-sm text-gray-400">
-        <span>Question {current + 1} of {questions.length}</span>
-        <span>{Math.round(progress)}% Complete</span>
+        <span>{t('demo.progress', { current: current + 1, total: questions.length })}</span>
+        <span>{t('demo.complete', { percent: Math.round(progress) })}</span>
       </div>
       <div className="w-full bg-gray-700 rounded-full h-1.5 mb-6">
         <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
       </div>
 
-      <h3 className="text-xl font-semibold text-white mb-6">{q.text}</h3>
+      <h3 className="text-xl font-semibold text-white mb-6">{tOption(q.text)}</h3>
 
       <div className="space-y-3">
         {q.options.map((opt, idx) => (
@@ -230,7 +232,7 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
               />
             )}
             <span className="relative z-10 text-gray-200 group-hover:text-white">
-              {opt}
+              {tOption(opt)}
             </span>
           </button>
         ))}
@@ -238,7 +240,7 @@ export default function BaitQuiz({ onComplete }: BaitQuizProps) {
 
       {current > 0 && (
         <button onClick={handleBack} className="mt-6 text-sm text-gray-400 hover:text-gray-200 transition">
-          ← Previous question
+          {t('demo.previous')}
         </button>
       )}
     </div>

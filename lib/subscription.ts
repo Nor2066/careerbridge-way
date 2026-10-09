@@ -1,5 +1,6 @@
 // lib/subscription.ts
 import { supabaseServer } from '@/lib/supabase-server';
+import { resultHasInstitutionFollowup } from '@/lib/institutions';
 
 export type SubscriptionRow = {
   user_id: string;
@@ -57,7 +58,12 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow> 
 }
 
 // ─── Can the user start a new main questionnaire? ───────────────────────
-export function canStartAssessment(sub: SubscriptionRow): { allowed: boolean; reason?: string } {
+// licenceAttempts: attempts the student's university has paid for and they
+// have not used yet (lib/institutions.ts). Counted alongside their own.
+export function canStartAssessment(
+  sub: SubscriptionRow,
+  licenceAttempts = 0
+): { allowed: boolean; reason?: string; code?: 'FINISH_FOLLOWUP' | 'NO_ATTEMPTS' } {
   if (sub.current_attempt_status === 'in_progress') {
     return { allowed: true };
   }
@@ -65,16 +71,18 @@ export function canStartAssessment(sub: SubscriptionRow): { allowed: boolean; re
   if (sub.current_attempt_status === 'awaiting_followup_decision') {
     return {
       allowed: false,
+      code: 'FINISH_FOLLOWUP',
       reason: 'Please finish your current assessment (followup) before starting a new one.',
     };
   }
 
-  if (sub.main_attempts_remaining > 0) {
+  if (sub.main_attempts_remaining > 0 || licenceAttempts > 0) {
     return { allowed: true };
   }
 
   return {
     allowed: false,
+    code: 'NO_ATTEMPTS',
     reason: 'You have no attempts remaining. Please purchase a plan or top-up.',
   };
 }
@@ -92,6 +100,11 @@ export async function canAccessFollowup(
   plan: SubscriptionRow['plan']
 ): Promise<boolean> {
   if (plan === 'full') return true;
+
+  // An attempt the student's university paid for carries the follow-up when
+  // the licence includes it. Checked before the paid paths so it never spends
+  // a top-up credit the student bought themselves.
+  if (await resultHasInstitutionFollowup(resultId, userId)) return true;
 
   const { data: sub, error: subError } = await supabaseServer
     .from('subscriptions')
@@ -208,6 +221,37 @@ export async function restoreConsumedAttempt(
   if (error) {
     console.error('RESTORE ATTEMPT FAILED for', userId, error.message);
   }
+}
+
+// ─── The same transition, for an attempt the university pays for ────────
+//
+// Moves the attempt to awaiting_followup_decision WITHOUT touching the
+// customer's own attempt count; the university's counter is taken separately
+// in lib/institutions.ts. Guarded on the attempt id so two tabs cannot both
+// win, exactly as consumeAttemptAndAwaitFollowup is.
+export async function markAwaitingFollowup(userId: string, sub: SubscriptionRow): Promise<boolean> {
+  const { data, error } = await supabaseServer
+    .from('subscriptions')
+    .update({ current_attempt_status: 'awaiting_followup_decision' })
+    .eq('user_id', userId)
+    .eq('current_attempt_status', 'in_progress')
+    .eq('current_attempt_result_id', sub.current_attempt_result_id ?? '')
+    .select('user_id');
+
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+/** Undo markAwaitingFollowup when the report could not be produced. */
+export async function revertAwaitingFollowup(userId: string, sub: SubscriptionRow): Promise<void> {
+  const { error } = await supabaseServer
+    .from('subscriptions')
+    .update({ current_attempt_status: 'in_progress' })
+    .eq('user_id', userId)
+    .eq('current_attempt_status', 'awaiting_followup_decision')
+    .eq('current_attempt_result_id', sub.current_attempt_result_id ?? '');
+
+  if (error) console.error('REVERT AWAITING FAILED for', userId, error.message);
 }
 
 // ─── Reset to 'none' once the user moves on ─────────────────────────────

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
-import { PASSWORD_HINT, MIN_PASSWORD_LENGTH } from '@/lib/password';
+import { MIN_PASSWORD_LENGTH } from '@/lib/password';
 import { BRAND } from '@/lib/site';
+import { useI18n } from '@/components/I18nProvider';
+import { getSubscriptionStatus, type SubscriptionStatus } from '@/lib/subscription-client';
 
 export default function AccountClient({
   email,
@@ -15,6 +17,17 @@ export default function AccountClient({
   emailVerified: boolean;
 }) {
   const router = useRouter();
+  const { t, locale } = useI18n();
+
+  // Shown so a student knows exactly what their university can and cannot see.
+  const [institution, setInstitution] = useState<SubscriptionStatus['institution']>(null);
+  useEffect(() => {
+    let mounted = true;
+    getSubscriptionStatus().then((sub) => {
+      if (mounted && sub?.institution) setInstitution(sub.institution);
+    });
+    return () => { mounted = false; };
+  }, []);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -53,7 +66,7 @@ export default function AccountClient({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setPasswordError(data.error ?? 'We could not change your password. Please try again.');
+        setPasswordError(locale === 'en' && data.error ? data.error : t('account.password.failed'));
         return;
       }
 
@@ -62,7 +75,7 @@ export default function AccountClient({
       setNewPassword('');
       setConfirmPassword('');
     } catch {
-      setPasswordError('Network error. Please check your connection and try again.');
+      setPasswordError(t('account.networkCheck'));
     } finally {
       setChangingPassword(false);
     }
@@ -74,9 +87,13 @@ export default function AccountClient({
     try {
       const res = await fetchWithAuth('/api/auth/resend-verification', { method: 'POST' });
       const data = await res.json().catch(() => ({}));
-      setResendMessage(data.message ?? data.error ?? 'Something went wrong. Please try again.');
+      setResendMessage(
+        res.ok
+          ? locale === 'en' && data.message ? data.message : t('account.confirm.sent')
+          : locale === 'en' && data.error ? data.error : t('common.error.generic')
+      );
     } catch {
-      setResendMessage('Network error. Please check your connection and try again.');
+      setResendMessage(t('account.networkCheck'));
     } finally {
       setResending(false);
     }
@@ -89,7 +106,7 @@ export default function AccountClient({
       const res = await fetchWithAuth('/api/account/export');
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setExportError(data.error ?? 'We could not build your export. Please try again.');
+        setExportError(locale === 'en' && data.error ? data.error : t('account.export.failed'));
         return;
       }
 
@@ -106,7 +123,7 @@ export default function AccountClient({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch {
-      setExportError('Network error. Please check your connection and try again.');
+      setExportError(t('account.networkCheck'));
     } finally {
       setExporting(false);
     }
@@ -124,7 +141,7 @@ export default function AccountClient({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setDeleteError(data.error ?? 'We could not delete your account. Please try again.');
+        setDeleteError(locale === 'en' && data.error ? data.error : t('account.delete.failed'));
         return;
       }
 
@@ -133,7 +150,7 @@ export default function AccountClient({
       // to be sure nothing stale survives.
       window.location.href = '/';
     } catch {
-      setDeleteError('Network error. Please check your connection and try again.');
+      setDeleteError(t('account.networkCheck'));
     } finally {
       setDeleting(false);
     }
@@ -142,26 +159,39 @@ export default function AccountClient({
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-14">
       <div className="mx-auto w-full max-w-2xl">
-        <h1 className="text-3xl font-bold text-white">Your account</h1>
+        <h1 className="text-3xl font-bold text-white">{t('account.title')}</h1>
         <p className="mt-2 text-gray-400">
-          Signed in as <span className="text-gray-200">{email}</span>
+          {t('account.signedInAs')}<span className="text-gray-200">{email}</span>
         </p>
+
+        {/* ── University access ──────────────────────────────────────── */}
+        {institution && (
+          <section className="mt-8 rounded-xl border border-indigo-400/30 bg-indigo-400/5 p-6">
+            <h2 className="text-lg font-semibold text-white">{t('account.university.title')}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-300">
+              {t('account.university.body', { university: institution.name })}
+            </p>
+            <p className="mt-2 text-sm text-gray-400">
+              {institution.active && institution.attemptsRemaining > 0
+                ? t('account.university.attempts', { count: institution.attemptsRemaining, total: institution.attemptsPerStudent })
+                : t('account.university.ended')}
+            </p>
+          </section>
+        )}
 
         {/* ── Confirm email ──────────────────────────────────────────── */}
         {!emailVerified && (
           <section className="mt-8 rounded-xl border border-amber-400/30 bg-amber-400/5 p-6">
-            <h2 className="text-lg font-semibold text-white">Confirm your email address</h2>
+            <h2 className="text-lg font-semibold text-white">{t('account.confirm.title')}</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-300">
-              We sent a link to <span className="text-white">{email}</span> when you signed up.
-              Until you click it you can take the assessment, but you cannot buy anything or
-              generate a report &mdash; we will not charge an address we cannot reach.
+              {t('account.confirm.body.before')}<span className="text-white">{email}</span>{t('account.confirm.body.after')}
             </p>
             <button
               onClick={handleResendVerification}
               disabled={resending}
               className="btn-secondary mt-4 text-sm disabled:opacity-50"
             >
-              {resending ? 'Sending…' : 'Send the link again'}
+              {resending ? t('auth.sending') : t('account.confirm.resend')}
             </button>
             {resendMessage && <p className="mt-3 text-sm text-gray-300">{resendMessage}</p>}
           </section>
@@ -169,17 +199,17 @@ export default function AccountClient({
 
         {/* ── Change password ────────────────────────────────────────── */}
         <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-lg font-semibold text-white">Change your password</h2>
-          <p className="mt-2 text-sm leading-relaxed text-gray-400">{PASSWORD_HINT}</p>
+          <h2 className="text-lg font-semibold text-white">{t('account.password.title')}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-400">{t('auth.passwordHint', { min: MIN_PASSWORD_LENGTH })}</p>
           <p className="mt-2 text-sm leading-relaxed text-gray-500">
-            Changing it signs out anyone else who is logged into your account.
+            {t('account.password.signsOut')}
           </p>
 
           <form onSubmit={handleChangePassword} className="mt-4 flex flex-col gap-3">
             <input
               type="password"
               autoComplete="current-password"
-              placeholder="Current password"
+              placeholder={t('account.password.current')}
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
@@ -188,7 +218,7 @@ export default function AccountClient({
             <input
               type="password"
               autoComplete="new-password"
-              placeholder="New password"
+              placeholder={t('account.password.new')}
               required
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -197,7 +227,7 @@ export default function AccountClient({
             <input
               type="password"
               autoComplete="new-password"
-              placeholder="Type the new password again"
+              placeholder={t('account.password.again')}
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -205,12 +235,12 @@ export default function AccountClient({
             />
 
             {confirmPassword.length > 0 && !passwordsMatch && (
-              <p className="text-xs text-red-300">These do not match yet.</p>
+              <p className="text-xs text-red-300">{t('account.password.mismatch')}</p>
             )}
             {passwordError && <p className="text-sm text-red-300">{passwordError}</p>}
             {passwordDone && (
               <p className="text-sm text-emerald-300">
-                Your password has been updated, and other sessions were signed out.
+                {t('account.password.done')}
               </p>
             )}
 
@@ -219,48 +249,42 @@ export default function AccountClient({
               disabled={changingPassword || !passwordsMatch || !passwordLongEnough}
               className="btn-secondary self-start text-sm disabled:opacity-50"
             >
-              {changingPassword ? 'Saving…' : 'Change password'}
+              {changingPassword ? t('auth.saving') : t('account.password.submit')}
             </button>
           </form>
 
           <p className="mt-4 text-sm text-gray-500">
-            Signed in with Google? You do not have a password here, so there is nothing to
-            change.
+            {t('account.password.google')}
           </p>
         </section>
 
         {/* ── Export ─────────────────────────────────────────────────── */}
         <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-lg font-semibold text-white">Download your data</h2>
+          <h2 className="text-lg font-semibold text-white">{t('account.export.title')}</h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-400">
-            A JSON file containing your account details, every assessment you have taken,
-            every report we generated, and your purchase history. This is your right under
-            UK GDPR &mdash; you do not have to give a reason and we do not ask for one.
+            {t('account.export.body')}
           </p>
           <button
             onClick={handleExport}
             disabled={exporting}
             className="btn-secondary mt-4 text-sm disabled:opacity-50"
           >
-            {exporting ? 'Preparing your file…' : 'Download my data'}
+            {exporting ? t('account.export.preparing') : t('account.export.submit')}
           </button>
           {exportError && <p className="mt-3 text-sm text-red-300">{exportError}</p>}
         </section>
 
         {/* ── Delete ─────────────────────────────────────────────────── */}
         <section className="mt-6 rounded-xl border border-red-400/30 bg-red-500/5 p-6">
-          <h2 className="text-lg font-semibold text-white">Delete your account</h2>
+          <h2 className="text-lg font-semibold text-white">{t('account.delete.title')}</h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-400">
-            This removes your profile, every assessment answer, every report, and your saved
-            progress. It happens immediately and it cannot be undone.
+            {t('account.delete.body')}
           </p>
           <p className="mt-3 text-sm leading-relaxed text-gray-400">
-            We keep a record of your purchases with your name and email removed, because UK
-            tax law requires us to keep sales records for six years.
+            {t('account.delete.records')}
           </p>
           <p className="mt-3 text-sm leading-relaxed text-amber-200/80">
-            Any attempts you have paid for and not used will be lost. If you want a refund
-            for them, ask us <Link href="/refunds" className="underline">first</Link>.
+            {t('account.delete.refund.before')}<Link href="/refunds" className="underline">{t('account.delete.refund.link')}</Link>.
           </p>
 
           {!confirmOpen ? (
@@ -268,12 +292,12 @@ export default function AccountClient({
               onClick={() => setConfirmOpen(true)}
               className="mt-4 rounded-lg border border-red-400/50 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/10"
             >
-              Delete my account
+              {t('account.delete.open')}
             </button>
           ) : (
             <div className="mt-5 border-t border-white/10 pt-5">
               <label htmlFor="confirm-email" className="block text-sm text-gray-300">
-                Type <span className="font-mono text-white">{email}</span> to confirm.
+                {t('account.delete.type.before')}<span className="font-mono text-white">{email}</span>{t('account.delete.type.after')}
               </label>
               <input
                 id="confirm-email"
@@ -281,7 +305,7 @@ export default function AccountClient({
                 autoComplete="off"
                 value={typedEmail}
                 onChange={(e) => setTypedEmail(e.target.value)}
-                placeholder="your email address"
+                placeholder={t('account.delete.placeholder')}
                 className="mt-2 w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white placeholder:text-gray-600 focus:border-red-400/60 focus:outline-none"
               />
 
@@ -291,7 +315,7 @@ export default function AccountClient({
                   disabled={!emailMatches || deleting}
                   className="rounded-lg bg-red-500/80 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {deleting ? 'Deleting…' : 'Permanently delete my account'}
+                  {deleting ? t('account.delete.deleting') : t('account.delete.confirm')}
                 </button>
                 <button
                   onClick={() => {
@@ -302,7 +326,7 @@ export default function AccountClient({
                   disabled={deleting}
                   className="rounded-lg border border-white/15 px-4 py-2 text-sm text-gray-300 transition hover:text-white disabled:opacity-50"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
 
@@ -312,18 +336,18 @@ export default function AccountClient({
         </section>
 
         <p className="mt-8 text-sm text-gray-500">
-          Questions about your data? Read the{' '}
+          {t('account.questions.before')}
           <Link href="/privacy" className="text-indigo-300 underline">
-            Privacy Policy
-          </Link>{' '}
-          or email us &mdash; the address is in the footer.
+            {t('account.questions.privacy')}
+          </Link>
+          {t('account.questions.after')}
         </p>
 
         <button
           onClick={() => router.push('/history')}
           className="mt-6 text-sm text-indigo-300 underline underline-offset-4 hover:text-white"
         >
-          &larr; Back to your history
+          {t('account.back')}
         </button>
       </div>
     </main>

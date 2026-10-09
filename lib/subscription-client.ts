@@ -29,14 +29,30 @@
 
 export type SubscriptionStatus = {
   plan: 'free' | 'basic' | 'full';
+  /** The student's own attempts plus any their university provides. */
   mainAttemptsRemaining: number;
+  ownAttemptsRemaining?: number;
   followupsPaidCount: number;
   bonusAttemptGranted: boolean;
   followupBundlePurchased: boolean;
   currentAttemptStatus: 'none' | 'in_progress' | 'awaiting_followup_decision';
   currentAttemptResultId: string | null;
+  /** True when the attempt in flight was paid for by a university that includes the follow-up. */
+  currentAttemptFollowupIncluded?: boolean;
   canStartAssessment: boolean;
   cannotStartReason: string | null;
+  cannotStartCode?: 'FINISH_FOLLOWUP' | 'NO_ATTEMPTS' | null;
+  /** Access through a university, when the student has it. */
+  institution?: {
+    name: string;
+    active: boolean;
+    attemptsRemaining: number;
+    attemptsPerStudent: number;
+    followupIncluded: boolean;
+    licenceEndsAt: string;
+  } | null;
+  /** Universities whose dashboard this person may open. */
+  staffOf?: { id: string; name: string }[];
 };
 
 /**

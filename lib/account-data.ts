@@ -30,7 +30,18 @@ export const USER_DATA_TABLES: UserTable[] = [
   { table: 'followup_unlocks', userColumn: 'user_id', label: 'followup_unlocks' },
   { table: 'assessments', userColumn: 'user_id', label: 'feedback_submissions' },
   { table: 'subscriptions', userColumn: 'user_id', label: 'plan_and_attempts' },
+  { table: 'institution_members', userColumn: 'user_id', label: 'university_access' },
 ];
+
+/**
+ * Is this error the table not existing at all? Deleting from a table that was
+ * never created removes nothing, so account deletion treats it as done rather
+ * than refusing — which matters while a new table's SQL has yet to be run.
+ */
+export function isMissingTableError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === '42P01' || error.code === 'PGRST205';
+}
 
 /**
  * Deleted last and treated separately, because UK tax law requires a record of

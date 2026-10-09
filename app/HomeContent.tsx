@@ -10,6 +10,32 @@ import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import PricingContent from '@/components/PricingContent';
 import { BRAND } from '@/lib/site';
 import { formatPrice } from '@/lib/prices';
+import { useI18n } from '@/components/I18nProvider';
+import type { SubscriptionStatus } from '@/lib/subscription-client';
+import {
+  SUBJECTS,
+  ACTIVITIES,
+  SKILL_NAMES,
+  THINKING_STYLES,
+  LEARNING_STYLES,
+  MOTIVATIONS,
+  WHAT_MATTERS,
+  SOCIAL_PREFERENCES,
+  WORK_ENVIRONMENTS,
+  JOB_TYPES,
+  YES_NO,
+  ACADEMIC_LEVEL_LABELS,
+  PROFILE_OPTIONS,
+  PROFILE_FOLLOWUPS,
+  SALARY_AIMS,
+  RELOCATION,
+  REMOTE_WORK,
+  WORK_SCHEDULES,
+  JOB_SECURITY,
+  TRAVEL,
+  TEAM_ENVIRONMENTS,
+  CRITICISM,
+} from '@/lib/assessment-options';
 
 type Answers = {
   subjects: string[];
@@ -62,118 +88,9 @@ type Answers = {
 };
 
 // ---------- Constants ----------
-const SUBJECTS = [
-  'Mathematics',
-  'Sciences',
-  'Technology / Computing',
-  'Business / Economics',
-  'Social Sciences (psychology, sociology, politics)',
-  'Arts / Humanities (history, literature, art)',
-  'Creative Fields (art, design, writing)',
-  'Languages'
-];
-
-const ACTIVITIES = [
-  'Solving problems',
-  'Experiments / Hands-on (like science labs or building things)',
-  'Designing / Creating',
-  'Reading / Analyzing (reading and thinking deeply)',
-  'Helping people',
-  'Building / Using tech (computers, phones, apps)',
-  'Leading / Organizing (being in charge or planning)',
-  'Coding / Programming (writing code for computers or apps)',
-  'Making / Building things (woodworking, repairs, crafts)',
-  'Teaching / Explaining',
-  'Advocating / Raising awareness (speaking up for a cause, e.g. climate change, bullying)'
-];
-
-const SKILL_NAMES = [
-  { id: 'logicalReasoning', label: 'Logical Reasoning (solving puzzles, finding patterns)' },
-  { id: 'creativity', label: 'Creativity (coming up with new ideas)' },
-  { id: 'communication', label: 'Communication (talking, writing, presenting)' },
-  { id: 'workingWithData', label: 'Working with Data (using numbers, charts, spreadsheets)' },
-  { id: 'manualSkills', label: 'Manual Skills (fixing things, using tools, crafts)' },
-  { id: 'teamwork', label: 'Teamwork (working well with others)' },
-  { id: 'criticalThinking', label: 'Critical Thinking (thinking carefully before deciding)' },
-  { id: 'timeManagement', label: 'Time Management (planning your time, meeting deadlines)' },
-  { id: 'uncertaintyComfort', label: 'Uncertainty Comfort (being okay when you don\'t know the answer)' },
-  { id: 'financialRiskComfort', label: 'Financial Risk Comfort (being okay with money risks, like investing)' },
-  { id: 'pressureTolerance', label: 'Pressure Tolerance (handling stress and tight deadlines)' },
-  { id: 'empathy', label: 'Empathy / Emotional Intelligence (understanding how others feel)' },
-  { id: 'artistic', label: 'Artistic / Visual Thinking (thinking in pictures, design)' },
-  { id: 'mechanical', label: 'Mechanical / Spatial Reasoning (understanding how things fit together, like puzzles or building)' },
-  { id: 'organization', label: 'Organization / Attention to Detail (keeping things tidy, noticing small things)' },
-  { id: 'adaptability', label: 'Adaptability / Flexibility (adjusting to change easily)' },
-  { id: 'physicalStamina', label: 'Physical Stamina / Endurance (staying active for long periods)' }
-];
-
-const THINKING_STYLES = [
-  'I like clear answers that are either right or wrong (like math problems)',
-  'I like open‑ended questions with many possible answers (like creative writing)',
-  'A mix of both'
-];
-
-const LEARNING_STYLES = [
-  'Hands-on',
-  'Reading & Theory (learning from books, not hands‑on)',
-  'Visual / Creative',
-  'Group Discussion',
-  'Independent Study'
-];
-
-const MOTIVATIONS = [
-  'High Earning',
-  'Helping / Impact',
-  'Creativity',
-  'Stability',
-  'Research',
-  'Working with Tech',
-  'Leadership',
-  'Personal growth and becoming the best version of yourself',
-  'Creating things (art, buildings, inventions, ideas)'
-];
-
-const WHAT_MATTERS = [
-  'Work-Life Balance',
-  'Career Growth (opportunities to move up and earn more)',
-  'Meaningful Impact (making a difference in the world)',
-  'Financial Independence (having enough money to not rely on others)',
-  'Autonomy (freedom to make your own decisions)'
-];
-
-const SOCIAL_PREFERENCES = [
-  'Being around many people (I feel energized)',
-  'Small groups',
-  'One-on-one conversations',
-  'Working alone / being by myself'
-];
-
-const WORK_ENVIRONMENTS = [
-  'Structured (clear rules and schedules)',
-  'Fast-Paced',
-  'Independent',
-  'Collaborative (working closely with a team)',
-  'Competitive',
-  'Calm'
-];
-
-const JOB_TYPES = [
-  'Research job',
-  'Healthcare job',
-  'Entrepreneurial',
-  'Hands-on trade',
-  'Transport / logistics',
-  'Business role',
-  'IT role',
-  'Engineering role',
-  'Education role',
-  'Creative role',
-  'Social impact role',
-  'Analytical/data role',
-  'Legal / Justice',
-  'Sales / Marketing',
-  'Hospitality / Tourism'
-];
+// The answer options live in lib/assessment-options.ts. Their English text is
+// the value scoring keys off; lib/i18n/options.ts holds what other languages
+// display instead.
 
 const initialAnswers: Answers = {
   subjects: [],
@@ -210,21 +127,9 @@ const initialAnswers: Answers = {
   criticismHandling: '',
 };
 
-// ---------- Subscription status type ----------
-type SubscriptionStatus = {
-  plan: 'free' | 'basic' | 'full';
-  mainAttemptsRemaining: number;
-  followupsPaidCount: number;
-  bonusAttemptGranted: boolean;
-  followupBundlePurchased: boolean;
-  currentAttemptStatus: 'none' | 'in_progress' | 'awaiting_followup_decision';
-  currentAttemptResultId: string | null;
-  canStartAssessment: boolean;
-  cannotStartReason: string | null;
-};
-
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
+  const { t, tOption, tCluster } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
@@ -556,7 +461,7 @@ export default function Home() {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           if (errData.code === 'SUBSCRIPTION_REQUIRED') {
-            setSaveResultError(errData.error || 'You need to purchase a plan to continue.');
+            setSaveResultError(t('assess.noAttempts'));
             await refetchSubStatus();
             autoSavedRef.current = false;
             return;
@@ -645,7 +550,7 @@ export default function Home() {
     }
 
     console.error('Failed to calculate results:', lastErr);
-    setSubmitError('We had trouble calculating your results. This is usually temporary — please try again.');
+    setSubmitError(t('assess.final.error'));
     setLoading(false);
   };
 
@@ -654,7 +559,7 @@ export default function Home() {
     track('report_generate_start');
     const assessmentId = sessionStorage.getItem('lastAssessmentId');
     if (!assessmentId) {
-      alert('Please wait a moment for the assessment to be saved, then try again.');
+      alert(t('assess.results.waitSave'));
       return;
     }
     setLoadingReport(true);
@@ -690,10 +595,10 @@ export default function Home() {
         setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         track('report_failed', { code: data.code ?? null, status: res.status });
-        alert('Failed to generate report: ' + (data.error || 'unknown error'));
+        alert(t('assess.results.failed', { error: data.error || t('assess.results.failedUnknown') }));
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert(t('common.error.network'));
     } finally {
       setLoadingReport(false);
     }
@@ -716,10 +621,10 @@ export default function Home() {
       if (res.ok) {
         router.push('/history');
       } else {
-        alert('Something went wrong. Please try again.');
+        alert(t('common.error.generic'));
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert(t('common.error.network'));
     } finally {
       setSkipLoading(false);
     }
@@ -742,13 +647,24 @@ export default function Home() {
         setShowMustFinishModal(false);
         await refetchSubStatus();
       } else {
-        alert('Something went wrong. Please try again.');
+        alert(t('common.error.generic'));
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert(t('common.error.network'));
     } finally {
       setSkipLoading(false);
     }
+  };
+
+  // The scoring route returns the case as a code; wording it here means the
+  // warning follows the language switcher like everything else.
+  const warningText = (r: { warningCode?: string | null; warningMessage?: string | null; excludedClusters?: string[] }) => {
+    if (r.warningCode === 'EXCLUDED') {
+      return t('assess.results.warning.EXCLUDED', { fields: (r.excludedClusters ?? []).map(tCluster).join(', ') });
+    }
+    if (r.warningCode === 'RAN_OUT') return t('assess.results.warning.RAN_OUT');
+    if (r.warningCode === 'ALL_EXCLUDED') return t('assess.results.warning.ALL_EXCLUDED');
+    return r.warningMessage ?? '';
   };
 
   // ***** STYLING *****
@@ -764,7 +680,7 @@ export default function Home() {
   if (authLoading) {
     return (
       <div className={containerClasses}>
-        <div className="text-gray-300">Loading...</div>
+        <div className="text-gray-300">{t('common.loading')}</div>
       </div>
     );
   }
@@ -785,7 +701,7 @@ export default function Home() {
             <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
           </div>
           <span className="text-sm font-medium text-gray-300 block mb-4">
-            Step {step + 1} of {totalSteps}
+            {t('assess.stepOf', { step: step + 1, total: totalSteps })}
           </span>
           <div className="w-full bg-gray-600 rounded-full h-2">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
@@ -795,8 +711,8 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-white mb-6 text-center">{title}</h2>
           {children}
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            {step > 0 && <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>}
-            <button onClick={nextStep} disabled={!isValid} className={buttonPrimaryClasses}>Next →</button>
+            {step > 0 && <button onClick={prevStep} className={buttonSecondaryClasses}>{t('common.back')}</button>}
+            <button onClick={nextStep} disabled={!isValid} className={buttonPrimaryClasses}>{t('common.next')}</button>
           </div>
         </div>
       </div>
@@ -829,7 +745,7 @@ export default function Home() {
                 }
               }}
             />
-            <span className="text-white font-medium">{option}</span>
+            <span className="text-white font-medium">{tOption(option)}</span>
           </label>
         );
       })}
@@ -855,7 +771,7 @@ export default function Home() {
               checked={isChecked}
               onChange={() => onChange(option)}
             />
-            <span className="text-white font-medium">{option}</span>
+            <span className="text-white font-medium">{tOption(option)}</span>
           </label>
         );
       })}
@@ -882,14 +798,17 @@ export default function Home() {
     const outOfAttempts = subStatus.mainAttemptsRemaining <= 0;
     const heading =
       subStatus.plan === 'free'
-        ? 'Unlock the Full Assessment'
+        ? t('assess.paywall.unlockTitle')
         : outOfAttempts
-        ? 'No attempts left on your account'
-        : 'One more step before you continue';
-    const subheading =
-      subStatus.plan === 'free'
-        ? "You've answered 10 questions — purchase a plan to see your results and AI report."
-        : "Here's exactly what's blocking this attempt, and what unblocks it.";
+        ? t('assess.paywall.noAttemptsTitle')
+        : t('assess.paywall.oneMoreTitle');
+    // A student whose university access has run out is told so, rather than
+    // being shown a sales pitch as if they had never had any.
+    const subheading = subStatus.institution && !subStatus.institution.attemptsRemaining
+      ? t('assess.paywall.universityEnded', { university: subStatus.institution.name })
+      : subStatus.plan === 'free'
+        ? t('assess.paywall.unlockBody')
+        : t('assess.paywall.blockedBody');
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -907,7 +826,7 @@ export default function Home() {
               <button
                 onClick={() => setShowPricingModal(false)}
                 className="text-gray-400 hover:text-white text-2xl leading-none ml-4 flex-shrink-0"
-                aria-label="Close"
+                aria-label={t('common.close')}
               >
                 &times;
               </button>
@@ -927,11 +846,11 @@ export default function Home() {
                 onClick={() => router.push('/history')}
                 className="text-sm text-indigo-300 hover:text-white underline"
               >
-                See my attempts and followups
+                {t('assess.paywall.seeAttempts')}
               </button>
             </div>
             <p className="text-center text-xs text-gray-400 mt-4">
-              Your progress is saved. After payment you&apos;ll continue exactly where you left off.
+              {t('assess.paywall.progressSaved')}
             </p>
           </div>
         </div>
@@ -949,7 +868,8 @@ export default function Home() {
     const followupsUnlocked =
       subStatus?.plan === 'full' ||
       subStatus?.followupBundlePurchased ||
-      subStatus?.bonusAttemptGranted;
+      subStatus?.bonusAttemptGranted ||
+      subStatus?.currentAttemptFollowupIncluded;
 
     return (
       <div
@@ -962,28 +882,25 @@ export default function Home() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-500/20 mb-4">
               <span className="text-3xl">📋</span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-3">One Attempt Left to Finish</h2>
+            <h2 className="text-2xl font-bold text-white mb-3">{t('assess.mustFinish.title')}</h2>
             <p className="text-gray-300 mb-4 leading-relaxed">
-              {subStatus?.cannotStartReason ||
-                "You have a previous assessment that's still waiting on its followup questionnaire."}
+              {t('assess.mustFinish.reason')}
             </p>
             <p className="text-gray-300 mb-8 leading-relaxed">
-              {followupsUnlocked
-                ? 'Open it from your history page and finish the followup — then you’re free to start a new assessment. Or skip it below if you’d rather move on; you can always come back to it later.'
-                : 'Your followups aren’t unlocked yet, so you can finish this attempt by unlocking them from your history page — or skip the followup below and start fresh. Skipping loses nothing: the attempt stays in your history.'}
+              {followupsUnlocked ? t('assess.mustFinish.unlocked') : t('assess.mustFinish.locked')}
             </p>
             <button
               onClick={() => router.push('/history')}
               className="btn-primary w-full py-3"
             >
-              Go to My History →
+              {t('assess.mustFinish.goHistory')}
             </button>
             <button
               onClick={handleSkipFromGate}
               disabled={skipLoading}
               className="mt-3 w-full text-sm text-gray-300 hover:text-white underline disabled:opacity-50"
             >
-              {skipLoading ? 'Please wait...' : 'Skip that followup and start a new assessment'}
+              {skipLoading ? t('common.pleaseWait') : t('assess.mustFinish.skip')}
             </button>
           </div>
         </div>
@@ -999,7 +916,7 @@ export default function Home() {
   if (user && subLoading) {
     return (
       <div className={containerClasses}>
-        <div className="text-gray-300">Loading...</div>
+        <div className="text-gray-300">{t('common.loading')}</div>
       </div>
     );
   }
@@ -1042,7 +959,7 @@ export default function Home() {
     const [expanded, setExpanded] = useState(true);
 
     const saveFeedback = async () => {
-      if (feedbackRating === 0) { alert('Please rate your experience'); return; }
+      if (feedbackRating === 0) { alert(t('assess.feedback.rateFirst')); return; }
       setSaving(true);
       try {
         // Only send rating + comment — the assessment data (topClusters,
@@ -1059,9 +976,9 @@ export default function Home() {
           body: JSON.stringify({ feedbackRating, feedbackComment }),
         });
         if (res.ok) setSaved(true);
-        else alert('Something went wrong. Please try again.');
+        else alert(t('common.error.generic'));
       } catch (err) {
-        alert('Network error. Please try again.');
+        alert(t('common.error.network'));
       } finally {
         setSaving(false);
       }
@@ -1075,23 +992,23 @@ export default function Home() {
           onClick={() => setExpanded(e => !e)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2 py-6 rounded-l-lg shadow-lg transition-colors"
           style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-          aria-label="Toggle feedback"
+          aria-label={t('assess.feedback.toggleLabel')}
         >
-          {expanded ? '✕ Close' : '💬 Feedback'}
+          {expanded ? t('assess.feedback.toggleClose') : t('assess.feedback.toggleOpen')}
         </button>
         {expanded && (
           <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-t border-b border-white/20 rounded-l-xl shadow-2xl p-5 flex flex-col gap-4">
             {saved ? (
               <div className="text-center py-4">
                 <div className="text-3xl mb-2">🎉</div>
-                <p className="text-green-400 font-semibold">Thank you for your feedback!</p>
-                <button onClick={() => setShowFeedbackPopup(false)} className="mt-4 text-xs text-gray-400 hover:text-white">Close</button>
+                <p className="text-green-400 font-semibold">{t('assess.feedback.thanks')}</p>
+                <button onClick={() => setShowFeedbackPopup(false)} className="mt-4 text-xs text-gray-400 hover:text-white">{t('common.close')}</button>
               </div>
             ) : (
               <>
                 <div>
-                  <h3 className="text-white font-bold text-sm mb-1">Help us improve</h3>
-                  <p className="text-gray-400 text-xs">How accurate were your results?</p>
+                  <h3 className="text-white font-bold text-sm mb-1">{t('assess.feedback.title')}</h3>
+                  <p className="text-gray-400 text-xs">{t('assess.feedback.question')}</p>
                 </div>
                 <div className="flex gap-2 justify-center">
                   {[1, 2, 3, 4, 5].map(r => (
@@ -1102,11 +1019,11 @@ export default function Home() {
                   ))}
                 </div>
                 <textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)}
-                  rows={3} placeholder="Any comments? (optional)"
+                  rows={3} placeholder={t('assess.feedback.placeholder')}
                   className="w-full p-2 text-sm border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
                 <button onClick={saveFeedback} disabled={saving || feedbackRating === 0}
                   className="btn-primary w-full text-sm py-2 disabled:opacity-50">
-                  {saving ? 'Saving...' : 'Submit Feedback'}
+                  {saving ? t('assess.feedback.saving') : t('assess.feedback.submit')}
                 </button>
               </>
             )}
@@ -1127,16 +1044,16 @@ export default function Home() {
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">{BRAND.name}</h1>
-            <p className="text-gray-300">Your personalized career assessment results</p>
+            <p className="text-gray-300">{t('assess.results.subtitle')}</p>
           </div>
 
           <div className="glass-card mb-8">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">{t('assess.results.top3')}</h2>
             <ul className="space-y-4">
               {result.top3.map((item: any, idx: number) => (
                 <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-white text-lg">{item.cluster}</span>
+                    <span className="font-semibold text-white text-lg">{tCluster(item.cluster)}</span>
                     <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3">
@@ -1150,30 +1067,30 @@ export default function Home() {
           {support && <SupportNotice data={support} />}
 
           <div className="glass-card mb-8">
-            <h3 className="text-xl font-bold text-white mb-3">Your Personalized Career Report</h3>
+            <h3 className="text-xl font-bold text-white mb-3">{t('assess.results.reportTitle')}</h3>
             <p className="text-gray-200 whitespace-pre-wrap">{aiReport}</p>
           </div>
 
           <div className="glass-card">
-            {plan === 'full' || subStatus?.followupBundlePurchased ? (
+            {plan === 'full' || subStatus?.followupBundlePurchased || subStatus?.currentAttemptFollowupIncluded ? (
               <>
-                <h3 className="text-xl font-bold text-white mb-3 text-center">Ready for your detailed roadmap?</h3>
+                <h3 className="text-xl font-bold text-white mb-3 text-center">{t('assess.decision.readyTitle')}</h3>
                 <p className="text-gray-300 mb-6 text-center">
-                  {plan === 'full'
-                    ? 'Your plan includes the followup questionnaire — answer a few more questions for an in-depth career roadmap.'
-                    : "You've already unlocked all followups — answer a few more questions for an in-depth career roadmap."}
+                  {subStatus?.currentAttemptFollowupIncluded && subStatus.institution
+                    ? t('assess.decision.universityIncludes', { university: subStatus.institution.name })
+                    : plan === 'full'
+                    ? t('assess.decision.planIncludes')
+                    : t('assess.decision.bundleUnlocked')}
                 </p>
                 <button onClick={handleGoToFollowup} className={buttonPrimaryClasses + ' w-full'}>
-                  📋 Continue to Followup Questionnaire
+                  {t('assess.decision.continue')}
                 </button>
               </>
             ) : (
               <>
-                <h3 className="text-xl font-bold text-white mb-3 text-center">Want a more detailed roadmap?</h3>
+                <h3 className="text-xl font-bold text-white mb-3 text-center">{t('assess.decision.wantTitle')}</h3>
                 <p className="text-gray-300 mb-6 text-center">
-                  Unlock the followup questionnaire and get a second, more detailed AI report
-                  with concrete job titles, courses, and a 3-month action plan — one purchase
-                  covers both of your attempts, for {formatPrice('followup_unlock')}.
+                  {t('assess.decision.wantBody', { price: formatPrice('followup_unlock') })}
                 </p>
                 <div className="flex flex-col gap-3">
                   <PricingContent
@@ -1204,7 +1121,7 @@ export default function Home() {
                     disabled={skipLoading}
                     className={buttonSecondaryClasses + ' w-full'}
                   >
-                    {skipLoading ? 'Please wait...' : 'Not now — go to my history'}
+                    {skipLoading ? t('common.pleaseWait') : t('assess.decision.notNow')}
                   </button>
                 </div>
               </>
@@ -1223,15 +1140,15 @@ export default function Home() {
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">{BRAND.name}</h1>
-            <p className="text-gray-300">Your personalized career assessment results</p>
+            <p className="text-gray-300">{t('assess.results.subtitle')}</p>
           </div>
           <div className="glass-card mb-8">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">Your Top 3 Career Clusters</h2>
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">{t('assess.results.top3')}</h2>
             <ul className="space-y-4">
               {result.top3.map((item: any, idx: number) => (
                 <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-white text-lg">{item.cluster}</span>
+                    <span className="font-semibold text-white text-lg">{tCluster(item.cluster)}</span>
                     <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3">
@@ -1241,7 +1158,7 @@ export default function Home() {
               ))}
             </ul>
             {result.warningMessage && (
-              <div className="mt-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100">⚠️ {result.warningMessage}</div>
+              <div className="mt-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100">⚠️ {warningText(result)}</div>
             )}
             {!reportGenerated && (
               <div className="mt-8 text-center">
@@ -1250,11 +1167,11 @@ export default function Home() {
                   disabled={loadingReport}
                   className="w-full py-4 px-6 text-lg font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg hover:shadow-indigo-500/40 transition-all disabled:opacity-60"
                 >
-                  {loadingReport ? '✨ Generating your AI report...' : '🤖 Get Your AI-Powered Career Report'}
+                  {loadingReport ? t('assess.results.generating') : t('assess.results.generate')}
                 </button>
                 {loadingReport && (
                   <p className="text-sm text-gray-400 mt-3">
-                    We are processing your information and preparing your result. This may take a few seconds.
+                    {t('assess.results.processing')}
                   </p>
                 )}
               </div>
@@ -1268,14 +1185,14 @@ export default function Home() {
   // ---------- STEP RENDERING ----------
   if (step === 0) {
     return (
-      <StepContainer title="Which subjects do you enjoy the most? (Pick up to 3)">
+      <StepContainer title={t('assess.q.subjects')}>
         <CheckboxGroup options={SUBJECTS} selected={answers.subjects} onChange={(val: string[]) => update('subjects', val)} maxSelections={3} />
       </StepContainer>
     );
   }
   if (step === 1) {
     return (
-      <StepContainer title="Which activities do you prefer? (Pick up to 3)">
+      <StepContainer title={t('assess.q.activities')}>
         <CheckboxGroup options={ACTIVITIES} selected={answers.activities} onChange={(val: string[]) => update('activities', val)} maxSelections={3} />
       </StepContainer>
     );
@@ -1285,9 +1202,9 @@ export default function Home() {
     const skill = SKILL_NAMES[skillIndex];
     const currentRating = answers.skills[skill.id as keyof Answers['skills']];
     return (
-      <StepContainer title={`Rate your ${skill.label} (1-5)`}>
+      <StepContainer title={t('assess.q.rateSkill', { skill: tOption(skill.label) })}>
         <div className="text-sm text-gray-300 mb-4 text-center">
-          1 = Not confident at all &nbsp;|&nbsp; 3 = Moderate &nbsp;|&nbsp; 5 = Very confident
+          {t('assess.q.rateScale')}
         </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={currentRating} onChange={(val: number) => updateSkill(skill.id as keyof Answers['skills'], val)} />
       </StepContainer>
@@ -1295,39 +1212,32 @@ export default function Home() {
   }
 
   stepOffset = 2 + SKILL_NAMES.length;
-  if (step === stepOffset) return (<StepContainer title="Which describes you better?"><RadioGroup options={THINKING_STYLES} selected={answers.thinkingStyle} onChange={(val: string) => update('thinkingStyle', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.thinking')}><RadioGroup options={THINKING_STYLES} selected={answers.thinkingStyle} onChange={(val: string) => update('thinkingStyle', val)} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="How do you learn best?"><RadioGroup options={LEARNING_STYLES} selected={answers.learningStyle} onChange={(val: string) => update('learningStyle', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.learning')}><RadioGroup options={LEARNING_STYLES} selected={answers.learningStyle} onChange={(val: string) => update('learningStyle', val)} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="What motivates you most? (Pick up to 2)"><CheckboxGroup options={MOTIVATIONS} selected={answers.motivations} onChange={(val: string[]) => update('motivations', val)} maxSelections={2} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.motivations')}><CheckboxGroup options={MOTIVATIONS} selected={answers.motivations} onChange={(val: string[]) => update('motivations', val)} maxSelections={2} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="Which matters more to you?"><RadioGroup options={WHAT_MATTERS} selected={answers.whatMattersMore} onChange={(val: string) => update('whatMattersMore', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.whatMatters')}><RadioGroup options={WHAT_MATTERS} selected={answers.whatMattersMore} onChange={(val: string) => update('whatMattersMore', val)} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="Are you willing to study or work for long hours?"><RadioGroup options={['YES', 'NO']} selected={answers.studyHours} onChange={(val: string) => update('studyHours', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.studyHours')}><RadioGroup options={YES_NO} selected={answers.studyHours} onChange={(val: string) => update('studyHours', val)} /></StepContainer>);
   stepOffset++;
   if (step === stepOffset) {
-    const levelLabels = [
-      '1 = High school diploma',
-      '2 = Some college / trade school',
-      '3 = Bachelor\'s degree',
-      '4 = Master\'s degree',
-      '5 = Doctorate / professional degree (MD, PhD, JD)'
-    ];
     return (
-      <StepContainer title="How far would you like to go academically?">
+      <StepContainer title={t('assess.q.academic')}>
         <div className="text-sm text-gray-300 mb-4 text-center space-y-1">
-          {levelLabels.map(label => <div key={label}>{label}</div>)}
+          {ACADEMIC_LEVEL_LABELS.map(label => <div key={label}>{tOption(label)}</div>)}
         </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={answers.academicLevel} onChange={(val: number) => update('academicLevel', val)} />
       </StepContainer>
     );
   }
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="In social situations, what do you usually prefer?"><RadioGroup options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.social')}><RadioGroup options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="Which work environment fits you best? (Pick up to 2)"><CheckboxGroup options={WORK_ENVIRONMENTS} selected={answers.workEnvironment} onChange={(val: string[]) => update('workEnvironment', val)} maxSelections={2} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.environment')}><CheckboxGroup options={WORK_ENVIRONMENTS} selected={answers.workEnvironment} onChange={(val: string[]) => update('workEnvironment', val)} maxSelections={2} /></StepContainer>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title="Which job types interest you? (Choose as many as you want)"><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
+  if (step === stepOffset) return (<StepContainer title={t('assess.q.jobTypes')}><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
 
   if (step === dealbreakerStep) {
     return (
@@ -1335,18 +1245,18 @@ export default function Home() {
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
-            <span className="text-sm font-medium text-gray-300 block mb-4">Step {step + 1} of {totalSteps}</span>
+            <span className="text-sm font-medium text-gray-300 block mb-4">{t('assess.stepOf', { step: step + 1, total: totalSteps })}</span>
             <div className="w-full bg-gray-600 rounded-full h-2">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
             </div>
           </div>
           <div className="glass-card">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">Which job types would you NEVER want to do?</h2>
-            <p className="text-sm text-gray-300 mb-4">Now be honest – these will be removed from your recommendations. (Even if you selected them before, choose them here if you would refuse that job.)</p>
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">{t('assess.q.dealbreakers')}</h2>
+            <p className="text-sm text-gray-300 mb-4">{t('assess.q.dealbreakersHint')}</p>
             <CheckboxGroup options={JOB_TYPES} selected={answers.dealbreakerJobs} onChange={(val: string[]) => update('dealbreakerJobs', val)} maxSelections={Infinity} />
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-              <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
-              <button onClick={nextStep} className={buttonPrimaryClasses}>Next →</button>
+              <button onClick={prevStep} className={buttonSecondaryClasses}>{t('common.back')}</button>
+              <button onClick={nextStep} className={buttonPrimaryClasses}>{t('common.next')}</button>
             </div>
           </div>
         </div>
@@ -1355,237 +1265,126 @@ export default function Home() {
   }
 
   if (step === profileStep) {
-    const profileDisplayMap: Record<string, string> = {
-      high_school: 'High school student',
-      university: 'University student / graduate',
-      specialized_training: 'Trade school or vocational training',
-      employed: 'Employed',
-      unemployed: 'Unemployed'
-    };
+    const currentProfile = PROFILE_OPTIONS.find((p) => p.value === answers.careerContext?.profile);
     return (
-      <StepContainer title="Which describes you the best?" isValid={answers.careerContext.profile !== ''}>
+      <StepContainer title={t('assess.q.profile')} isValid={answers.careerContext.profile !== ''}>
         <RadioGroup
-          options={['High school student', 'University student / graduate', 'Trade school or vocational training', 'Employed', 'Unemployed']}
-          selected={profileDisplayMap[answers.careerContext?.profile] || ''}
+          options={PROFILE_OPTIONS.map((p) => p.label)}
+          selected={currentProfile?.label || ''}
           onChange={(val: string) => {
-            const profileMap: Record<string, string> = {
-              'High school student': 'high_school',
-              'University student / graduate': 'university',
-              'Trade school or vocational training': 'specialized_training',
-              'Employed': 'employed',
-              'Unemployed': 'unemployed'
-            };
-            setAnswers(prev => ({ ...prev, careerContext: { profile: profileMap[val], subAnswers: {} } }));
+            const picked = PROFILE_OPTIONS.find((p) => p.label === val);
+            if (!picked) return;
+            setAnswers(prev => ({ ...prev, careerContext: { profile: picked.value, subAnswers: {} } }));
           }}
         />
       </StepContainer>
     );
   }
 
-  if (step === followUp1Step) {
-    if (profile === 'high_school') {
-      return (<StepContainer title="How soon do you plan to start thinking seriously about your career path?"><RadioGroup options={['Within the next year', 'Before I graduate high school', 'After graduation', "I'm already thinking about it"]} selected={answers.careerContext?.subAnswers?.highSchoolTiming || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, highSchoolTiming: val } } }))} /></StepContainer>);
+  // The three questions that depend on the profile picked above. Same
+  // fields, titles and options as before, now read from PROFILE_FOLLOWUPS so
+  // they can be translated in one place.
+  const profileQuestionIndex =
+    step === followUp1Step ? 0 : step === followUp2Step ? 1 : step === followUp3Step ? 2 : -1;
+  if (profileQuestionIndex >= 0) {
+    const question = PROFILE_FOLLOWUPS[profile]?.[profileQuestionIndex as 0 | 1 | 2];
+    if (!question) {
+      return <StepContainer title={t('assess.error')}>{t('assess.selectProfile')}</StepContainer>;
     }
-    if (profile === 'university') {
-      return (<StepContainer title="What is your current status regarding a career?"><RadioGroup options={['Still exploring majors/careers', 'Chosen a career path but not yet specialized', 'Actively preparing for a specific job field', 'Graduated and job searching']} selected={answers.careerContext?.subAnswers?.universityStatus || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, universityStatus: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'specialized_training') {
-      return (<StepContainer title="Are you currently in training for a specific career?"><RadioGroup options={["Yes, and I'm committed to it", 'Yes, but still considering other options', 'No, just exploring', 'Finished training, now choosing job']} selected={answers.careerContext?.subAnswers?.trainingStatus || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, trainingStatus: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'employed') {
-      return (<StepContainer title="Why are you looking at career choice questions if already employed?"><RadioGroup options={['Considering a career change', 'Unsatisfied with current career', 'Want to advance in same field', 'Just curious about options']} selected={answers.careerContext?.subAnswers?.employedReason || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, employedReason: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'unemployed') {
-      return (<StepContainer title="Is your unemployment..."><RadioGroup options={['Recently unemployed, actively looking', 'Long‑term unemployed', 'Choosing first career after studies', 'Re‑entering workforce after break']} selected={answers.careerContext?.subAnswers?.unemployedStatus || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, unemployedStatus: val } } }))} /></StepContainer>);
-    }
-    return <StepContainer title="Error">Please go back and select a profile.</StepContainer>;
-  }
-
-  if (step === followUp2Step) {
-    if (profile === 'high_school') {
-      return (<StepContainer title="Which best describes your current career planning stage?"><RadioGroup options={['No idea yet', 'A few broad interests', 'A specific career in mind', 'Already taking related courses/activities']} selected={answers.careerContext?.subAnswers?.highSchoolStage || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, highSchoolStage: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'university') {
-      return (<StepContainer title="The biggest challenge you face in choosing a career is:"><RadioGroup options={['Too many options', "Not knowing what I'll enjoy long‑term", 'Worry about job market/salary', 'Lack of real‑world experience']} selected={answers.careerContext?.subAnswers?.universityChallenge || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, universityChallenge: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'specialized_training') {
-      return (<StepContainer title="What matters most to you in a career after training?"><RadioGroup options={['Job stability', 'High salary immediately', 'Ability to advance without another degree', 'Work‑life balance']} selected={answers.careerContext?.subAnswers?.trainingPriority || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, trainingPriority: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'employed') {
-      return (<StepContainer title="What is the main issue with your current career?"><RadioGroup options={['Low pay', 'No growth opportunities', 'Poor fit with my personality/interests', 'Stress or burnout']} selected={answers.careerContext?.subAnswers?.employedIssue || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, employedIssue: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'unemployed') {
-      return (<StepContainer title="What is the biggest barrier to choosing a career right now?"><RadioGroup options={['Lack of skills / qualifications', 'No clear interests', 'Health or personal issues', 'Few jobs available locally']} selected={answers.careerContext?.subAnswers?.unemployedBarrier || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, unemployedBarrier: val } } }))} /></StepContainer>);
-    }
-    return <StepContainer title="Error">Please go back and select a profile.</StepContainer>;
-  }
-
-  if (step === followUp3Step) {
-    if (profile === 'high_school') {
-      return (<StepContainer title="What would help you most right now with career choices?"><RadioGroup options={['Career quizzes / self‑assessments', 'Talking to professionals', 'Internship or job shadowing opportunities', 'Advice from school counselors']} selected={answers.careerContext?.subAnswers?.highSchoolHelp || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, highSchoolHelp: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'university') {
-      return (<StepContainer title="What career support do you need most right now?"><RadioGroup options={['Resume/interview prep', 'Finding internships or entry‑level roles', 'Mentorship in my field', 'Understanding career progression paths']} selected={answers.careerContext?.subAnswers?.universitySupport || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, universitySupport: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'specialized_training') {
-      return (<StepContainer title="Which factor would make you switch career paths despite training?"><RadioGroup options={['Better pay elsewhere', 'Burnout risk in trained field', 'Lack of jobs in trained field', 'Discovering a new passion']} selected={answers.careerContext?.subAnswers?.trainingSwitch || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, trainingSwitch: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'employed') {
-      return (<StepContainer title="What would most help you choose a different career?"><RadioGroup options={['Skills assessment', 'Understanding transferable skills', 'Learning about new industries', 'Part‑time training while working']} selected={answers.careerContext?.subAnswers?.employedHelp || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, employedHelp: val } } }))} /></StepContainer>);
-    }
-    if (profile === 'unemployed') {
-      return (<StepContainer title="Which would help you most with career choice today?"><RadioGroup options={['Free career counseling', 'Short training programs', 'Help with job search strategy', 'Assessment of my strengths']} selected={answers.careerContext?.subAnswers?.unemployedHelp || ''} onChange={(val: string) => setAnswers(prev => ({ ...prev, careerContext: { ...prev.careerContext, subAnswers: { ...prev.careerContext.subAnswers, unemployedHelp: val } } }))} /></StepContainer>);
-    }
-    return <StepContainer title="Error">Please go back and select a profile.</StepContainer>;
+    return (
+      <StepContainer title={tOption(question.title)}>
+        <RadioGroup
+          options={question.options}
+          selected={answers.careerContext?.subAnswers?.[question.field] || ''}
+          onChange={(val: string) =>
+            setAnswers(prev => ({
+              ...prev,
+              careerContext: {
+                ...prev.careerContext,
+                subAnswers: { ...prev.careerContext.subAnswers, [question.field]: val },
+              },
+            }))
+          }
+        />
+      </StepContainer>
+    );
   }
 
   // ---------- NEW MULTIPLE-CHOICE AND OPEN-ENDED STEPS ----------
-  if (step === salaryStep) {
+  const preferenceSteps: { step: number; title: string; options: string[]; field: keyof Answers }[] = [
+    { step: salaryStep, title: t('assess.q.salary'), options: SALARY_AIMS, field: 'salaryAim' },
+    { step: relocateStep, title: t('assess.q.relocate'), options: RELOCATION, field: 'relocateWillingness' },
+    { step: remoteStep, title: t('assess.q.remote'), options: REMOTE_WORK, field: 'remoteWork' },
+    { step: scheduleStep, title: t('assess.q.schedule'), options: WORK_SCHEDULES, field: 'workSchedule' },
+    { step: securityStep, title: t('assess.q.security'), options: JOB_SECURITY, field: 'jobSecurity' },
+    { step: travelStep, title: t('assess.q.travel'), options: TRAVEL, field: 'travelPreference' },
+    { step: teamStep, title: t('assess.q.team'), options: TEAM_ENVIRONMENTS, field: 'teamEnvironment' },
+    { step: criticismStep, title: t('assess.q.criticism'), options: CRITICISM, field: 'criticismHandling' },
+  ];
+  const preference = preferenceSteps.find((p) => p.step === step);
+  if (preference) {
     return (
-      <StepContainer title="What level of salary are you aiming for in your career?">
+      <StepContainer title={preference.title}>
         <RadioGroup
-          options={[
-            'Comfortable living – I don\'t need much',
-            'Good average salary – like most people in my job',
-            'Above average – better than most',
-            'High income – top earner level',
-            'Wealthy – millionaire or more'
-          ]}
-          selected={answers.salaryAim}
-          onChange={(val: string) => update('salaryAim', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === relocateStep) {
-    return (
-      <StepContainer title="How willing are you to relocate for a job?">
-        <RadioGroup
-          options={['Not willing (stay in my city)', 'Willing within my region', 'Willing anywhere in my country', 'Willing to move abroad']}
-          selected={answers.relocateWillingness}
-          onChange={(val: string) => update('relocateWillingness', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === remoteStep) {
-    return (
-      <StepContainer title="How do you feel about remote work?">
-        <RadioGroup
-          options={['Must be fully remote', 'Prefer hybrid (2–3 days in office)', 'Prefer fully in‑office', 'No preference']}
-          selected={answers.remoteWork}
-          onChange={(val: string) => update('remoteWork', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === scheduleStep) {
-    return (
-      <StepContainer title="What is your preferred work schedule?">
-        <RadioGroup
-          options={['Standard 9–5', 'Flexible hours (core hours only)', 'Shift work (evenings/nights/weekends)', 'Compressed workweek (4x10h)', 'No preference']}
-          selected={answers.workSchedule}
-          onChange={(val: string) => update('workSchedule', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === securityStep) {
-    return (
-      <StepContainer title="How important is job security to you?">
-        <RadioGroup
-          options={['Extremely important (stable industry, government, etc.)', 'Somewhat important', 'Not important (willing to take risks)']}
-          selected={answers.jobSecurity}
-          onChange={(val: string) => update('jobSecurity', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === travelStep) {
-    return (
-      <StepContainer title="How do you feel about travel as part of your job?">
-        <RadioGroup
-          options={['Never travel', 'Occasional (a few times a year)', 'Frequent (weekly)', 'Love it, open to 50%+ travel']}
-          selected={answers.travelPreference}
-          onChange={(val: string) => update('travelPreference', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === teamStep) {
-    return (
-      <StepContainer title="Which of these best describes your ideal team environment?">
-        <RadioGroup
-          options={['I work best alone', 'Small, tight‑knit team', 'Large, collaborative team', 'I like leading a team']}
-          selected={answers.teamEnvironment}
-          onChange={(val: string) => update('teamEnvironment', val)}
-        />
-      </StepContainer>
-    );
-  }
-  if (step === criticismStep) {
-    return (
-      <StepContainer title="How do you handle criticism?">
-        <RadioGroup
-          options={['Use it to improve', 'Find it difficult but accept it', 'Prefer positive feedback only', 'Not sure', 'I can\'t stand it']}
-          selected={answers.criticismHandling}
-          onChange={(val: string) => update('criticismHandling', val)}
+          options={preference.options}
+          selected={answers[preference.field] as string}
+          onChange={(val: string) => update(preference.field, val)}
         />
       </StepContainer>
     );
   }
   if (step === dreamJobStep) {
     return (
-      <StepContainer title="What is your dream job? (Write a short description. If you don't know it exactly, write the most important features your job should or shouldn't have)">
+      <StepContainer title={t('assess.q.dreamJob')}>
         <textarea
           key="dreamJob"
           defaultValue={answers.dreamJob}
           onBlur={(e) => update('dreamJob', e.target.value)}
           rows={4}
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., 'I want to work with animals and travel', or 'I don't want a desk job, I want to be outdoors'"
+          placeholder={t('assess.q.dreamJob.placeholder')}
         />
       </StepContainer>
     );
   }
   if (step === topValuesStep) {
     return (
-      <StepContainer title="What are the top 3 things you value most in a career? (e.g., money, freedom, helping others, creativity)">
+      <StepContainer title={t('assess.q.topValues')}>
         <textarea
           key="topValues"
           defaultValue={answers.topValues}
           onBlur={(e) => update('topValues', e.target.value)}
           rows={3}
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., '1. Helping others, 2. Creativity, 3. Job security'"
+          placeholder={t('assess.q.topValues.placeholder')}
         />
       </StepContainer>
     );
   }
   if (step === fulfillingStep) {
     return (
-      <StepContainer title="Describe a time you felt truly fulfilled in a work or school project">
+      <StepContainer title={t('assess.q.fulfilling')}>
         <textarea
           key="fulfillingProject"
           defaultValue={answers.fulfillingProject}
           onBlur={(e) => update('fulfillingProject', e.target.value)}
           rows={4}
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="What did you do? Why did it feel meaningful?"
+          placeholder={t('assess.q.fulfilling.placeholder')}
         />
       </StepContainer>
     );
   }
   if (step === pastConsiderationsStep) {
     return (
-      <StepContainer title="What career(s) have you considered before? Why did you consider them? Why did you get discouraged from them, if you got discouraged?">
+      <StepContainer title={t('assess.q.past')}>
         <textarea
           key="pastConsiderations"
           defaultValue={answers.pastConsiderations}
           onBlur={(e) => update('pastConsiderations', e.target.value)}
           rows={4}
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., 'I thought about becoming a doctor because I like helping people, but I'm not good with blood.'"
+          placeholder={t('assess.q.past.placeholder')}
         />
       </StepContainer>
     );
@@ -1599,22 +1398,22 @@ export default function Home() {
             <div className="flex items-center justify-center mb-4">
               <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
             </div>
-            <span className="text-sm font-medium text-gray-300 block mb-4">Ready to see your results?</span>
+            <span className="text-sm font-medium text-gray-300 block mb-4">{t('assess.final.ready')}</span>
             <div className="w-full bg-gray-600 rounded-full h-2">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full" style={{ width: '100%' }}></div>
             </div>
           </div>
           <div className="glass-card">
-            <p className="text-center text-gray-200 mb-6">You&apos;ve answered all questions.</p>
+            <p className="text-center text-gray-200 mb-6">{t('assess.final.allAnswered')}</p>
             {submitError && (
               <div className="mb-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100 text-center text-sm">
                 {submitError}
               </div>
             )}
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button onClick={prevStep} className={buttonSecondaryClasses}>← Back</button>
+              <button onClick={prevStep} className={buttonSecondaryClasses}>{t('common.back')}</button>
               <button onClick={handleSubmit} disabled={loading} className={buttonPrimaryClasses}>
-                {loading ? '✨ Calculating...' : submitError ? '🔄 Try Again' : '🚀 See My Results'}
+                {loading ? t('assess.final.calculating') : submitError ? t('assess.final.tryAgain') : t('assess.final.see')}
               </button>
             </div>
           </div>
@@ -1623,5 +1422,5 @@ export default function Home() {
     );
   }
 
-  return <div>Unknown step: {step}</div>;
+  return <div>{t('assess.unknownStep', { step })}</div>;
 }

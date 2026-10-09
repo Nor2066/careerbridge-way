@@ -192,6 +192,35 @@ export function clustersWithQuestions(): string[] {
 }
 
 /**
+ * A stored follow-up answer in words the model can use.
+ *
+ * The page stores the option LETTER ("b"), which is the same whatever language
+ * the questions were shown in. Sent to the model on its own, "Q3: b" told it
+ * nothing; this pairs the letter with the question and the option it stands
+ * for, always from this English file.
+ */
+export function describeFollowupAnswer(
+  cluster: string,
+  questionIndex: number,
+  answer: string
+): { question: string; answer: string } | null {
+  const text = clusterQuestions[cluster]?.[questionIndex];
+  if (!text) return null;
+
+  const firstOption = text.search(/\n\([a-z]\)/);
+  const question = (firstOption === -1 ? text : text.slice(0, firstOption)).trim();
+
+  const letter = answer.trim().toLowerCase();
+  if (/^[a-z]$/.test(letter)) {
+    for (const line of text.split('\n')) {
+      const match = line.match(/^\(([a-z])\)\s+(.*)$/);
+      if (match && match[1] === letter) return { question, answer: match[2] };
+    }
+  }
+  return { question, answer };
+}
+
+/**
  * Questions for a cluster, or an empty array.
  *
  * Callers should treat empty as "skip this cluster" rather than an error --

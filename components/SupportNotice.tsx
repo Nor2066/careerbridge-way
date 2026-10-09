@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/components/I18nProvider';
+
 // Shown above a career report when the answers contained something that
 // looked like distress. See lib/crisis.ts for how that is decided and why
 // nothing about it is stored.
@@ -42,15 +44,16 @@ function telHref(contact: string): string | null {
 }
 
 export default function SupportNotice({ data }: { data: SupportNoticeData }) {
+  const { t } = useI18n();
   if (!data?.resources?.length) return null;
 
   return (
     <section
-      aria-label="Support information"
+      aria-label={t('support.label')}
       className="mb-8 rounded-2xl border border-amber-200/30 bg-amber-50/10 p-6 backdrop-blur-sm"
     >
       <h3 className="mb-2 text-lg font-semibold text-amber-50">
-        Before you read your report
+        {t('support.title')}
       </h3>
       <p className="mb-5 text-[15px] leading-relaxed text-amber-50/85">{data.message}</p>
 
@@ -83,7 +86,7 @@ export default function SupportNotice({ data }: { data: SupportNoticeData }) {
                   rel="noopener noreferrer"
                   className="mt-1 inline-block text-sm text-amber-200/80 underline underline-offset-2 hover:text-white"
                 >
-                  Visit {resource.name}
+                  {t('support.visit', { name: resource.name })}
                 </a>
               )}
             </li>

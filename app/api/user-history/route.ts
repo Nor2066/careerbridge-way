@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth';
 import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { supabaseServer } from '@/lib/supabase-server';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
+import { institutionFollowupResultIds } from '@/lib/institutions';
 
 export async function GET(request: Request) {
   try {
@@ -40,10 +41,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    // Build a set of unlocked result IDs for O(1) lookup
+    // Build a set of unlocked result IDs for O(1) lookup. Attempts a
+    // university paid for count as unlocked when its licence includes the
+    // follow-up.
     const unlockedResultIds = new Set(
       (unlocksRes.data ?? []).map((u: { result_id: string }) => u.result_id)
     );
+    for (const id of await institutionFollowupResultIds(user.id)) unlockedResultIds.add(id);
 
     const history = resultsRes.data.map((item) => ({
       id: item.id,

@@ -32,6 +32,10 @@ import {
   getUserIdentifier,
 } from '@/lib/rate-limit';
 import { BRAND } from '@/lib/site';
+import { localeFromRequest } from '@/lib/i18n/config';
+import { getLicence } from '@/lib/institutions';
+import { describeFollowupAnswer } from '@/lib/followup-questions';
+import { reportContextInstruction, clusterForPrompt, supportCountry } from '@/lib/report-locale';
 
 // A hung OpenAI call used to hold the serverless function open for its whole
 // allowance while the customer stared at a spinner. Cap it: 25s per attempt,
@@ -218,16 +222,31 @@ export async function POST(request: Request) {
       mainAnswers.pastConsiderations,
     ]);
 
+    // The reader's language, and their university's country if they came
+    // through one — see lib/report-locale.ts.
+    const locale = localeFromRequest(request);
+    const institutionCountry = (await getLicence(user))?.institution.country ?? null;
+
+    // Cluster names in the reader's language, so the roadmap and the screen
+    // around it agree on what each area is called.
     const clusterSummary = topClusters
-      .map((c) => `- ${sanitize(c.cluster)}: ${c.percentage}%`)
+      .map((c) => `- ${sanitize(clusterForPrompt(locale, c.cluster))}: ${c.percentage}%`)
       .join('\n');
 
+    // Each answer with its question and the option it stands for. The page
+    // stores only the option letter, and "Q3: b" on its own gave the model
+    // nothing to work with.
     const followupSummary = Object.entries(followupAnswers)
       .map(([cluster, qa]) => {
         const lines = Object.entries(qa)
-          .map(([qIdx, ans]) => `  Q${Number(qIdx) + 1}: ${sanitize(ans)}`)
+          .map(([qIdx, ans]) => {
+            const described = describeFollowupAnswer(cluster, Number(qIdx), ans);
+            return described
+              ? `  Q${Number(qIdx) + 1}: ${sanitize(described.question)}\n    Answer: ${sanitize(described.answer)}`
+              : `  Q${Number(qIdx) + 1}: ${sanitize(ans)}`;
+          })
           .join('\n');
-        return `${sanitize(cluster)}:\n${lines}`;
+        return `${sanitize(clusterForPrompt(locale, cluster))}:\n${lines}`;
       })
       .join('\n\n');
 
@@ -273,6 +292,7 @@ Please write the career roadmap now.
             role: 'system',
             content:
               SYSTEM_PROMPT +
+              reportContextInstruction(locale, institutionCountry) +
               (crisisDetected ? CRISIS_PROMPT_ADDENDUM : '') +
               (unlawfulDetected ? UNLAWFUL_PROMPT_ADDENDUM : ''),
           },
@@ -325,7 +345,9 @@ Please write the career roadmap now.
 
     return NextResponse.json({
       report,
-      ...(crisisDetected ? { support: buildSupportNotice() } : {}),
+      ...(crisisDetected
+        ? { support: buildSupportNotice({ country: supportCountry(request, { institutionCountry, locale }), locale }) }
+        : {}),
     });
   } catch (err) {
     // An expired session is not a server fault — answer 401 so the client

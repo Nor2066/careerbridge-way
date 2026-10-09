@@ -62,10 +62,77 @@ describe('leaving ordinary answers alone', () => {
   });
 });
 
+// Spanish speakers answer in Spanish, so the screen has to read it. Same
+// over-trigger intent as the English list.
+describe('detecting distress written in Spanish', () => {
+  const cases = [
+    'quiero morir',
+    'a veces pienso en quitarme la vida',
+    'no quiero seguir viviendo',
+    'me he estado autolesionando otra vez',
+    'todos estarían mejor sin mí',
+    'ya no puedo más',
+    'tengo pensamientos suicidas',
+    'quiero acabar con mi vida',
+    'pienso mucho en el suicidio',
+    // Accents dropped or added by a hurried phone keyboard.
+    'todos estarian mejor sin mi',
+    'QUIERO MORIRME',
+  ];
+
+  for (const text of cases) {
+    it(`fires on: "${text}"`, () => {
+      expect(detectCrisisSignals([text])).toBe(true);
+    });
+  }
+});
+
+describe('leaving ordinary Spanish answers alone', () => {
+  const cases = [
+    'Quiero ser médica y ayudar a personas enfermas',
+    'Me gustaría trabajar en prevención del suicidio',
+    'Quiero dedicarme a la investigación sobre el suicidio en jóvenes',
+    'Me gustaría acabar con todo el papeleo de mi empresa',
+    'Me corto el pelo cada mes',
+    'La estabilidad me importa más que el dinero',
+  ];
+
+  for (const text of cases) {
+    it(`stays quiet on: "${text}"`, () => {
+      expect(detectCrisisSignals([text])).toBe(false);
+    });
+  }
+});
+
 describe('the support notice', () => {
   it('offers a route for people outside the UK', () => {
     const notice = buildSupportNotice();
     expect(notice.resources.some((r) => /findahelpline/i.test(r.href ?? ''))).toBe(true);
+  });
+
+  it('shows Spanish helplines, in Spanish, to someone in Spain', () => {
+    const notice = buildSupportNotice({ country: 'ES', locale: 'es' });
+    const contacts = notice.resources.map((r) => r.contact);
+    expect(contacts).toContain('024');
+    expect(contacts).toContain('717 003 717');
+    expect(notice.message).toMatch(/mereces/);
+    // And never the UK numbers.
+    expect(contacts).not.toContain('116 123');
+  });
+
+  it('keeps the UK helplines for the UK', () => {
+    const contacts = buildSupportNotice({ country: 'GB', locale: 'en' }).resources.map((r) => r.contact);
+    expect(contacts).toContain('116 123');
+  });
+
+  // Someone in a country we have no list for must not be handed another
+  // country's numbers — they get the directory and their emergency number.
+  it('gives an unknown country the directory, not someone else\'s numbers', () => {
+    const notice = buildSupportNotice({ country: 'BR', locale: 'en' });
+    const contacts = notice.resources.map((r) => r.contact);
+    expect(notice.resources.some((r) => /findahelpline/i.test(r.href ?? ''))).toBe(true);
+    expect(contacts).not.toContain('116 123');
+    expect(contacts).not.toContain('024');
   });
 
   it('gives every resource something to actually contact', () => {

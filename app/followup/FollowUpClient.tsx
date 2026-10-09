@@ -15,6 +15,9 @@ import { track } from '@/lib/analytics';
 import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
 import { useRouter } from 'next/navigation';
 import { clusterQuestions } from '@/lib/followup-questions';
+import { clusterQuestionsEs } from '@/lib/i18n/followup-questions-es';
+import { useI18n } from '@/components/I18nProvider';
+import type { Locale } from '@/lib/i18n/config';
 
 
 function parseOptions(questionText: string): { letter: string; text: string }[] {
@@ -33,14 +36,18 @@ function getQuestionStem(questionText: string): string {
   return questionText.substring(0, firstOptionIndex).trim();
 }
 
-const clusterNameMap: Record<string, string> = {
-  Analytical: 'Analytical', Engineering: 'Engineering', IT: 'IT',
-  Healthcare: 'Healthcare', Research: 'Research', Business: 'Business',
-  Entrepreneurship: 'Entrepreneurship', SocialImpact: 'Social Impact',
-  Education: 'Education', Creative: 'Creative', SkilledTrades: 'Skilled Trades',
-  Operations: 'Operations', Legal: 'Legal & Justice', Sales: 'Sales & Marketing',
-  Hospitality: 'Hospitality & Tourism',
-};
+// The questions to SHOW, in the reader's language. Answers are stored as the
+// option letter, so they mean the same thing whichever wording was on screen.
+//
+// Clusters stay as their scoring keys ("SocialImpact") everywhere in this
+// component and only become a display name at render. They used to be renamed
+// up front ("Social Impact"), which made the lookup below miss for five
+// clusters and showed "No questions found" in the part of the product the
+// customer had just unlocked.
+function questionsToShow(cluster: string, locale: Locale): string[] | undefined {
+  if (locale === 'es') return clusterQuestionsEs[cluster] ?? clusterQuestions[cluster];
+  return clusterQuestions[cluster];
+}
 
 // Hoisted out of the render body of FollowUpClient.
 //
@@ -53,6 +60,7 @@ const clusterNameMap: Record<string, string> = {
 // Declared at module scope it keeps a stable identity, and the two values it
 // needed from the parent come in as props.
 function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useI18n();
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [saved, setSaved] = useState(false);
@@ -60,7 +68,7 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
   const [expanded, setExpanded] = useState(true);
 
   const saveFeedback = async () => {
-    if (feedbackRating === 0) { alert('Please rate your experience'); return; }
+    if (feedbackRating === 0) { alert(t('assess.feedback.rateFirst')); return; }
     setSaving(true);
     try {
       // Only feedbackRating/feedbackComment are sent — topClusters/rawScores/
@@ -73,9 +81,9 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
         body: JSON.stringify({ feedbackRating, feedbackComment }),
       });
       if (res.ok) setSaved(true);
-      else alert('Something went wrong. Please try again.');
+      else alert(t('common.error.generic'));
     } catch {
-      alert('Network error. Please try again.');
+      alert(t('common.error.network'));
     } finally {
       setSaving(false);
     }
@@ -89,23 +97,23 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
         onClick={() => setExpanded(e => !e)}
         className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2 py-6 rounded-l-lg shadow-lg transition-colors"
         style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-        aria-label="Toggle feedback"
+        aria-label={t('assess.feedback.toggleLabel')}
       >
-        {expanded ? '✕ Close' : '💬 Feedback'}
+        {expanded ? t('assess.feedback.toggleClose') : t('assess.feedback.toggleOpen')}
       </button>
       {expanded && (
         <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-t border-b border-white/20 rounded-l-xl shadow-2xl p-5 flex flex-col gap-4">
           {saved ? (
             <div className="text-center py-4">
               <div className="text-3xl mb-2">🎉</div>
-              <p className="text-green-400 font-semibold">Thank you for your feedback!</p>
-              <button onClick={() => onClose()} className="mt-4 text-xs text-gray-400 hover:text-white">Close</button>
+              <p className="text-green-400 font-semibold">{t('assess.feedback.thanks')}</p>
+              <button onClick={() => onClose()} className="mt-4 text-xs text-gray-400 hover:text-white">{t('common.close')}</button>
             </div>
           ) : (
             <>
               <div>
-                <h3 className="text-white font-bold text-sm mb-1">Help us improve</h3>
-                <p className="text-gray-400 text-xs">How useful was your career roadmap?</p>
+                <h3 className="text-white font-bold text-sm mb-1">{t('assess.feedback.title')}</h3>
+                <p className="text-gray-400 text-xs">{t('followup.feedback.question')}</p>
               </div>
               <div className="flex gap-2 justify-center">
                 {[1, 2, 3, 4, 5].map(r => (
@@ -116,11 +124,11 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
                 ))}
               </div>
               <textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)}
-                rows={3} placeholder="Any comments? (optional)"
+                rows={3} placeholder={t('assess.feedback.placeholder')}
                 className="w-full p-2 text-sm border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
               <button onClick={saveFeedback} disabled={saving || feedbackRating === 0}
                 className="btn-primary w-full text-sm py-2 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Submit Feedback'}
+                {saving ? t('assess.feedback.saving') : t('assess.feedback.submit')}
               </button>
             </>
           )}
@@ -132,6 +140,7 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function FollowUpClient() {
   const router = useRouter();
+  const { t, tCluster, locale } = useI18n();
   const [clusters, setClusters] = useState<string[]>([]);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [booting, setBooting] = useState(true);
@@ -168,7 +177,7 @@ export default function FollowUpClient() {
     };
 
     const applyClusters = (raw: string[]) => {
-      setClusters(raw.map((c: string) => clusterNameMap[c] || c));
+      setClusters(raw);
     };
 
     const { storedClusters, storedAssessmentId } = readStored();
@@ -207,7 +216,8 @@ export default function FollowUpClient() {
         // planUnlocksFollowups false and pendingId null, which is the cautious
         // reading — the recovery below then relies on the history alone.
         if (sub) {
-          planUnlocksFollowups = sub.plan === 'full' || !!sub.followupBundlePurchased;
+          planUnlocksFollowups =
+            sub.plan === 'full' || !!sub.followupBundlePurchased || !!sub.currentAttemptFollowupIncluded;
           if (sub.currentAttemptStatus === 'awaiting_followup_decision') {
             pendingId = sub.currentAttemptResultId ?? null;
           }
@@ -255,12 +265,12 @@ export default function FollowUpClient() {
     };
   }, [router]);
 
-  if (booting || !clusters.length) return <div className="p-6 text-center">Loading...</div>;
+  if (booting || !clusters.length) return <div className="p-6 text-center">{t('common.loading')}</div>;
 
   const currentCluster = clusters[clusterIndex];
-  const questions = clusterQuestions[currentCluster];
+  const questions = questionsToShow(currentCluster, locale);
   if (!questions) {
-    return <div className="p-6 text-center">Error: No questions found for {currentCluster}.</div>;
+    return <div className="p-6 text-center">{t('followup.noQuestions', { cluster: tCluster(currentCluster) })}</div>;
   }
 
   const totalClusters = clusters.length;
@@ -281,7 +291,7 @@ export default function FollowUpClient() {
       setQuestionIndex(questionIndex - 1);
     } else if (clusterIndex > 0) {
       const prevCluster = clusters[clusterIndex - 1];
-      const prevQuestions = clusterQuestions[prevCluster];
+      const prevQuestions = questionsToShow(prevCluster, locale);
       if (prevQuestions) {
         setClusterIndex(clusterIndex - 1);
         setQuestionIndex(prevQuestions.length - 1);
@@ -317,16 +327,14 @@ export default function FollowUpClient() {
       } else {
         const data = await res.json().catch(() => ({}));
         if (data.code === 'FOLLOWUP_LOCKED') {
-          alert(
-            'Your followup access for this attempt is not unlocked. Unlock it from your history page — your answers will still be here.'
-          );
+          alert(t('followup.locked'));
           router.push('/history');
           return;
         }
-        alert('Failed to save answers: ' + (data.error || 'Unknown error'));
+        alert(t('followup.saveFailed', { error: data.error || t('followup.unknownError') }));
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert(t('common.error.network'));
     } finally {
       setLoading(false);
     }
@@ -335,7 +343,7 @@ export default function FollowUpClient() {
   const generateFollowupReport = async () => {
     track('followup_complete');
     if (!assessmentId) {
-      alert('Assessment ID not found. Please return to history and try again.');
+      alert(t('followup.noAssessment'));
       router.push('/history');
       return;
     }
@@ -361,10 +369,10 @@ export default function FollowUpClient() {
         sessionStorage.removeItem('lastAssessmentId');
         setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
-        alert('Failed to generate report: ' + (data.error || 'Unknown server error'));
+        alert(t('followup.generateFailed', { error: data.error || t('followup.unknownError') }));
       }
     } catch (err) {
-      alert('Network error. Please check your connection and try again.');
+      alert(t('followup.networkCheck'));
     } finally {
       setLoadingReport(false);
     }
@@ -375,7 +383,7 @@ export default function FollowUpClient() {
     const clusterAnswers = answers[cluster];
     if (clusterAnswers) answeredCount += Object.keys(clusterAnswers).length;
   }
-  const totalQuestionsAll = clusters.reduce((sum, c) => sum + (clusterQuestions[c]?.length || 0), 0);
+  const totalQuestionsAll = clusters.reduce((sum, c) => sum + (questionsToShow(c, locale)?.length || 0), 0);
   const progressPercent = totalQuestionsAll ? (answeredCount / totalQuestionsAll) * 100 : 0;
 
   if (submitted) {
@@ -387,16 +395,16 @@ export default function FollowUpClient() {
         <FeedbackPopup open={showFeedbackPopup} onClose={() => setShowFeedbackPopup(false)} />
         <div className="relative z-10 max-w-2xl w-full mx-auto">
           <div className="glass-card text-center">
-            <h1 className="text-2xl font-bold text-white mb-4">Thank you!</h1>
-            <p className="text-gray-200 mb-4">Your detailed answers have been saved.</p>
+            <h1 className="text-2xl font-bold text-white mb-4">{t('followup.thanks')}</h1>
+            <p className="text-gray-200 mb-4">{t('followup.saved')}</p>
             {!reportGenerated ? (
               <div>
                 <button onClick={generateFollowupReport} disabled={loadingReport} className="btn-primary mt-2">
-                  {loadingReport ? 'Generating your personalized roadmap...' : '🚀 Get Your Career Roadmap'}
+                  {loadingReport ? t('followup.generating') : t('followup.generate')}
                 </button>
                 {loadingReport && (
                   <p className="text-sm text-gray-300 mt-2">
-                    We are processing your information. This may take a few seconds.
+                    {t('followup.processing')}
                   </p>
                 )}
               </div>
@@ -404,10 +412,10 @@ export default function FollowUpClient() {
               <div className="mt-4">
                 {support && <SupportNotice data={support} />}
                 <div className="p-4 bg-white/20 rounded-lg">
-                  <h2 className="text-xl font-bold text-white mb-2">Your Personalized Career Roadmap</h2>
+                  <h2 className="text-xl font-bold text-white mb-2">{t('followup.roadmapTitle')}</h2>
                   <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
                   <button onClick={() => router.push('/history')} className="btn-primary mt-4">
-                    Go to History
+                    {t('followup.goHistory')}
                   </button>
                 </div>
               </div>
@@ -425,10 +433,10 @@ export default function FollowUpClient() {
       <div className="relative z-10 w-full max-w-2xl mx-auto">
         <div className="glass-card">
           <div className="mb-4 text-sm text-gray-300">
-            Cluster {clusterIndex + 1} of {clusters.length}: {currentCluster}
+            {t('followup.clusterOf', { current: clusterIndex + 1, total: clusters.length, name: tCluster(currentCluster) })}
           </div>
           <div className="mb-4 text-sm text-gray-300">
-            Question {questionIndex + 1} of {totalQuestionsInCluster}
+            {t('followup.questionOf', { current: questionIndex + 1, total: totalQuestionsInCluster })}
           </div>
           <div className="w-full bg-gray-600 rounded-full h-2 mb-6">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all"
@@ -455,7 +463,7 @@ export default function FollowUpClient() {
             {options.length === 0 && (
               <input type="text"
                 className="w-full p-3 border border-gray-300 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Type your answer"
+                placeholder={t('followup.typeAnswer')}
                 value={currentAnswer}
                 onChange={(e) => handleAnswer(e.target.value)} />
             )}
@@ -463,13 +471,13 @@ export default function FollowUpClient() {
           <div className="mt-8 flex justify-between">
             <button onClick={goToPrevious}
               disabled={clusterIndex === 0 && questionIndex === 0}
-              className="btn-secondary">← Previous</button>
+              className="btn-secondary">{t('followup.previous')}</button>
             <button onClick={goToNext} disabled={loading} className="btn-primary">
               {clusterIndex === clusters.length - 1 && questionIndex === totalQuestionsInCluster - 1
-                ? 'Submit' : 'Next →'}
+                ? t('followup.submit') : t('common.next')}
             </button>
           </div>
-          {loading && <div className="mt-4 text-center text-gray-300">Saving...</div>}
+          {loading && <div className="mt-4 text-center text-gray-300">{t('followup.saving')}</div>}
         </div>
       </div>
     </div>

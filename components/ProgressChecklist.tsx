@@ -19,6 +19,8 @@
 // has — no extra request, and nothing new stored.
 
 import Link from 'next/link';
+import { useI18n } from '@/components/I18nProvider';
+import type { Translator } from '@/lib/i18n/translate';
 
 /**
  * Only the fields the checklist reads, kept structural rather than importing
@@ -30,6 +32,8 @@ export type ChecklistSubscription = {
   mainAttemptsRemaining: number;
   followupBundlePurchased: boolean;
   currentAttemptStatus: string;
+  /** Access through a university, which stands in for buying a plan. */
+  institution?: { name: string; followupIncluded: boolean; attemptsRemaining: number } | null;
 };
 
 type StepState = 'done' | 'current' | 'todo' | 'locked';
@@ -41,49 +45,65 @@ type Step = {
   href?: string;
 };
 
-function buildSteps(sub: ChecklistSubscription | null, hasHistory: boolean): Step[] {
+const PLAN_NAME_KEYS = {
+  free: 'pricing.planName.free',
+  basic: 'pricing.planName.basic',
+  full: 'pricing.planName.full',
+} as const;
+
+function buildSteps(sub: ChecklistSubscription | null, hasHistory: boolean, t: Translator['t']): Step[] {
   if (!sub) return [];
 
-  const hasPlan = sub.plan !== 'free';
+  // A university student has access without buying anything; for them the
+  // first step is already done and names who provided it.
+  const viaUniversity = Boolean(sub.institution);
+  const hasPlan = sub.plan !== 'free' || viaUniversity;
   const inProgress = sub.currentAttemptStatus === 'in_progress';
   const awaitingFollowup = sub.currentAttemptStatus === 'awaiting_followup_decision';
-  const followupsAvailable = sub.plan === 'full' || sub.followupBundlePurchased;
+  const followupsAvailable =
+    sub.plan === 'full' || sub.followupBundlePurchased || Boolean(sub.institution?.followupIncluded);
 
   return [
+    viaUniversity && sub.plan === 'free'
+      ? {
+          label: t('checklist.plan.university.label'),
+          detail: t('checklist.plan.university.detail', { university: sub.institution!.name }),
+          state: 'done',
+        }
+      : {
+          label: t('checklist.plan.label'),
+          detail: hasPlan
+            ? t('checklist.plan.on', { plan: t(PLAN_NAME_KEYS[sub.plan]) })
+            : t('checklist.plan.pick'),
+          state: hasPlan ? 'done' : 'current',
+          href: hasPlan ? undefined : '/pricing',
+        },
     {
-      label: 'Choose a plan',
-      detail: hasPlan
-        ? `You are on the ${sub.plan} plan.`
-        : 'Pick a plan to unlock the full assessment.',
-      state: hasPlan ? 'done' : 'current',
-      href: hasPlan ? undefined : '/pricing',
-    },
-    {
-      label: 'Complete the assessment',
+      label: t('checklist.assess.label'),
       detail: inProgress
-        ? 'You have one in progress — pick up where you left off.'
+        ? t('checklist.assess.inProgress')
         : hasHistory || awaitingFollowup
-          ? 'Done. You can take another whenever you have an attempt left.'
-          : `${sub.mainAttemptsRemaining} attempt${sub.mainAttemptsRemaining === 1 ? '' : 's'} available.`,
+          ? t('checklist.assess.done')
+          : t('checklist.assess.available', { count: sub.mainAttemptsRemaining }),
       state: inProgress ? 'current' : hasHistory || awaitingFollowup ? 'done' : hasPlan ? 'todo' : 'locked',
       href: hasPlan ? '/assess' : undefined,
     },
     {
-      label: 'Read your career report',
+      label: t('checklist.report.label'),
       detail:
         hasHistory || awaitingFollowup
-          ? 'Ready in your history.'
-          : 'Generated as soon as you finish the questionnaire.',
+          ? t('checklist.report.ready')
+          : t('checklist.report.pending'),
       state: hasHistory || awaitingFollowup ? 'done' : 'todo',
       href: hasHistory || awaitingFollowup ? '/history' : undefined,
     },
     {
-      label: 'Get your detailed roadmap',
+      label: t('checklist.roadmap.label'),
       detail: followupsAvailable
         ? awaitingFollowup
-          ? 'Unlocked and waiting — this is your next step.'
-          : 'Unlocked on your account. Answer the follow-up on any attempt.'
-        : 'Needs the follow-up bundle. Adds specific roles and a three-month plan.',
+          ? t('checklist.roadmap.waiting')
+          : t('checklist.roadmap.unlocked')
+        : t('checklist.roadmap.locked'),
       state: !followupsAvailable
         ? 'locked'
         : awaitingFollowup
@@ -112,21 +132,22 @@ export default function ProgressChecklist({
   hasHistory?: boolean;
   className?: string;
 }) {
-  const steps = buildSteps(sub, hasHistory);
+  const { t } = useI18n();
+  const steps = buildSteps(sub, hasHistory, t);
   if (steps.length === 0) return null;
 
   const done = steps.filter((s) => s.state === 'done').length;
 
   return (
     <section
-      aria-label="Your progress"
+      aria-label={t('checklist.label')}
       className={`rounded-xl border border-white/10 bg-white/5 p-5 ${className}`}
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-          Where you are
+          {t('checklist.title')}
         </h2>
-        <span className="font-mono text-xs text-gray-500">{done} of {steps.length}</span>
+        <span className="font-mono text-xs text-gray-500">{t('checklist.count', { done, total: steps.length })}</span>
       </div>
 
       <ol className="mt-4 flex flex-col gap-3">

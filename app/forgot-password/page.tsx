@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/components/I18nProvider';
 
 export default function ForgotPasswordPage() {
+  const { t, locale } = useI18n();
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -26,10 +28,10 @@ export default function ForgotPasswordPage() {
       if (res.ok) {
         setSent(true);
       } else {
-        setError(data.error ?? 'Something went wrong. Please try again.');
+        setError(locale === 'en' && data.error ? data.error : t('common.error.generic'));
       }
     } catch {
-      setError('Network error. Please check your connection and try again.');
+      setError(t('auth.networkCheck'));
     } finally {
       setSending(false);
     }
@@ -38,7 +40,7 @@ export default function ForgotPasswordPage() {
   return (
     <main className="flex min-h-[80vh] items-center justify-center bg-slate-950 px-5 py-16">
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white">Reset your password</h1>
+        <h1 className="text-2xl font-bold text-white">{t('auth.forgot.title')}</h1>
 
         {sent ? (
           // Deliberately does not say whether the address had an account —
@@ -46,31 +48,28 @@ export default function ForgotPasswordPage() {
           // registered. Same wording either way.
           <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
             <p className="text-[15px] leading-relaxed text-gray-300">
-              If there is an account for <span className="text-white">{email}</span>, a reset
-              link is on its way. It expires in one hour.
+              {t('auth.forgot.sent.before')}<span className="text-white">{email}</span>{t('auth.forgot.sent.after')}
             </p>
             <p className="mt-3 text-sm text-gray-500">
-              Nothing arriving? Check your spam folder, and make sure you typed the address you
-              signed up with.
+              {t('auth.forgot.nothing')}
             </p>
             <Link
               href="/login"
               className="mt-5 inline-block text-sm text-indigo-300 underline underline-offset-4 hover:text-white"
             >
-              Back to sign in
+              {t('auth.backToSignIn')}
             </Link>
           </div>
         ) : (
           <>
             <p className="mt-2 text-[15px] leading-relaxed text-gray-400">
-              Enter the address you signed up with and we will send you a link to choose a new
-              one.
+              {t('auth.forgot.intro')}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <div>
                 <label htmlFor="email" className="block text-sm text-gray-300">
-                  Email address
+                  {t('auth.emailAddress')}
                 </label>
                 <input
                   id="email"
@@ -80,14 +79,14 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white placeholder:text-gray-600 focus:border-indigo-400/60 focus:outline-none"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
 
               {error && <p className="text-sm text-red-300">{error}</p>}
 
               <button type="submit" disabled={sending} className="btn-primary disabled:opacity-50">
-                {sending ? 'Sending…' : 'Send reset link'}
+                {sending ? t('auth.sending') : t('auth.forgot.submit')}
               </button>
             </form>
 
@@ -96,11 +95,10 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="text-indigo-300 underline underline-offset-4 hover:text-white"
               >
-                I remembered it — back to sign in
+                {t('auth.forgot.remembered')}
               </Link>
               <p className="text-gray-500">
-                Signed up with Google? You do not have a password here — use the Google button on
-                the sign-in page.
+                {t('auth.forgot.google')}
               </p>
             </div>
           </>

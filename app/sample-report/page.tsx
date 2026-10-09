@@ -20,6 +20,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BRAND } from '@/lib/site';
+import { getTranslator } from '@/lib/i18n/server';
+import type { MessageKey } from '@/lib/i18n/messages';
 
 export const metadata: Metadata = {
   title: 'Sample career report',
@@ -27,55 +29,40 @@ export const metadata: Metadata = {
     `An example of the AI-generated career report ${BRAND.name} produces, so you can see what you get before you buy.`,
 };
 
-const CLUSTERS = [
-  { name: 'Healthcare & Wellbeing', pct: 78.4 },
-  { name: 'Education & Training', pct: 71.2 },
-  { name: 'Social & Community', pct: 66.9 },
+const CLUSTERS: { name: MessageKey; pct: number }[] = [
+  { name: 'sample.cluster.1', pct: 78.4 },
+  { name: 'sample.cluster.2', pct: 71.2 },
+  { name: 'sample.cluster.3', pct: 66.9 },
 ];
 
-const REPORT = `Thank you for taking the time to work through the assessment properly — the detail in your answers makes a real difference to what follows.
+// The report text lives in lib/i18n/messages/misc.ts, one version per language.
 
-Your three strongest clusters are Healthcare & Wellbeing, Education & Training, and Social & Community. That combination is a coherent one rather than a coincidence, and it says something specific about you.
-
-Healthcare & Wellbeing came out highest, driven mainly by how you rated empathy and working under pressure, and by your comfort with responsibility. You described wanting work where the outcome of a good day is that someone is better off. That is the thread running through this cluster: the value is delivered to a person, and you can see it land.
-
-Education & Training follows closely, and for related reasons. Your communication and patience scores are high, and you wrote about explaining things to people who had been made to feel stupid elsewhere. Teaching rewards the same instinct as care work — noticing where somebody actually is, rather than where the material assumes they are.
-
-Social & Community rounds out the picture. Your answers on values placed fairness and stability above income and status. That does not mean you should expect to earn little; it means you are unlikely to stay somewhere that pays well and asks you to be indifferent.
-
-Two things worth naming honestly. You rated your tolerance for uncertainty on the lower side, which sits awkwardly with parts of frontline healthcare where shifts and workload are unpredictable. And you said you would rather not relocate, which narrows some routes considerably. Neither is a problem — both are worth deciding about deliberately rather than discovering later.
-
-The follow-up questionnaire is where this becomes concrete: specific roles, the qualifications each one needs, and a realistic sense of what the next three months could look like.`;
-
-export default function SampleReportPage() {
+export default async function SampleReportPage() {
+  const { t } = await getTranslator();
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-14">
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-lg border border-indigo-400/30 bg-indigo-400/5 px-4 py-3">
           <p className="text-sm text-indigo-100">
-            <strong className="font-semibold">This is an example.</strong> It was written for a
-            made-up person so you can see the format before you buy. Yours will be based on your
-            own answers.
+            <strong className="font-semibold">{t('sample.example.strong')}</strong>{t('sample.example.rest')}
           </p>
         </div>
 
         <h1 className="mt-8 text-3xl font-bold text-white sm:text-4xl">
-          What your report looks like
+          {t('sample.title')}
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-gray-400">
-          Every assessment produces a breakdown of your strongest career clusters and a written
-          report explaining why you fit them. The follow-up adds specific roles, qualifications,
-          and a three-month plan.
+          {t('sample.intro')}
         </p>
 
         {/* Clusters */}
         <section className="mt-10 rounded-xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-bold text-white">Top 3 career clusters</h2>
+          <h2 className="text-xl font-bold text-white">{t('sample.top3')}</h2>
           <ul className="mt-5 flex flex-col gap-5">
             {CLUSTERS.map((c) => (
               <li key={c.name}>
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="font-medium text-white">{c.name}</span>
+                  <span className="font-medium text-white">{t(c.name)}</span>
                   <span className="font-mono text-sm text-indigo-300">{c.pct}%</span>
                 </div>
                 <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-700">
@@ -91,28 +78,26 @@ export default function SampleReportPage() {
 
         {/* Report body */}
         <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-bold text-white">Your personalised career report</h2>
+          <h2 className="text-xl font-bold text-white">{t('sample.reportTitle')}</h2>
           <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-gray-200">
-            {REPORT}
+            {t('sample.report')}
           </p>
         </section>
 
         <p className="mt-6 text-sm leading-relaxed text-gray-500">
-          Reports are generated by AI from your answers. They are information to think about
-          alongside people who know you &mdash; not professional careers advice, and not a
-          prediction. See our{' '}
+          {t('sample.disclaimer.before')}
           <Link href="/terms" className="text-indigo-300 underline">
-            terms
-          </Link>{' '}
-          for what that means.
+            {t('sample.disclaimer.terms')}
+          </Link>
+          {t('sample.disclaimer.after')}
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">
           <Link href="/assess" className="btn-primary">
-            Take the assessment
+            {t('sample.assess')}
           </Link>
           <Link href="/pricing" className="btn-secondary">
-            See pricing
+            {t('sample.pricing')}
           </Link>
         </div>
       </div>
