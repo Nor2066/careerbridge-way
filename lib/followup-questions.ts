@@ -192,6 +192,24 @@ export function clustersWithQuestions(): string[] {
 }
 
 /**
+ * Before 2026-10-09 the follow-up page keyed answers by display name
+ * ("Sales & Marketing") instead of the scoring key ("Sales"), and saved them
+ * that way. Those rows still exist, so lookups accept either form.
+ */
+const LEGACY_CLUSTER_NAMES: Record<string, string> = {
+  'Social Impact': 'SocialImpact',
+  'Skilled Trades': 'SkilledTrades',
+  'Legal & Justice': 'Legal',
+  'Sales & Marketing': 'Sales',
+  'Hospitality & Tourism': 'Hospitality',
+};
+
+/** The scoring key for a cluster, given either the key or an old display name. */
+export function followupClusterKey(cluster: string): string {
+  return LEGACY_CLUSTER_NAMES[cluster] ?? cluster;
+}
+
+/**
  * A stored follow-up answer in words the model can use.
  *
  * The page stores the option LETTER ("b"), which is the same whatever language
@@ -204,7 +222,7 @@ export function describeFollowupAnswer(
   questionIndex: number,
   answer: string
 ): { question: string; answer: string } | null {
-  const text = clusterQuestions[cluster]?.[questionIndex];
+  const text = clusterQuestions[followupClusterKey(cluster)]?.[questionIndex];
   if (!text) return null;
 
   const firstOption = text.search(/\n\([a-z]\)/);

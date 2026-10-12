@@ -95,6 +95,29 @@ async function fetchInstitutions(): Promise<{ institutions: Institution[] } | { 
   }
 }
 
+/**
+ * fetch, tried a second time if the request never got a response.
+ *
+ * After the form has sat open a while, the browser can send the save down a
+ * connection that has quietly closed, and it does not retry a POST by itself
+ * -- that was the "Failed to fetch" on the first click. Safe to repeat: a new
+ * university carries an id picked when the form opened (the server spots the
+ * second try), and an edit replaces the whole record either way.
+ */
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    if (!(err instanceof TypeError)) throw err;
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      return await fetch(url, init);
+    } catch {
+      throw new Error('Could not reach the server. Check your connection and press Save again; it will not add the university twice.');
+    }
+  }
+}
+
 /** Splits a textarea on newlines, commas, semicolons and spaces. */
 function splitList(text: string): string[] {
   return text.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
@@ -118,6 +141,8 @@ export default function UniversitiesAdmin() {
 
   // null = form closed, 'new' = creating, otherwise the id being edited.
   const [editing, setEditing] = useState<string | null>(null);
+  // Picked when the "new" form opens, so a retried save is the same university.
+  const [newId, setNewId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -146,6 +171,7 @@ export default function UniversitiesAdmin() {
   const load = async () => applyLoad(await fetchInstitutions());
 
   const openNew = () => {
+    setNewId(crypto.randomUUID());
     setForm(EMPTY_FORM);
     setFormError(null);
     setNotice(null);
@@ -190,11 +216,11 @@ export default function UniversitiesAdmin() {
       };
 
       const isNew = editing === 'new';
-      const res = await fetch(isNew ? '/api/admin/institutions' : `/api/admin/institutions/${editing}`, {
+      const res = await fetchWithRetry(isNew ? '/api/admin/institutions' : `/api/admin/institutions/${editing}`, {
         method: isNew ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(body),
+        body: JSON.stringify(isNew ? { ...body, id: newId } : body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Save failed (${res.status})`);

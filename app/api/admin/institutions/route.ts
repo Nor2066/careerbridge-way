@@ -6,6 +6,7 @@
 //       audit_logs — this hands out paid access, so it leaves a trail.
 
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { requireAdmin } from '@/lib/admin-gate';
 import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
@@ -50,7 +51,8 @@ export async function POST(request: Request) {
     const gate = await requireAdmin(request);
     if ('response' in gate) return gate.response;
 
-    const parsed = InstitutionInputSchema.safeParse(await request.json());
+    const body = await request.json();
+    const parsed = InstitutionInputSchema.safeParse(body);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
       return NextResponse.json(
@@ -65,7 +67,14 @@ export async function POST(request: Request) {
     }
     const { row, domains, staffEmails } = cleaned.value;
 
-    const conflicts = await findDomainConflicts(domains);
+    // The page picks this id when the form opens and sends it with every try.
+    // A browser does not retry a POST on its own when the connection drops, so
+    // the page does -- and if the first try did get through, the retry finds
+    // that row here instead of creating the same university twice.
+    const requestedId = z.string().uuid().safeParse(body?.id);
+    const id = requestedId.success ? requestedId.data : crypto.randomUUID();
+
+    const conflicts = await findDomainConflicts(domains, id);
     if (conflicts.length) {
       return NextResponse.json(
         { error: `Already used by another university: ${conflicts.join(', ')}` },
@@ -73,18 +82,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: created, error: insertError } = await supabaseServer
-      .from('institutions')
-      .insert(row)
-      .select('id')
-      .single();
-    if (insertError || !created) throw insertError ?? new Error('Insert returned nothing');
+    const { error: insertError } = await supabaseServer.from('institutions').insert({ ...row, id });
+    if (insertError) {
+      if (insertError.code === '23505') {
+        const { data: existing } = await supabaseServer.from('institutions').select('id').eq('id', id).maybeSingle();
+        if (existing) return NextResponse.json({ ok: true, id, repeated: true }, { headers: NO_STORE_HEADERS });
+      }
+      throw insertError;
+    }
 
     try {
-      await replaceDomainsAndStaff(created.id, domains, staffEmails);
+      await replaceDomainsAndStaff(id, domains, staffEmails);
     } catch (childError) {
       // Do not leave a university behind with half its setup.
-      await supabaseServer.from('institutions').delete().eq('id', created.id);
+      await supabaseServer.from('institutions').delete().eq('id', id);
       throw childError;
     }
 
@@ -92,10 +103,10 @@ export async function POST(request: Request) {
       userId: gate.user.id,
       action: 'admin_institution_change',
       ipAddress: getIP(request),
-      metadata: { kind: 'create', institutionId: created.id, name: row.name, domains, staffCount: staffEmails.length },
+      metadata: { kind: 'create', institutionId: id, name: row.name, domains, staffCount: staffEmails.length },
     });
 
-    return NextResponse.json({ ok: true, id: created.id }, { headers: NO_STORE_HEADERS });
+    return NextResponse.json({ ok: true, id }, { headers: NO_STORE_HEADERS });
   } catch (err) {
     if (isUnauthorized(err)) return unauthorizedResponse();
     Sentry.captureException(err);

@@ -101,7 +101,7 @@ export default function SignupPage() {
 
   return (
     <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
-         style={{ backgroundImage: "url('/images/bg-assess.jpg')" }}>
+         style={{ backgroundImage: "url('/images/bg-assess.webp')" }}>
       <div className="absolute inset-0 bg-black/30 z-0" />
       <div className="relative z-10 max-w-md w-full glass-card">
         {awaitingConfirmation ? (
