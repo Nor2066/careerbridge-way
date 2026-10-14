@@ -36,7 +36,7 @@ import {
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
 import { cookies } from 'next/headers';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authIpLimiter, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   }
 
   // Irreversible, so it gets the strict auth limiter rather than a read one.
-  const { success } = await authLimiter.limit(`delete_${getIP(request)}`);
+  const { success } = await authIpLimiter.limit(`delete_${getIP(request)}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many attempts. Please try again in a few minutes.' },

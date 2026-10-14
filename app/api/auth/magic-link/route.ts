@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { isSameOrigin, siteOrigin, NO_STORE_HEADERS } from '@/lib/auth-cookies';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authLimiter, authIpLimiter, emailIdentifier, getIP } from '@/lib/rate-limit';
 
 const MagicLinkSchema = z.object({
   email: z.string().email(),
@@ -32,9 +32,9 @@ export async function POST(request: Request) {
     );
   }
 
-  // IP-based limit — user is not authenticated yet
+  // Coarse IP ceiling first; the strict limit is per inbox, below.
   const ip = getIP(request);
-  const { success } = await authLimiter.limit(`magic_${ip}`);
+  const { success } = await authIpLimiter.limit(`magic_${ip}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
@@ -50,6 +50,14 @@ export async function POST(request: Request) {
     }
 
     const { email } = result.data;
+
+    const { success: emailOk } = await authLimiter.limit(`magic_${emailIdentifier(email)}`);
+    if (!emailOk) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
 
     const { error } = await getAnonClient().auth.signInWithOtp({
       email,

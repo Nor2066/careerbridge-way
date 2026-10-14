@@ -14,7 +14,7 @@ import {
   siteOrigin,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authLimiter, authIpLimiter, emailIdentifier, getIP } from '@/lib/rate-limit';
 import { assessPassword, MAX_PASSWORD_LENGTH } from '@/lib/password';
 import { recordTermsAcceptance } from '@/lib/terms-acceptance';
 import { MINIMUM_AGE } from '@/lib/legal';
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   const ip = getIP(request);
-  const { success } = await authLimiter.limit(`signup_${ip}`);
+  const { success } = await authIpLimiter.limit(`signup_${ip}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many sign-up attempts. Please try again later.' },
@@ -76,6 +76,16 @@ export async function POST(request: Request) {
     // Pulled out by name rather than spread into signUp below: the consent
     // flags belong on our profile row, not in Supabase's auth payload.
     const { email, password } = parsed.data;
+
+    // The strict limit is per address, so classmates on one campus Wi-Fi
+    // don't use up each other's allowance.
+    const { success: emailOk } = await authLimiter.limit(`signup_${emailIdentifier(email)}`);
+    if (!emailOk) {
+      return NextResponse.json(
+        { error: 'Too many sign-up attempts. Please try again later.' },
+        { status: 429, headers: NO_STORE_HEADERS }
+      );
+    }
 
     // Checked before Supabase is called: no point creating an account and
     // then telling someone the password is unacceptable.

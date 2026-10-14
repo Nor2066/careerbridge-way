@@ -52,11 +52,13 @@ export function getUserIdentifier(userId: string): string {
 // Naming convention: prefix describes the route, limiter describes the policy.
 // All use slidingWindow for smooth rate limiting without burst edges.
 
-// Public assessment scoring — IP based (no auth required)
-// 10 submissions per minute is generous for a quiz
+// Public assessment scoring — IP based (no auth required).
+// The scoring is cheap and stateless, and a whole class on one campus
+// address finishes the quiz within the same minute or two, so this is a
+// flood ceiling, not a per-person policy.
 export const assessLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(10, "60 s"),
+  limiter: Ratelimit.slidingWindow(200, "60 s"),
   analytics: true,
   prefix: "rl:assess",
 });
@@ -79,10 +81,11 @@ export const generateReportLimiter = new Ratelimit({
 // session is verified, so it is the only thing standing between an
 // unauthenticated flood and a Supabase round trip per request. Set generously
 // enough that shared campus addresses are unaffected — the strict, meaningful
-// limit is the per-user one.
+// limit is the per-user one. Both reports share this bucket, so a class of
+// 150 doing the main and follow-up report in one session is 300 calls.
 export const generateReportIpLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(30, "10 m"),
+  limiter: Ratelimit.slidingWindow(300, "10 m"),
   analytics: true,
   prefix: "rl:gen_report_ip",
 });
@@ -104,14 +107,34 @@ export const saveProgressLimiter = new Ratelimit({
   prefix: "rl:save_progress",
 });
 
-// Auth endpoints — IP based, strict to prevent brute force and spam
-// 5 attempts per 15 minutes for login/signup/magic-link
+// Auth endpoints come in two layers.
+//
+// authLimiter is the strict one, and it is keyed by EMAIL ADDRESS (or user)
+// wherever the route knows one: it is what stops someone guessing one
+// account's password or flooding one inbox. It used to be keyed by IP, which
+// meant a whole university on one Wi-Fi address shared five sign-ups per
+// quarter hour — the sixth student in a lecture hall was turned away.
 export const authLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, "15 m"),
+  limiter: Ratelimit.slidingWindow(10, "15 m"),
   analytics: true,
   prefix: "rl:auth",
 });
+
+// authIpLimiter is the coarse ceiling per address, checked first. Big enough
+// for a lecture hall signing up together behind one campus NAT address,
+// small enough that one machine cannot spray thousands of addresses.
+export const authIpLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(200, "15 m"),
+  analytics: true,
+  prefix: "rl:auth_ip",
+});
+
+/** Email addresses are case-insensitive in practice; one bucket per inbox. */
+export function emailIdentifier(email: string): string {
+  return `email_${email.trim().toLowerCase()}`;
+}
 
 // Admin login — extra strict, IP based
 // 5 attempts per 30 minutes
@@ -142,20 +165,24 @@ export const readLimiter = new Ratelimit({
 // Sign-in initiation and the OAuth callback. Both are unauthenticated by
 // nature — the whole point is that nobody is signed in yet — and /api/auth/google
 // mints a fresh PKCE verifier cookie on every call, so an unbounded caller can
-// spray cookies and burn Supabase auth requests for free.
+// spray cookies and burn Supabase auth requests for free. IP based because
+// nothing else is known yet, so sized for a campus behind one address; callers
+// prefix the key per route so one Google sign-in does not count twice.
 export const oauthLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(20, "10 m"),
+  limiter: Ratelimit.slidingWindow(200, "10 m"),
   analytics: true,
   prefix: "rl:oauth",
 });
 
 // GET /api/auth/me runs on essentially every page load, so this is a ceiling
 // against a flood rather than a policy anyone should ever notice. Set well
-// above what normal browsing produces.
+// above what normal browsing produces — including a few hundred students
+// browsing at once behind one campus address, who would otherwise all appear
+// signed out when it tripped.
 export const sessionReadLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(120, "60 s"),
+  limiter: Ratelimit.slidingWindow(2000, "60 s"),
   analytics: false,
   prefix: "rl:me",
 });

@@ -15,7 +15,7 @@ import {
   isSameOrigin,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authLimiter, authIpLimiter, emailIdentifier, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const ip = getIP(request);
-  const { success } = await authLimiter.limit(`signin_${ip}`);
+  const { success } = await authIpLimiter.limit(`signin_${ip}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many sign-in attempts. Please try again later.' },
@@ -51,6 +51,16 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 400, headers: NO_STORE_HEADERS }
+      );
+    }
+
+    // Password guessing is against one account, so that is what the strict
+    // limit is keyed by — not the address, which a whole campus may share.
+    const { success: emailOk } = await authLimiter.limit(`signin_${emailIdentifier(parsed.data.email)}`);
+    if (!emailOk) {
+      return NextResponse.json(
+        { error: 'Too many sign-in attempts. Please try again later.' },
+        { status: 429, headers: NO_STORE_HEADERS }
       );
     }
 

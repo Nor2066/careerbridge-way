@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   // Unauthenticated by nature -- nobody is signed in yet -- and each call mints
   // a fresh PKCE verifier cookie, so without a ceiling this is free cookie
   // spray and free Supabase auth requests.
-  const { success: withinLimit } = await oauthLimiter.limit(getIP(request));
+  const { success: withinLimit } = await oauthLimiter.limit(`google_${getIP(request)}`);
   if (!withinLimit) {
     return NextResponse.redirect(
       new URL('/login?error=oauth_init_failed', siteOrigin(request))

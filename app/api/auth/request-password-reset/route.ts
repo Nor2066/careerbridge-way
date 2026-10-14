@@ -15,7 +15,7 @@ import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { isSameOrigin, siteOrigin, NO_STORE_HEADERS } from '@/lib/auth-cookies';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authLimiter, authIpLimiter, emailIdentifier, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   const ip = getIP(request);
-  const { success } = await authLimiter.limit(`pwreset_${ip}`);
+  const { success } = await authIpLimiter.limit(`pwreset_${ip}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again in a few minutes.' },
@@ -47,7 +47,13 @@ export async function POST(request: Request) {
 
     // Even a malformed address gets the same cheerful answer, so the shape of
     // the response never reveals anything either.
-    if (parsed.success) {
+    // Over the per-inbox limit gets the same cheerful answer too, just no
+    // email — saying "too many" would confirm the address is being used.
+    const inboxOk = parsed.success
+      ? (await authLimiter.limit(`pwreset_${emailIdentifier(parsed.data.email)}`)).success
+      : false;
+
+    if (parsed.success && inboxOk) {
       // Anon key: sending a recovery email needs no elevated privileges, and
       // using the service role here would mean a compromised route had full
       // database access. Same reasoning as /api/auth/magic-link.

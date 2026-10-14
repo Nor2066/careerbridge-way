@@ -35,7 +35,7 @@ import {
   siteOrigin,
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
-import { authLimiter, getIP, getUserIdentifier } from '@/lib/rate-limit';
+import { authLimiter, authIpLimiter, emailIdentifier, getIP, getUserIdentifier } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
 
     // ── Signed out ──────────────────────────────────────────────────────
     const ip = getIP(request);
-    const { success } = await authLimiter.limit(`resend_ip_${ip}`);
+    const { success } = await authIpLimiter.limit(`resend_ip_${ip}`);
     if (!success) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again in a few minutes.' },
@@ -128,7 +128,11 @@ export async function POST(request: Request) {
     }
 
     // Even a missing or malformed address gets the same answer.
-    if (parsed.success && parsed.data.email) {
+    if (
+      parsed.success &&
+      parsed.data.email &&
+      (await authLimiter.limit(`resend_${emailIdentifier(parsed.data.email)}`)).success
+    ) {
       // Anon key: resending a confirmation needs no elevated privileges, and
       // the service role here would mean a compromised route had full database
       // access. Same reasoning as /api/auth/magic-link.

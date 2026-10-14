@@ -17,7 +17,7 @@ import {
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
 import { RECOVERY_COOKIE, RECOVERY_COOKIE_MAX_AGE } from '@/lib/recovery-cookie';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authIpLimiter, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   const ip = getIP(request);
-  const { success } = await authLimiter.limit(`setsession_${ip}`);
+  const { success } = await authIpLimiter.limit(`setsession_${ip}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },

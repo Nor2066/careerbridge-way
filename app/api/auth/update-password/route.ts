@@ -32,7 +32,7 @@ import {
 } from '@/lib/auth-cookies';
 import { RECOVERY_COOKIE } from '@/lib/recovery-cookie';
 import { assessPassword, MAX_PASSWORD_LENGTH } from '@/lib/password';
-import { authLimiter, getIP } from '@/lib/rate-limit';
+import { authIpLimiter, getIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   }
 
   const ip = getIP(request);
-  const { success } = await authLimiter.limit(`pwupdate_${ip}`);
+  const { success } = await authIpLimiter.limit(`pwupdate_${ip}`);
   if (!success) {
     return NextResponse.json(
       { error: 'Too many attempts. Please try again in a few minutes.' },
