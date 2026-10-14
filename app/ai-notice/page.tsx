@@ -79,7 +79,9 @@ export default function AiNoticePage() {
                 <td className="py-3 pr-4 font-medium text-white">The follow-up roadmap</td>
                 <td className="py-3 pr-4 font-medium text-indigo-300">Yes</td>
                 <td className="py-3 text-gray-300">
-                  The same, from your follow-up answers.
+                  The same model, writing from your follow-up answers together with your main
+                  answers and your first report, so the roadmap builds on what you were
+                  already told.
                 </td>
               </tr>
               <tr className="border-b border-white/10 align-top">
@@ -98,14 +100,18 @@ export default function AiNoticePage() {
         <p>
           When you ask for a report, we send the model{' '}
           <strong className="text-white">
-            the relevant parts of your answers, including free text, and your calculated
-            scores.
+            all of your assessment answers, including free text, your calculated scores, and
+            the language you use the site in
           </strong>
+          , so the report is written in that language. For the follow-up roadmap we also send
+          your follow-up answers and the first report from the same attempt. If a university
+          gives you access, we tell the model which country it is in, so its suggestions fit
+          where you study.
         </p>
         <p>
           We do <strong className="text-white">not</strong> send your email address, your
-          name, your payment details, your account identifier, your IP address, or your
-          history of previous reports.
+          name, your payment details, your account identifier, your IP address, the name of
+          your university, or reports from your other attempts.
         </p>
         <p>
           Your answers pass through a sanitiser first, which strips content that could be
@@ -116,11 +122,37 @@ export default function AiNoticePage() {
           &mdash; it is not designed for that and will not catch everything.
         </p>
         <p>
-          Your answers are not used to train AI models, ours or OpenAI&rsquo;s. Our{' '}
+          <strong className="text-white">
+            We do not train AI models on your answers. Not ours, not OpenAI&rsquo;s, not
+            anyone&rsquo;s.
+          </strong>{' '}
+          If we ever decide we want to, we will come and ask you first, rather than treating
+          something you agreed to in the past as permission. Our{' '}
           <a className="text-indigo-300 underline" href="/privacy#ai">
             Privacy Policy
           </a>{' '}
           covers the contractual position and where the processing happens.
+        </p>
+        <p>
+          There is a second, separate use of AI here worth knowing about.{' '}
+          <strong className="text-white">
+            We also use AI to read across many people&rsquo;s answers at once
+          </strong>{' '}
+          &mdash; summarising which questions confuse people, where the scoring looks wrong,
+          and where reports come out weak &mdash; so that we can fix those things. That
+          analysis runs on data with the identifying details stripped out, it produces themes
+          and figures rather than anything about one person, and it is still not training:
+          the model learns nothing and keeps nothing.
+        </p>
+        <p>
+          Two things follow from that. A change we make because of it &mdash; a reworded
+          question, a corrected weight &mdash; is a human decision informed by the analysis,
+          not something a model decided on its own. And you can tell us to leave your data
+          out of it entirely, without losing anything:{' '}
+          <a className="text-indigo-300 underline" href="/privacy#improving">
+            how it works and how to object
+          </a>
+          .
         </p>
       </LegalSection>
 
@@ -134,7 +166,8 @@ export default function AiNoticePage() {
         </div>
         <ul className="ml-5 flex list-disc flex-col gap-3">
           <li>
-            <strong className="text-white">It invents things.</strong> Language models produce
+            <strong className="text-white">It invents things.</strong>{' '}
+            Language models produce
             text that reads convincingly whether or not it is true. A report can state a
             salary, a qualification, an entry requirement, a professional body or a course
             that does not exist &mdash; in exactly the same confident tone as the parts that
@@ -149,7 +182,9 @@ export default function AiNoticePage() {
           <li>
             <strong className="text-white">It does not know your local job market</strong>{' '}
             &mdash; where you live, what employers are near you, or what is being hired for
-            in your area.
+            in your area. Its knowledge of education systems, qualifications and pay is
+            uneven between countries, and it may describe the routes of one country as if they
+            applied in another.
           </li>
           <li>
             <strong className="text-white">
@@ -165,7 +200,8 @@ export default function AiNoticePage() {
             <strong className="text-white">that is a fault and we want to hear about it.</strong>
           </li>
           <li>
-            <strong className="text-white">It is not consistent.</strong> Ask twice and you
+            <strong className="text-white">It is not consistent.</strong>{' '}
+            Ask twice and you
             will get two different reports. Neither is the &ldquo;real&rdquo; answer.
           </li>
           <li>
@@ -220,7 +256,10 @@ export default function AiNoticePage() {
           <strong className="text-white">
             not shared with any university, employer, school or careers service.
           </strong>{' '}
-          Nobody sees them unless you choose to show them.
+          Nobody sees them unless you choose to show them. If a university gives you access,
+          it sees only anonymous totals for all its students together, never your results.
+          Our contract with it forbids using {BRAND.name} to decide anything about a student
+          &mdash; admission, grading, discipline or anything else.
         </p>
         <p>
           Because nothing here produces a legal or similarly significant effect on you, we do
@@ -261,12 +300,14 @@ export default function AiNoticePage() {
           A questionnaire that asks what you have failed at and what you are afraid of will
           sometimes receive answers describing real distress. So that the service does not
           respond to that by cheerfully listing job clusters, your free-text answers are
-          checked against a fixed list of phrases suggesting self-harm or suicidal thoughts.
+          checked against a fixed list of phrases, in English and in Spanish, suggesting
+          self-harm or suicidal thoughts.
         </p>
         <p>
           If one matches, support information is shown above your report and the model is
           instructed to write more carefully. Your report is{' '}
-          <strong className="text-white">not blocked, delayed or changed</strong> in its
+          <strong className="text-white">not blocked, delayed or changed</strong>{' '}
+            in its
           career content &mdash; you asked for it and you are entitled to it.
         </p>
         <p className="font-medium text-white">What this is not:</p>
@@ -276,7 +317,8 @@ export default function AiNoticePage() {
             It will miss things and will sometimes fire on ordinary phrasing.
           </li>
           <li>
-            <strong className="text-white">Nothing is stored.</strong> The result exists for
+            <strong className="text-white">Nothing is stored.</strong>{' '}
+            The result exists for
             one request and is then gone &mdash; not saved, not attached to your account, not
             visible to anyone.
           </li>
@@ -289,13 +331,30 @@ export default function AiNoticePage() {
             on it.
           </li>
         </ul>
+        <p>
+          The support information shown is for your country: the country of your partner
+          university if you have one, otherwise the approximate country of your connection,
+          and an international directory of helplines where we have no local list.
+        </p>
         <div className="rounded-lg border border-indigo-400/30 bg-indigo-400/10 p-4">
           <p className="text-sm text-indigo-100">
-            <strong className="font-semibold">If you are in danger right now, call 999.</strong>{' '}
-            Samaritans are free, 24 hours a day, on <strong>116 123</strong>, or email
-            jo@samaritans.org. Shout offers text support &mdash; text SHOUT to{' '}
-            <strong>85258</strong>. If you are a student, your university or college will have
-            a wellbeing service.
+            <strong className="font-semibold">
+              If you are in danger right now, call your local emergency number
+            </strong>{' '}
+            &mdash; <strong>112</strong> anywhere in Europe, <strong>999</strong> in the UK.
+            In Spain, the suicide prevention line <strong>024</strong> is free and open 24
+            hours a day. In the UK, Samaritans are free, 24 hours a day, on{' '}
+            <strong>116 123</strong>. Elsewhere,{' '}
+            <a
+              className="underline"
+              href="https://findahelpline.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              findahelpline.com
+            </a>{' '}
+            lists free services by country. If you are a student, your university will have a
+            wellbeing service.
           </p>
         </div>
       </LegalSection>
@@ -319,16 +378,28 @@ export default function AiNoticePage() {
 
       <LegalSection id="regulation" title="Where we stand with regulators">
         <p>
-          <strong className="text-white">United Kingdom.</strong> There is no general AI
+          <strong className="text-white">European Union.</strong>{' '}
+            We offer the service in the
+          EU, so the EU AI Act applies to it. Our reading is that it is not a
+          &ldquo;high-risk&rdquo; system: it is a self-help tool, and it is not used to decide
+          admission to education, to evaluate learning, to assign a level of education, to
+          monitor students during tests, or to recruit or select anyone &mdash; and our
+          contracts with universities forbid them from using it for any of those. What
+          applies to us are the Act&rsquo;s transparency duties for AI-generated content. Your
+          report is labelled as an AI report wherever it appears, and this notice explains
+          what that means.
+        </p>
+        <p>
+          <strong className="text-white">United Kingdom.</strong>{' '}
+            There is no general AI
           statute in force. Our obligations come from data protection law, consumer law, and
           the ordinary law of negligence and misrepresentation. This notice is written to meet
           the transparency expectations in the ICO&rsquo;s guidance on AI and data protection.
         </p>
         <p>
-          <strong className="text-white">Elsewhere.</strong> We are a UK business selling to
-          individuals. If that changes, or if the EU AI Act is found to reach this product
-          because its output is used in the EU, this page will change with it and we will say
-          so.
+          <strong className="text-white">Elsewhere.</strong> Wherever you use the service,
+          the same notice and the same limits apply. If a law where we offer the service
+          requires more, this page will change with it and we will say so.
         </p>
       </LegalSection>
 

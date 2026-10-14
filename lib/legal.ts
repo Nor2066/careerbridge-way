@@ -34,6 +34,14 @@ export const COMPANY = {
    *  the £90,000 threshold; below it, leave this null and charge no UK VAT. */
   vatNumber: null as string | null,
 
+  /**
+   * Our representative in the EU under Article 27 of the EU GDPR: a company
+   * outside the EU that offers its service to people in the EU names one, as
+   * their local point of contact. Several firms provide it as a yearly
+   * service. Name and address, as it should appear on the privacy policy.
+   */
+  euRepresentative: 'TODO — EU representative (GDPR Article 27)',
+
   jurisdiction: 'England and Wales',
   country: 'United Kingdom',
 } as const;
@@ -60,7 +68,7 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-10-07';
+export const TERMS_VERSION = '2026-10-14';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
@@ -77,12 +85,12 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '7 October 2026',
-  terms: '7 October 2026',
-  refunds: '7 October 2026',
-  cookies: '7 October 2026',
-  acceptableUse: '7 October 2026',
-  aiNotice: '7 October 2026',
+  privacy: '14 October 2026',
+  terms: '14 October 2026',
+  refunds: '13 October 2026',
+  cookies: '13 October 2026',
+  acceptableUse: '13 October 2026',
+  aiNotice: '14 October 2026',
 } as const;
 
 /**
@@ -105,13 +113,14 @@ export const SUBPROCESSORS: Subprocessor[] = [
   {
     name: 'Supabase',
     purpose: 'Database and account authentication',
-    data: 'Email address, account identifiers, assessment answers, generated reports',
+    data: 'Email address, account identifiers, assessment and follow-up answers, generated reports, ratings and comments, and the partner university you joined through, if any',
     region: 'European Union (Frankfurt, Germany)',
   },
   {
     name: 'OpenAI',
-    purpose: 'Generating your career report from your answers',
-    data: 'The answers used to write the report. Not used to train their models.',
+    purpose:
+      'Writing your career report and follow-up roadmap. Also summarising themes across many people’s answers so we can improve the questionnaire and the reports.',
+    data: 'Your answers, your career scores and the language you use the site in; for the roadmap, also your follow-up answers and first report; if you came through a university, the country it is in. For the improvement work, answers with the identifying details stripped out. Never your name or email address. Not used to train their models.',
     region: 'United States',
   },
   {
@@ -122,8 +131,8 @@ export const SUBPROCESSORS: Subprocessor[] = [
   },
   {
     name: 'Vercel',
-    purpose: 'Hosting the website',
-    data: 'Technical request logs, including IP address',
+    purpose: 'Hosting the website. Also tells us which country a request comes from, which we use only to show the right helplines.',
+    data: 'Technical request logs, including IP address and approximate country',
     region: 'United States and Europe',
   },
   {
@@ -160,6 +169,21 @@ export const RETENTION = [
     why: 'So you can return to your reports and history at any time.',
   },
   {
+    what: 'Ratings and comments you leave on a report',
+    how_long: 'Until you delete your account',
+    why: 'To improve the questionnaire and the reports. A partner university sees only the average rating of its students, and only once at least five have rated.',
+  },
+  {
+    what: 'Your link to a partner university',
+    how_long: 'Until you delete your account',
+    why: 'So the free access your university pays for keeps working while its licence runs. When a licence ends, your account and reports stay yours.',
+  },
+  {
+    what: 'University staff contact details',
+    how_long: 'Until the university asks us to remove someone, or 12 months after its agreement with us ends',
+    why: 'So the people the university named can sign in to its dashboard, and so we can show who had access if a question is ever asked.',
+  },
+  {
     what: 'Payment records',
     how_long: '6 years from the end of the relevant tax year',
     why: 'UK tax law requires businesses to keep records of sales for this long. These are kept even after account deletion, with your name and email removed where possible.',
@@ -188,6 +212,7 @@ export function legalDetailsComplete(): boolean {
     COMPANY.legalName,
     COMPANY.companyNumber,
     COMPANY.address,
+    COMPANY.euRepresentative,
     CONTACT.support,
     CONTACT.privacy,
   ].some((value) => value.includes('TODO'));

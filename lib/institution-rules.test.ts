@@ -11,6 +11,7 @@ import {
   dateInputFromLicenceEnd,
   licenceStatus,
   summariseInstitution,
+  suppressSmall,
   MIN_GROUP_SIZE,
   type ResultForSummary,
 } from '@/lib/institution-rules';
@@ -125,15 +126,40 @@ describe('the university dashboard summary', () => {
     ...extra,
   });
 
-  it('shows nothing broken down until enough students have a report', () => {
+  it('shows nothing, not even the headline counts, until enough students have a report', () => {
     const results = ['a', 'b', 'c', 'd'].map((u) => result(u, 'Business', '2026-10-05T10:00:00Z'));
     const s = summariseInstitution({ membersJoined: 4, results, ratings: [5, 4] });
-    expect(s.studentsWithResults).toBe(4);
     expect(s.topCareerAreas).toBeNull();
     expect(s.averageRating).toBeNull();
-    // Headline totals are not about any one person, so they always show.
-    expect(s.membersJoined).toBe(4);
-    expect(s.reportsGenerated).toBe(4);
+    expect(s.ratingsCount).toBeNull();
+    // A count of 1 to 4 can tell staff who know whom they invited that a
+    // particular student took part, so the headline counts follow the rule too.
+    expect(s.membersJoined).toBeNull();
+    expect(s.studentsWithResults).toBeNull();
+    expect(s.reportsGenerated).toBeNull();
+    expect(s.roadmapsGenerated).toBeNull();
+  });
+
+  it('shows the headline counts once there are enough students', () => {
+    const results = ['a', 'b', 'c', 'd', 'e'].map((u, i) =>
+      result(u, 'Business', '2026-10-05T10:00:00Z', { has_followup_report: i < 2 })
+    );
+    const s = summariseInstitution({ membersJoined: 12, results, ratings: [] });
+    expect(s.membersJoined).toBe(12);
+    expect(s.studentsWithResults).toBe(5);
+    expect(s.reportsGenerated).toBe(5);
+    // Two roadmaps among five students does not point at either of them.
+    expect(s.roadmapsGenerated).toBe(2);
+  });
+
+  it('keeps zero as zero, because nobody is identified by it', () => {
+    expect(suppressSmall(0)).toBe(0);
+    expect(suppressSmall(1)).toBeNull();
+    expect(suppressSmall(4)).toBeNull();
+    expect(suppressSmall(5)).toBe(5);
+    const s = summariseInstitution({ membersJoined: 0, results: [], ratings: [] });
+    expect(s.membersJoined).toBe(0);
+    expect(s.reportsGenerated).toBe(0);
   });
 
   // The rule that protects students: an area with fewer than five people in
@@ -145,7 +171,8 @@ describe('the university dashboard summary', () => {
     ];
     const s = summariseInstitution({ membersJoined: 9, results, ratings: [] });
     expect(s.topCareerAreas).toEqual([{ cluster: 'Business', students: 5 }]);
-    expect(s.otherCareerAreasStudents).toBe(2);
+    // "Other: 2 students" would itself be a small group.
+    expect(s.otherCareerAreasStudents).toBeNull();
   });
 
   it('counts each student once, by their most recent report', () => {
@@ -182,5 +209,6 @@ describe('the university dashboard summary', () => {
     const s = summariseInstitution({ membersJoined: 1, results, ratings: [] });
     expect(s.studentsWithResults).toBe(0);
     expect(s.reportsGenerated).toBe(0);
+    expect(s.membersJoined).toBeNull();
   });
 });

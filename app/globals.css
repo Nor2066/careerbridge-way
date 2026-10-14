@@ -90,9 +90,13 @@ h2 {
   color: var(--heading2-color);
 }
 
-/* Labels (for form fields) */
-label {
-  color: var(--label-text-color);
+/* Labels (for form fields). In the base layer so a colour class on the label
+   itself wins: unlayered, this beat text-gray-200 and left the signup page's
+   age-and-terms tickbox dark grey on a dark background. */
+@layer base {
+  label {
+    color: var(--label-text-color);
+  }
 }
 
 /* Result text (top clusters percentages, etc.) */

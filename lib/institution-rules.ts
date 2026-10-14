@@ -146,22 +146,34 @@ export type ResultForSummary = {
   has_followup_report: boolean;
 };
 
+/**
+ * Every number here is either 0, at least minGroupSize, or null ("fewer than
+ * minGroupSize"). A count of 1 to 4 would let staff who know who was told about
+ * the service work out that a particular student took part, which the Privacy
+ * Policy and the university agreement both promise cannot happen.
+ */
 export type InstitutionSummary = {
-  membersJoined: number;
-  studentsWithResults: number;
-  reportsGenerated: number;
-  roadmapsGenerated: number;
+  membersJoined: number | null;
+  studentsWithResults: number | null;
+  /** Null while fewer than minGroupSize students have a report. */
+  reportsGenerated: number | null;
+  roadmapsGenerated: number | null;
   /** Null when fewer than MIN_GROUP_SIZE students have a report. */
   topCareerAreas: { cluster: string; students: number }[] | null;
   /** Students whose top area was in a group too small to show on its own. */
-  otherCareerAreasStudents: number;
+  otherCareerAreasStudents: number | null;
   /** Reports per month, oldest first. Months under the threshold show null. */
   reportsByMonth: { month: string; reports: number | null }[];
   /** Average 1–5 rating, or null when fewer than MIN_GROUP_SIZE ratings. */
   averageRating: number | null;
-  ratingsCount: number;
+  ratingsCount: number | null;
   minGroupSize: number;
 };
+
+/** 0 stays 0 (it identifies nobody); 1 to k-1 becomes null. */
+export function suppressSmall(n: number, k: number = MIN_GROUP_SIZE): number | null {
+  return n > 0 && n < k ? null : n;
+}
 
 export function summariseInstitution(input: {
   membersJoined: number;
@@ -213,16 +225,20 @@ export function summariseInstitution(input: {
       ? Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10
       : null;
 
+  // Report and roadmap counts say nothing about any one person once at least k
+  // students have a report; below that, "3 reports" can be one student's three.
+  const enoughStudents = latestByStudent.size === 0 || latestByStudent.size >= k;
+
   return {
-    membersJoined: input.membersJoined,
-    studentsWithResults: latestByStudent.size,
-    reportsGenerated: withReport.length,
-    roadmapsGenerated: input.results.filter((r) => r.has_followup_report).length,
+    membersJoined: suppressSmall(input.membersJoined, k),
+    studentsWithResults: suppressSmall(latestByStudent.size, k),
+    reportsGenerated: enoughStudents ? withReport.length : null,
+    roadmapsGenerated: enoughStudents ? input.results.filter((r) => r.has_followup_report).length : null,
     topCareerAreas,
-    otherCareerAreasStudents,
+    otherCareerAreasStudents: suppressSmall(otherCareerAreasStudents, k),
     reportsByMonth,
     averageRating,
-    ratingsCount: ratings.length,
+    ratingsCount: averageRating === null ? null : ratings.length,
     minGroupSize: k,
   };
 }

@@ -181,15 +181,26 @@ export default function UniversityDashboard({ institutions }: { institutions: { 
 
             {/* Headline numbers */}
             <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
-              <Stat label={t('uni.stats.joined')} value={s.membersJoined} />
-              <Stat label={t('uni.stats.withReport')} value={s.studentsWithResults} />
-              <Stat label={t('uni.stats.reports')} value={s.reportsGenerated} />
-              <Stat label={t('uni.stats.roadmaps')} value={s.roadmapsGenerated} />
+              {(
+                [
+                  ['uni.stats.joined', s.membersJoined],
+                  ['uni.stats.withReport', s.studentsWithResults],
+                  ['uni.stats.reports', s.reportsGenerated],
+                  ['uni.stats.roadmaps', s.roadmapsGenerated],
+                ] as const
+              ).map(([key, value]) => (
+                <Stat
+                  key={key}
+                  label={t(key)}
+                  value={value ?? `< ${k}`}
+                  note={value === null ? t('uni.stats.hiddenNote', { k }) : undefined}
+                />
+              ))}
               <Stat
                 label={t('uni.stats.rating')}
                 value={s.averageRating ?? '—'}
                 note={
-                  s.averageRating != null
+                  s.averageRating != null && s.ratingsCount != null
                     ? t('uni.stats.ratingOf', { count: s.ratingsCount })
                     : t('uni.stats.ratingHidden', { k })
                 }
@@ -216,10 +227,14 @@ export default function UniversityDashboard({ institutions }: { institutions: { 
                       </div>
                     </li>
                   ))}
-                  {s.otherCareerAreasStudents > 0 && (
+                  {s.otherCareerAreasStudents !== 0 && (
                     <li className="flex items-baseline justify-between gap-4 text-sm text-gray-400">
                       <span>{t('uni.areas.other', { k })}</span>
-                      <span className="tabular-nums">{t('uni.areas.students', { count: s.otherCareerAreasStudents })}</span>
+                      <span className="tabular-nums">
+                        {s.otherCareerAreasStudents === null
+                          ? t('uni.months.hidden', { k })
+                          : t('uni.areas.students', { count: s.otherCareerAreasStudents })}
+                      </span>
                     </li>
                   )}
                 </ul>

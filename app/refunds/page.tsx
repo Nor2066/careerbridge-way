@@ -33,9 +33,11 @@ export default function RefundsPage() {
     >
       <LegalSection id="right-to-cancel" title="Your 14-day right to cancel">
         <p>
-          Under the Consumer Contracts (Information, Cancellation and Additional Charges)
-          Regulations 2013, you can cancel a purchase within 14 days of buying it and get a
-          full refund &mdash; no reason needed.
+          You can cancel a purchase within 14 days of buying it and get a full refund &mdash;
+          no reason needed. In the UK this right comes from the Consumer Contracts
+          (Information, Cancellation and Additional Charges) Regulations 2013; in the European
+          Union, from the national rules implementing the EU Consumer Rights Directive. The
+          two work the same way, and we apply them the same way to everyone.
         </p>
         <p>
           The one exception, and it is an important one: digital content delivered
@@ -60,13 +62,20 @@ export default function RefundsPage() {
             delivered, and you agreed at checkout to receive it immediately.
           </li>
           <li>
-            <strong className="text-white">Partly used purchases:</strong> we refund the
+            <strong className="text-white">Partly used purchases:</strong>{' '}
+            we refund the
             part you have not used. Buy three attempts, use one, change your mind in the
             first 14 days &mdash; you get two thirds back.
           </li>
           <li>
             <strong className="text-white">The follow-up bundle</strong> counts as used once
             you have generated any follow-up roadmap with it.
+          </li>
+          <li>
+            <strong className="text-white">Access through your university</strong> is free to
+            you, so there is nothing to refund. What the university paid is between it and us.
+            If a report you got that way fails or is faulty, tell us and we will regenerate it
+            or restore the attempt.
           </li>
         </ul>
       </LegalSection>
@@ -82,9 +91,13 @@ export default function RefundsPage() {
           </p>
         </div>
         <p>
-          Under the <strong className="text-white">Consumer Rights Act 2015</strong>, digital
-          content you buy must be of satisfactory quality, fit for its purpose, and as
-          described. If it is not, you are entitled to:
+          Digital content you buy must be of satisfactory quality, fit for its purpose, and as
+          described. In the UK that comes from the{' '}
+          <strong className="text-white">Consumer Rights Act 2015</strong>; in the European
+          Union, from the national rules implementing the{' '}
+          <strong className="text-white">EU Digital Content Directive</strong>, which also let
+          you end the contract and get your money back if the problem is not put right. If it
+          is not as it should be, you are entitled to:
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
@@ -99,8 +112,8 @@ export default function RefundsPage() {
         </ul>
         <p>
           If our digital content damages your device or other content, and it would not have
-          done had we taken reasonable care, section 46 of that Act entitles you to a repair
-          or to compensation.
+          done had we taken reasonable care, you are entitled to a repair or to compensation
+          (in the UK, under section 46 of the Consumer Rights Act 2015).
         </p>
         <p>
           <strong className="text-white">
@@ -166,7 +179,7 @@ export default function RefundsPage() {
           end here.
         </p>
         <p>
-          You can get free, independent advice from{' '}
+          You can get free, independent advice in the UK from{' '}
           <strong className="text-white">Citizens Advice</strong> at{' '}
           <a
             className="text-indigo-300 underline"
@@ -175,8 +188,18 @@ export default function RefundsPage() {
             rel="noopener noreferrer"
           >
             citizensadvice.org.uk
-          </a>
-          , or on <strong className="text-white">0808 223 1133</strong>.
+          </a>{' '}
+          or on <strong className="text-white">0808 223 1133</strong>, and in the European
+          Union from the{' '}
+          <a
+            className="text-indigo-300 underline"
+            href="https://www.eccnet.eu"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            European Consumer Centre
+          </a>{' '}
+          in your country, which helps for free with purchases from businesses abroad.
         </p>
         <p>
           You can also ask your bank or card provider about a chargeback. We would much rather
@@ -187,9 +210,9 @@ export default function RefundsPage() {
 
       <LegalSection id="cancellation-form" title="Model cancellation form">
         <p>
-          You do not have to use this. It is here because the Consumer Contracts Regulations
-          2013 require us to make it available &mdash; a plain email saying you want to cancel
-          works just as well, and is faster.
+          You do not have to use this. It is here because UK and EU consumer law require us
+          to make it available &mdash; a plain email saying you want to cancel works just as
+          well, and is faster.
         </p>
         <div className="rounded-lg border border-white/15 bg-white/5 p-4 font-mono text-xs leading-relaxed text-gray-300">
           <p>

@@ -84,7 +84,8 @@ export default function AcceptableUsePage() {
         </ul>
         <p>
           Please also avoid putting <strong className="text-white">sensitive information
-          about yourself</strong> into a free-text answer where you can. You do not need to
+          about yourself</strong>{' '}
+          into a free-text answer where you can. You do not need to
           disclose a health condition, a disability, your religion, your ethnicity or your
           sexuality to get a useful report. That is a request for your benefit rather than a
           prohibition &mdash; our{' '}
@@ -157,6 +158,28 @@ export default function AcceptableUsePage() {
           <li>Sell, rent or transfer your account or the attempts on it.</li>
         </ul>
 
+        <p className="mt-2 font-medium text-white">University access</p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            Use an email address you are not entitled to &mdash; someone else&rsquo;s, or one
+            obtained only for this &mdash; to get a university&rsquo;s free access.
+          </li>
+          <li>Let other people use your account so that they get your university&rsquo;s attempts.</li>
+        </ul>
+
+        <p className="mt-2 font-medium text-white">If you have a university dashboard</p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            Try to work out which student is behind a figure, including by combining the
+            totals with other information you hold.
+          </li>
+          <li>
+            Require or pressure a student to show you their report, their answers or their
+            scores.
+          </li>
+          <li>Share the dashboard, or your sign-in to it, with anyone your university has not named to us.</li>
+        </ul>
+
         <div className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/5 p-4">
           <p className="text-sm text-amber-100">
             <strong className="font-semibold">
@@ -166,7 +189,9 @@ export default function AcceptableUsePage() {
             for the person answering the questions. It is not built or validated for
             assessing anyone, and used as a screening instrument an unvalidated questionnaire
             with an AI attached can do real harm and expose you to discrimination liability.
-            This is the rule we care about most.
+            The same applies to universities, schools and their staff, and our contracts with
+            them say so: no admission, grading, discipline or selection decision may rest on
+            it. This is the rule we care about most.
           </p>
         </div>
       </LegalSection>

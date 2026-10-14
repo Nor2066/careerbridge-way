@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden', code: 'NOT_STAFF' }, { status: 403, headers: NO_STORE_HEADERS });
     }
 
-    const [membersRes, resultsRes, ratingsRes, licenceRes, domainsRes] = await Promise.all([
+    const [membersRes, resultsRes, ratingsRes, licenceRes, domainsRes, objectorsRes] = await Promise.all([
       supabaseServer
         .from('institution_members')
         .select('user_id', { count: 'exact', head: true })
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         .eq('institution_id', institution.id),
       supabaseServer
         .from('assessments')
-        .select('feedback_rating')
+        .select('feedback_rating, user_id')
         .eq('institution_id', institution.id)
         .not('feedback_rating', 'is', null),
       supabaseServer
@@ -78,24 +78,39 @@ export async function GET(request: Request) {
         .single(),
       // So staff can tell their students which address to sign up with.
       supabaseServer.from('institution_domains').select('domain').eq('institution_id', institution.id),
+      // Students who objected to being counted, as the Privacy Policy lets
+      // them. They keep their free access and drop out of every figure below.
+      supabaseServer
+        .from('institution_members')
+        .select('user_id')
+        .eq('institution_id', institution.id)
+        .eq('counted_in_totals', false),
     ]);
 
     for (const res of [membersRes, resultsRes, ratingsRes, licenceRes, domainsRes]) {
       if (res.error) throw res.error;
     }
+    // 42703 = no such column: supabase/institution-opt-out.sql has not been
+    // run yet, so nobody can have been marked as objecting.
+    if (objectorsRes.error && objectorsRes.error.code !== '42703') throw objectorsRes.error;
+    const objectors = new Set((objectorsRes.error ? [] : objectorsRes.data ?? []).map((m) => m.user_id as string));
 
-    const results: ResultForSummary[] = (resultsRes.data ?? []).map((r) => ({
-      user_id: r.user_id as string,
-      created_at: r.created_at as string,
-      top_clusters: r.top_clusters as ResultForSummary['top_clusters'],
-      has_main_report: Array.isArray(r.ai_main_reports) && r.ai_main_reports.length > 0,
-      has_followup_report: Array.isArray(r.ai_followup_reports) && r.ai_followup_reports.length > 0,
-    }));
+    const results: ResultForSummary[] = (resultsRes.data ?? [])
+      .filter((r) => !objectors.has(r.user_id as string))
+      .map((r) => ({
+        user_id: r.user_id as string,
+        created_at: r.created_at as string,
+        top_clusters: r.top_clusters as ResultForSummary['top_clusters'],
+        has_main_report: Array.isArray(r.ai_main_reports) && r.ai_main_reports.length > 0,
+        has_followup_report: Array.isArray(r.ai_followup_reports) && r.ai_followup_reports.length > 0,
+      }));
 
     const summary = summariseInstitution({
-      membersJoined: membersRes.count ?? 0,
+      membersJoined: Math.max(0, (membersRes.count ?? 0) - objectors.size),
       results,
-      ratings: (ratingsRes.data ?? []).map((r) => r.feedback_rating as number),
+      ratings: (ratingsRes.data ?? [])
+        .filter((r) => !objectors.has(r.user_id as string))
+        .map((r) => r.feedback_rating as number),
     });
 
     return NextResponse.json(

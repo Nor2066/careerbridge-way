@@ -12,8 +12,8 @@ export const auth = {
   'auth.backToSignIn': { en: 'Back to sign in', es: 'Volver a iniciar sesión' },
   'auth.networkCheck': { en: 'Network error. Please check your connection and try again.', es: 'Error de conexión. Comprueba tu conexión e inténtalo de nuevo.' },
   'auth.university.hint': {
-    en: 'Studying at a partner university? Use your university email address and your access is free.',
-    es: '¿Estudias en una universidad asociada? Usa el correo de tu universidad y tendrás acceso gratis.',
+    en: 'Studying at a partner university? Use your university email address and your access is free. Your university only sees anonymous totals, never your answers or reports.',
+    es: '¿Estudias en una universidad asociada? Usa el correo de tu universidad y tendrás acceso gratis. Tu universidad solo ve totales anónimos, nunca tus respuestas ni tus informes.',
   },
 
   // Login

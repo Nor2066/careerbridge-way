@@ -5,8 +5,8 @@ export const university = {
   'uni.title': { en: 'University dashboard', es: 'Panel de la universidad' },
   'uni.choose': { en: 'University', es: 'Universidad' },
   'uni.privacy': {
-    en: 'Totals only. To protect your students, this page never shows answers, reports or names, and hides any group smaller than {k}.',
-    es: 'Solo totales. Para proteger a tus estudiantes, esta página nunca muestra respuestas, informes ni nombres, y oculta cualquier grupo de menos de {k}.',
+    en: 'Totals only. To protect your students, this page never shows answers, reports or names, and hides any group smaller than {k}. Please do not try to work out which student is behind a figure, or use these results in any decision about a student.',
+    es: 'Solo totales. Para proteger a tus estudiantes, esta página nunca muestra respuestas, informes ni nombres, y oculta cualquier grupo de menos de {k}. No intentes averiguar qué estudiante hay detrás de una cifra ni uses estos resultados en ninguna decisión sobre un estudiante.',
   },
   'uni.noAccess.title': { en: 'No dashboard for this account', es: 'Esta cuenta no tiene panel' },
   'uni.noAccess.body': {
@@ -37,6 +37,10 @@ export const university = {
   'uni.stats.roadmaps': { en: 'Follow-up roadmaps', es: 'Hojas de ruta' },
   'uni.stats.rating': { en: 'Average accuracy rating', es: 'Valoración media de acierto' },
   'uni.stats.ratingOf': { en: 'out of 5, from {count} ratings', es: 'sobre 5, de {count} valoraciones' },
+  'uni.stats.hiddenNote': {
+    en: 'Hidden until there are at least {k}, to protect students',
+    es: 'Oculto hasta que haya al menos {k}, para proteger al alumnado',
+  },
   'uni.stats.ratingHidden': { en: 'Shown from {k} ratings', es: 'Se muestra a partir de {k} valoraciones' },
 
   'uni.areas.title': { en: 'Strongest career areas', es: 'Áreas profesionales más fuertes' },
