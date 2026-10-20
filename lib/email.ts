@@ -111,14 +111,14 @@ function signOff(): string {
  * hence the fallback — a receipt that reads "4.50 XYZ" is still a usable
  * record, whereas an exception here would lose the email entirely.
  *
- * The default is GBP because that is where the company is registered. The
+ * The default is EUR because the Stripe Prices are in EUR (lib/prices.ts). The
  * divide by 100 assumes a two-decimal currency, which holds for everything
  * Stripe is configured to take here; zero-decimal currencies (JPY, KRW) would
  * need handling before enabling them.
  */
 function money(amountCents: number | null | undefined, currency: string | null | undefined): string {
   if (amountCents == null) return 'your purchase';
-  const code = (currency ?? 'gbp').toUpperCase();
+  const code = (currency ?? 'eur').toUpperCase();
   try {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: code })
       .format(amountCents / 100);

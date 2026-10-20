@@ -385,11 +385,11 @@ export default function TermsPage() {
           <li>
             <strong className="text-white">
               Our total liability to you is capped at the greater of the amount you have paid
-              us in the 12 months before the claim and £100.
+              us in the 12 months before the claim and €100.
             </strong>{' '}
-            The fixed £100 floor is deliberate: purchases here are small, and university
+            The fixed €100 floor is deliberate: purchases here are small, and university
             access is free to you, so a cap of &ldquo;what you paid&rdquo; alone would leave a
-            remedy worth a few pounds or nothing, which would not be fair.
+            remedy worth a few euros or nothing, which would not be fair.
           </li>
           <li>
             We do not promise the service will be uninterrupted or error-free. It depends on

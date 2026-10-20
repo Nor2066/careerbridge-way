@@ -70,13 +70,13 @@ export async function fulfillCheckoutSession(params: {
   // never refuse to fulfil a paid session just because the amount is
   // missing, but do say so, because it means the record may be wrong.
   const amountCents = params.amountTotal ?? PRODUCT_AMOUNTS_CENTS[productType];
-  // GBP, not EUR: the Stripe Prices are created in GBP (see lib/prices.ts), so
-  // a session with no currency was charged in pounds, and the receipt built
+  // EUR: the Stripe Prices are created in EUR (see lib/prices.ts), so a
+  // session with no currency was charged in euros, and the receipt built
   // from this row names the currency back to the customer. Which currency to
   // sell in is a separate decision; if it changes, change this default too. The
   // old default meant a session that arrived without a currency was recorded,
   // and receipted, in euros.
-  const currency = params.currency ?? 'gbp';
+  const currency = params.currency ?? 'eur';
   if (params.amountTotal == null) {
     console.warn(
       'FULFILLMENT: session', sessionId, 'had no amount_total — recording the',

@@ -4,7 +4,7 @@
 // pricing rules live in exactly one place.
 
 import { BRAND_FULL } from '@/lib/site';
-import { PRICES_PENCE } from '@/lib/prices';
+import { PRICES_CENTS } from '@/lib/prices';
 
 export type ProductType = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
@@ -23,7 +23,7 @@ export const STRIPE_PRICE_IDS: Record<ProductType, string> = {
 // The same numbers the site displays, so they live in lib/prices.ts.
 // followup_unlock was 150 — now ONE purchase that unlocks BOTH followups.
 // topup was 100 — now a 3-pack of full attempts (main + followup).
-export const PRODUCT_AMOUNTS_CENTS: Record<ProductType, number> = PRICES_PENCE;
+export const PRODUCT_AMOUNTS_CENTS: Record<ProductType, number> = PRICES_CENTS;
 
 // How many main-questionnaire attempts each product grants
 export const ATTEMPTS_GRANTED: Record<ProductType, number> = {

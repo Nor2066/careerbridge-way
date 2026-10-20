@@ -115,8 +115,8 @@ DROP POLICY IF EXISTS "Only admins can access assessments" ON public.assessments
 -- payments.user_id is currently:
 --     FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 --
--- CASCADE means deleting a user deletes their payment rows — and UK tax law
--- requires you to keep a record of every sale for six years. A customer
+-- CASCADE means deleting a user deletes their payment rows — and Hungarian
+-- accounting law requires you to keep the records of every sale for eight years. A customer
 -- exercising their right to erasure would silently destroy records you are
 -- legally required to hold.
 --

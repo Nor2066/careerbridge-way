@@ -198,7 +198,7 @@ ORDER BY public DESC, name;
 --                WITH CHECK (auth.uid() = user_id);
 
 -- ── Let account deletion keep the sales record ───────────────────────
--- UK tax law wants six years of sales records; GDPR wants the person gone.
+-- Hungarian accounting law wants eight years of sales records; GDPR wants the person gone.
 -- Both are satisfied by keeping the transaction and dropping the link.
 --
 --   ALTER TABLE public.payments ALTER COLUMN user_id DROP NOT NULL;

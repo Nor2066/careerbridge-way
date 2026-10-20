@@ -149,7 +149,7 @@ export default function RefundsPage() {
       <LegalSection id="beyond-the-rules" title="When we refund anyway">
         <p>
           The above is the legal minimum. We would rather have a person who felt fairly
-          treated than £3. We will refund you outside those rules if:
+          treated than €3. We will refund you outside those rules if:
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>

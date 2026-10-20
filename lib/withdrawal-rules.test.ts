@@ -20,7 +20,7 @@ const payment = (o: Partial<PaymentForWithdrawal> = {}): PaymentForWithdrawal =>
   created_at: '2026-10-01T10:00:00Z',
   product_type: 'full',
   amount_cents: 450,
-  currency: 'gbp',
+  currency: 'eur',
   status: 'completed',
   stripe_session_id: 'cs_test_123',
   ...o,
@@ -63,11 +63,11 @@ describe('the withdrawal period', () => {
 
 describe('naming the contract', () => {
   it('describes a purchase in English and Spanish', () => {
-    expect(describePurchase('en', payment())).toBe('Full plan, £4.50, bought 1 October 2026 (order ref. 1A2B3C4D)');
-    // The currency sign follows Intl, as on the pricing cards ("4,50 GBP" or
-    // "4,50 £" depending on the ICU data), so only the rest is pinned.
+    expect(describePurchase('en', payment())).toBe('Full plan, €4.50, bought 1 October 2026 (order ref. 1A2B3C4D)');
+    // The currency sign follows Intl, as on the pricing cards ("4,50 EUR" or
+    // "4,50 €" depending on the ICU data), so only the rest is pinned.
     expect(describePurchase('es', payment())).toMatch(
-      /^Plan Completo, 4,50\s(£|GBP), comprado el 1 de octubre de 2026 \(ref\. de pedido 1A2B3C4D\)$/
+      /^Plan Completo, 4,50\s(€|EUR), comprado el 1 de octubre de 2026 \(ref\. de pedido 1A2B3C4D\)$/
     );
   });
 
@@ -85,7 +85,7 @@ describe('the acknowledgement', () => {
   const statement = {
     reference: 'W-9F8E7D6C',
     name: 'Ana García',
-    contract: 'Full plan, £4.50, bought 1 October 2026 (order ref. 1A2B3C4D)',
+    contract: 'Full plan, €4.50, bought 1 October 2026 (order ref. 1A2B3C4D)',
     confirmationEmail: 'ana@example.com',
     submittedAt: new Date('2026-10-05T08:15:00Z'),
   };

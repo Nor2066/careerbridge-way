@@ -4,13 +4,13 @@
 // because plans.ts reads server-only environment variables and the pricing
 // cards are client components.
 //
-// These are TOTALS, tax included. The Stripe Prices must be created in GBP
+// These are TOTALS, tax included. The Stripe Prices must be created in EUR
 // with "Include tax in price" set, so Stripe takes VAT/sales tax out of the
 // amount rather than adding it at checkout. EU consumer law (the Price
 // Indication Directive and the Consumer Rights Directive) requires the first
 // price a consumer sees to be the full amount they pay, and so do most other
-// countries' rules — showing £3.00 here and
-// charging £3.60 at checkout would break that.
+// countries' rules — showing €3.00 here and
+// charging €3.60 at checkout would break that.
 //
 // Stripe stays the source of truth for what is actually charged. Changing a
 // price means a new Price in the Dashboard AND the number here, together.
@@ -19,9 +19,12 @@ import { INTL_LOCALE, type Locale } from '@/lib/i18n/config';
 
 export type PricedProduct = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
-export const PRICE_CURRENCY = 'GBP';
+// Euros since 20 October 2026, when the company became ADAQNO Kft. (Hungary)
+// and Europe the first market. The amounts kept their old pound figures for
+// now; the founders will revisit them.
+export const PRICE_CURRENCY = 'EUR';
 
-export const PRICES_PENCE: Record<PricedProduct, number> = {
+export const PRICES_CENTS: Record<PricedProduct, number> = {
   basic: 300,
   full: 450,
   followup_unlock: 300,
@@ -34,12 +37,12 @@ const formatters: Record<Locale, Intl.NumberFormat> = {
 };
 
 /**
- * "£3.00" — the full amount the customer pays, tax included. The amount and
+ * "€3.00" — the full amount the customer pays, tax included. The amount and
  * currency never change with the language; only how they are written does
- * ("3,00 £" in Spanish).
+ * ("3,00 €" in Spanish).
  */
 export function formatPrice(product: PricedProduct, locale: Locale = 'en'): string {
-  return formatters[locale].format(PRICES_PENCE[product] / 100);
+  return formatters[locale].format(PRICES_CENTS[product] / 100);
 }
 
 /** Shown beside a price wherever there is room, so nobody wonders whether

@@ -322,7 +322,7 @@ function WithdrawalCard({ w, onSaved }: { w: Withdrawal; onSaved: () => Promise<
             value={note}
             maxLength={2000}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Refunded £3.00 in Stripe, 1 attempt was used"
+            placeholder="e.g. Refunded €3.00 in Stripe, 1 attempt was used"
           />
         </div>
 

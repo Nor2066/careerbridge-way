@@ -116,7 +116,7 @@ export function productName(locale: Locale, productType: string): string {
 }
 
 export function formatMoney(locale: Locale, amountCents: number, currency: string): string {
-  const code = (currency || 'gbp').toUpperCase();
+  const code = (currency || 'eur').toUpperCase();
   try {
     return new Intl.NumberFormat(INTL_LOCALE[locale], { style: 'currency', currency: code })
       .format(amountCents / 100);
@@ -157,7 +157,7 @@ export function formatMoment(locale: Locale, date: Date): string {
 
 /**
  * The contract, described the way the statement and the acknowledgement name
- * it: "Full plan, £4.50, bought 18 October 2026 (order ref. 1A2B3C4D)".
+ * it: "Full plan, €4.50, bought 18 October 2026 (order ref. 1A2B3C4D)".
  */
 export function describePurchase(
   locale: Locale,
