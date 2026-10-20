@@ -22,6 +22,10 @@ const LEGAL_LINKS: { href: string; label: MessageKey }[] = [
   { href: '/privacy', label: 'footer.link.privacy' },
   { href: '/terms', label: 'footer.link.terms' },
   { href: '/refunds', label: 'footer.link.refunds' },
+  // The EU withdrawal button (Consumer Rights Directive Art. 11a) has to be
+  // reachable for the whole 14 days, wherever the customer is on the site.
+  // The footer is on every page; the label is the directive's own wording.
+  { href: '/withdraw', label: 'withdraw.cta' },
   { href: '/cookies', label: 'footer.link.cookies' },
   { href: '/acceptable-use', label: 'footer.link.acceptableUse' },
   { href: '/ai-notice', label: 'footer.link.aiNotice' },

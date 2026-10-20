@@ -512,7 +512,8 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>
             <strong className="text-white">Legal obligation</strong> &mdash; for keeping
-            records of sales for tax purposes.
+            records of sales for tax purposes, and for handling and keeping a record of a
+            purchase you cancel.
           </li>
           <li>
             <strong className="text-white">Explicit consent</strong> &mdash; only for special
@@ -598,7 +599,9 @@ export default function PrivacyPolicyPage() {
         <p>
           Payment records are the one exception: UK tax law requires us to keep a record of
           each sale for six years. We strip your name and email from those records where we
-          can, leaving only what the law requires.
+          can, leaving only what the law requires. If you cancelled a purchase, we keep what
+          you sent us for the same time, with your name, because it is the record that you
+          cancelled in time and were refunded.
         </p>
       </LegalSection>
 

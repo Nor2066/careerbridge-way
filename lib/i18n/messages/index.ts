@@ -14,6 +14,7 @@ import { auth } from './auth';
 import { account } from './account';
 import { payment } from './payment';
 import { university } from './university';
+import { withdraw } from './withdraw';
 import { misc } from './misc';
 
 export const MESSAGES = {
@@ -27,6 +28,7 @@ export const MESSAGES = {
   ...account,
   ...payment,
   ...university,
+  ...withdraw,
   ...misc,
 };
 

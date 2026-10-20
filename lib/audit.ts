@@ -25,7 +25,9 @@ type AuditAction =
   | 'result_saved'
   | 'admin_viewed_assessments'
   | 'admin_login'
-  | 'admin_institution_change';
+  | 'admin_institution_change'
+  | 'withdrawal_submitted'
+  | 'admin_withdrawal_change';
 
 interface AuditOptions {
   userId: string | null;

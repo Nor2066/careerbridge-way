@@ -85,9 +85,9 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '14 October 2026',
+  privacy: '20 October 2026',
   terms: '14 October 2026',
-  refunds: '13 October 2026',
+  refunds: '20 October 2026',
   cookies: '13 October 2026',
   acceptableUse: '13 October 2026',
   aiNotice: '14 October 2026',
@@ -149,7 +149,7 @@ export const SUBPROCESSORS: Subprocessor[] = [
   },
   {
     name: 'Resend',
-    purpose: 'Sending receipts, sign-in links and "report ready" emails',
+    purpose: 'Sending receipts, sign-in links, "report ready" emails and confirmations when you cancel a purchase',
     data: 'Your email address and the contents of that email. No assessment answers.',
     region: 'United States',
   },
@@ -187,6 +187,11 @@ export const RETENTION = [
     what: 'Payment records',
     how_long: '6 years from the end of the relevant tax year',
     why: 'UK tax law requires businesses to keep records of sales for this long. These are kept even after account deletion, with your name and email removed where possible.',
+  },
+  {
+    what: 'Cancellations you send us (the withdrawal form)',
+    how_long: '6 years from the end of the relevant tax year, the same as payment records',
+    why: 'They are the record that you cancelled in time and that we refunded you. Kept with your name and email, including after account deletion, because without them that record proves nothing.',
   },
   {
     what: 'Error and security logs',

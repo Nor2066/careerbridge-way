@@ -7,6 +7,7 @@ import { logout } from '@/lib/logout';
 const LINKS = [
   { href: '/admin', label: 'Feedback' },
   { href: '/admin/universities', label: 'Universities' },
+  { href: '/admin/withdrawals', label: 'Withdrawals' },
 ];
 
 export default function AdminHeader() {

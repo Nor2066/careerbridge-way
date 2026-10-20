@@ -28,7 +28,9 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { COMPANY, CONTACT } from '@/lib/legal';
-import { BRAND_FULL } from '@/lib/site';
+import { BRAND_FULL, SITE_URL } from '@/lib/site';
+import type { Locale } from '@/lib/i18n/config';
+import { acknowledgementEmail, type WithdrawalStatement } from '@/lib/withdrawal-rules';
 
 const API = 'https://api.resend.com/emails';
 
@@ -49,14 +51,19 @@ type SendArgs = {
   text: string;
 };
 
-async function send({ to, subject, text }: SendArgs): Promise<void> {
+/**
+ * True only when the provider accepted the message. Most callers ignore it;
+ * the withdrawal acknowledgement records it, because whether that email went
+ * out is something the founders may have to prove.
+ */
+async function send({ to, subject, text }: SendArgs): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
 
   if (!key) {
     console.log(
       `EMAIL (not sent — RESEND_API_KEY unset): to=${to} subject="${subject}"`
     );
-    return;
+    return false;
   }
 
   try {
@@ -75,10 +82,13 @@ async function send({ to, subject, text }: SendArgs): Promise<void> {
       const detail = await res.text().catch(() => '');
       console.error(`EMAIL: provider rejected the send (${res.status})`, detail.slice(0, 300));
       Sentry.captureMessage(`Transactional email failed: ${subject}`, 'warning');
+      return false;
     }
+    return true;
   } catch (err) {
     console.error('EMAIL: send failed:', err);
     Sentry.captureException(err);
+    return false;
   }
 }
 
@@ -152,6 +162,8 @@ export async function sendPurchaseReceipt(args: {
 ${granted}
 Everything you have bought is on your account page, and your reports stay in your history for as long as you keep the account.
 
+Changed your mind? You can withdraw within 14 days, without giving a reason, at ${SITE_URL}/withdraw
+
 If something is not there, tell us before you contact your bank — we can almost always fix it in a few minutes.${signOff()}`,
   });
 }
@@ -178,5 +190,48 @@ export async function sendReportReady(args: {
 ${args.url}
 
 It stays there, so there is no rush — and no need to take the assessment again to see it.${signOff()}`,
+  });
+}
+
+/**
+ * The acknowledgement Article 11a(4) requires once someone presses "Confirm
+ * withdrawal": on a durable medium, without undue delay, repeating what they
+ * sent and when. In their language, unlike the other mail here, because this
+ * one may have to be read as evidence.
+ *
+ * Returns whether it went out, so the row can record it and the page can tell
+ * the customer to keep a copy if it did not.
+ */
+export async function sendWithdrawalAcknowledgement(args: {
+  to: string;
+  locale: Locale;
+  statement: WithdrawalStatement;
+}): Promise<boolean> {
+  const { subject, text } = acknowledgementEmail(args.locale, args.statement, COMPANY.tradingName);
+  return send({ to: args.to, subject, text: `${text}${signOff()}` });
+}
+
+/**
+ * Tells the team a withdrawal has arrived, because the refund clock (14 days)
+ * starts now. Goes to the support address once it is real; until then the
+ * Sentry alert raised by the route and /admin/withdrawals are the only signal.
+ */
+export async function notifyWithdrawalReceived(args: {
+  reference: string;
+  contract: string;
+  refundDueBy: string;
+}): Promise<void> {
+  if (CONTACT.support.includes('TODO')) return;
+  await send({
+    to: CONTACT.support,
+    subject: `Withdrawal received (${args.reference}): refund due by ${args.refundDueBy}`,
+    text: `A customer has withdrawn using the button on the site.
+
+  Reference:   ${args.reference}
+  Purchase:    ${args.contract}
+  Refund by:   ${args.refundDueBy}
+
+Refund it in Stripe, remove the attempts, and mark it handled:
+${SITE_URL}/admin/withdrawals`,
   });
 }

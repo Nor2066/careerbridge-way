@@ -47,6 +47,23 @@ export default function RefundsPage() {
         </p>
       </LegalSection>
 
+      <LegalSection id="withdraw" title="Cancelling online">
+        <p>
+          The quickest way to cancel is the{' '}
+          <a className="text-indigo-300 underline" href="/withdraw">
+            Withdraw from contract here
+          </a>{' '}
+          link, at the bottom of every page and on your account page. Give your name and say
+          which purchase, press <strong className="text-white">Confirm withdrawal</strong>, and
+          we email you a confirmation of what you sent and when, straight away. You do not
+          have to be signed in, and you do not have to give a reason.
+        </p>
+        <p>
+          It is there for the 14 days after each purchase. A withdrawal sent before the end of
+          the 14th day is on time, however long we then take to deal with it.
+        </p>
+      </LegalSection>
+
       <LegalSection id="how-it-works" title="What that means in practice">
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
@@ -147,12 +164,16 @@ export default function RefundsPage() {
 
       <LegalSection id="how-to-ask" title="How to ask">
         <p>
-          Email{' '}
+          Within the 14 days, use the{' '}
+          <a className="text-indigo-300 underline" href="/withdraw">
+            withdrawal form
+          </a>
+          . Or, at any time, email{' '}
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.support}`}>
             {CONTACT.support}
           </a>{' '}
           from the address on your account, and tell us what you bought and roughly when.
-          You do not need a form, a reference number, or a reason.
+          You do not need a reference number or a reason.
         </p>
         <p>
           We will reply within 3 working days. Approved refunds go back to the card you paid

@@ -66,6 +66,16 @@ export async function GET(request: Request) {
 
     account.purchases = payments ?? [];
 
+    // Withdrawals are kept like payments (see supabase/withdrawals.sql), so
+    // they are not in USER_DATA_TABLES, which account deletion empties. They
+    // are still this person's data, so they are in the export.
+    const { data: withdrawals } = await supabaseServer
+      .from('withdrawals')
+      .select('submitted_at, consumer_name, contract_details, confirmation_email, acknowledgement_sent_at, status, handled_at')
+      .eq('user_id', user.id);
+
+    account.withdrawals = withdrawals ?? [];
+
     const filename = `${BRAND.name.toLowerCase()}-data-${new Date().toISOString().slice(0, 10)}.json`;
 
     return new NextResponse(JSON.stringify(account, null, 2), {

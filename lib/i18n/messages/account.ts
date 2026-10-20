@@ -46,6 +46,12 @@ export const account = {
     es: '¿Entraste con Google? No tienes contraseña aquí, así que no hay nada que cambiar.',
   },
 
+  'account.withdraw.title': { en: 'Withdraw from a purchase', es: 'Desistir de una compra' },
+  'account.withdraw.body': {
+    en: 'You can withdraw from anything you bought within 14 days of buying it, without giving a reason.',
+    es: 'Puedes desistir de cualquier compra en los 14 días siguientes a hacerla, sin dar ningún motivo.',
+  },
+
   'account.export.title': { en: 'Download your data', es: 'Descarga tus datos' },
   'account.export.body': {
     en: 'A JSON file containing your account details, every assessment you have taken, every report we generated, and your purchase history. This is your right under data protection law (GDPR) — you do not have to give a reason and we do not ask for one.',

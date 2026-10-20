@@ -258,6 +258,19 @@ export default function AccountClient({
           </p>
         </section>
 
+        {/* ── Withdraw ───────────────────────────────────────────────── */}
+        {/* The EU withdrawal button. Always shown: the page itself works out
+            which purchases are still inside their 14 days. */}
+        <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-lg font-semibold text-white">{t('account.withdraw.title')}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-400">
+            {t('account.withdraw.body')}
+          </p>
+          <Link href="/withdraw" className="btn-secondary mt-4 inline-block text-sm">
+            {t('withdraw.cta')}
+          </Link>
+        </section>
+
         {/* ── Export ─────────────────────────────────────────────────── */}
         <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-6">
           <h2 className="text-lg font-semibold text-white">{t('account.export.title')}</h2>
