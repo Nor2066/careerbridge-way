@@ -180,7 +180,7 @@ describe('the payments row', () => {
         stripe_session_id: `cs_${p}`,
         product_type: p,
         amount_cents: PRODUCT_AMOUNTS_CENTS[p],
-        // GBP, not EUR — the company is registered in England and Wales, and
+        // GBP, not EUR — the Stripe Prices are in GBP (lib/prices.ts), and
         // this value is what the receipt email formats the amount with.
         currency: 'gbp',
         status: 'completed',

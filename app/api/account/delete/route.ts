@@ -8,8 +8,8 @@
 //
 //   1. Child tables first. Each is idempotent, so a partial failure can simply
 //      be retried by pressing the button again.
-//   2. Payments are detached, not deleted — UK tax law requires six years of
-//      sales records. We drop the link to the person and keep the transaction.
+//   2. Payments are detached, not deleted — Hungarian accounting law requires
+//      eight years of sales records. We drop the link to the person and keep the transaction.
 //   3. The auth user last. Once it is gone the customer cannot sign in to
 //      retry, so nothing that might fail should come after it.
 //
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     // ── 2. Detach payments, keep the transaction ────────────────────────
     // The audit found payments.user_id is NOT NULL with ON DELETE CASCADE, so
     // this update fails and step 3 would then delete the payment rows outright
-    // — destroying sales records UK tax law requires be kept for six years.
+    // — destroying sales records accounting law requires be kept for eight years.
     //
     // So a failure here is fatal, not a warning. Refusing to finish is the
     // safe outcome: the customer can be told to contact us, whereas records

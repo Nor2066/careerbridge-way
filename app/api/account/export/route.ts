@@ -1,6 +1,6 @@
 // app/api/account/export/route.ts
 //
-// UK GDPR Articles 15 and 20: a copy of your data, in a portable format.
+// GDPR Articles 15 and 20: a copy of your data, in a portable format.
 // Our privacy policy promises a button, so here is the thing behind it.
 //
 // Returns JSON rather than a PDF deliberately — Article 20 asks for

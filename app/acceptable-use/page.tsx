@@ -61,7 +61,7 @@ export default function AcceptableUsePage() {
             and anything else that identifies them.
           </li>
           <li>
-            Content that is <strong className="text-white">unlawful</strong> &mdash;
+            Content that is <strong className="text-white">unlawful</strong>{' '}&mdash;
             infringing copyright, breaching confidence, defamatory, or an offence to possess
             or distribute.
           </li>
@@ -141,7 +141,7 @@ export default function AcceptableUsePage() {
             a general-purpose chatbot.
           </li>
           <li>
-            Attempt <strong className="text-white">prompt injection</strong> &mdash;
+            Attempt <strong className="text-white">prompt injection</strong>{' '}&mdash;
             instructions written into an answer and aimed at the model rather than at us,
             meant to change its behaviour, reveal its instructions, or bypass its limits.
           </li>

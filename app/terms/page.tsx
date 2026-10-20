@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
-import { COMPANY, CONTACT, LAST_UPDATED, MINIMUM_AGE } from '@/lib/legal';
+import { COMPANY, CONTACT, HOSTING, LAST_UPDATED, MINIMUM_AGE } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -67,13 +67,19 @@ export default function TermsPage() {
     >
       <LegalSection id="who-we-are" title="1. Who you are contracting with">
         <p>
-          {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, registered in{' '}
-          {COMPANY.jurisdiction} under number {COMPANY.companyNumber}, registered office{' '}
-          {COMPANY.address}. Contact us at{' '}
+          {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, a company
+          registered in {COMPANY.jurisdiction} under company registration number
+          (cégjegyzékszám) {COMPANY.companyNumber} by the {COMPANY.registryCourt}, with its
+          registered seat at {COMPANY.address}. Tax number: {COMPANY.taxNumber}.
+          {COMPANY.euVatNumber ? ` EU VAT number: ${COMPANY.euVatNumber}.` : ''} Contact us
+          at{' '}
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.support}`}>
             {CONTACT.support}
           </a>
           .
+        </p>
+        <p>
+          The website is hosted by {HOSTING.name}, {HOSTING.address}, {HOSTING.email}.
         </p>
       </LegalSection>
 
@@ -333,35 +339,20 @@ export default function TermsPage() {
         <p>
           Your report and the service must be{' '}
           <strong className="text-white">
-            of satisfactory quality, fit for purpose, and as described.
+            as described, fit for purpose, and of the quality you would normally expect.
           </strong>{' '}
           If they are not:
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
-            <strong className="text-white">In the UK</strong>, the Consumer Rights Act 2015
-            entitles you to have the problem repaired or the content replaced &mdash; for us,
-            regenerating the report or restoring the attempt &mdash; and, if that is
-            impossible or we do not manage it, a price reduction of up to the whole price. If
-            our digital content damages a device or other content of yours through our lack of
-            reasonable care, section 46 of that Act entitles you to a repair or compensation.
-            Free advice:{' '}
-            <a
-              className="text-indigo-300 underline"
-              href="https://www.citizensadvice.org.uk"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              citizensadvice.org.uk
-            </a>
-            .
-          </li>
-          <li>
-            <strong className="text-white">In the European Union</strong>, the national rules
-            implementing the EU Digital Content Directive give you similar rights: to have
-            the content brought into line with what was promised, and if that does not happen,
-            a price reduction or to end the contract and get your money back. Free advice:
-            the{' '}
+            <strong className="text-white">In Hungary and the rest of the European Union</strong>,
+            the rules implementing the EU Digital Content Directive &mdash; in Hungary,
+            Government Decree 373/2021 and the consumer rules of the Civil Code &mdash; entitle
+            you to have the content brought into line with what was promised &mdash; for us,
+            regenerating the report or restoring the attempt &mdash; and, if that is impossible
+            or we do not manage it, a price reduction or to end the contract and get your money
+            back. If our digital content damages a device or other content of yours through our
+            lack of reasonable care, you are entitled to compensation. Free advice: the{' '}
             <a
               className="text-indigo-300 underline"
               href="https://www.eccnet.eu"
@@ -373,8 +364,9 @@ export default function TermsPage() {
             .
           </li>
           <li>
-            <strong className="text-white">Anywhere else</strong>, you keep whatever rights
-            the consumer law of your country gives you.
+            <strong className="text-white">Anywhere else</strong>{' '}&mdash; the United Kingdom,
+            Switzerland, the United States or any other country &mdash; you keep whatever
+            rights the consumer law of your country gives you, on top of these terms.
           </li>
         </ul>
         <p>Subject to all of that:</p>
@@ -443,6 +435,24 @@ export default function TermsPage() {
           days. If you are not happy with it, say so, and a different person will look again.
           Nothing here stops you going to court or to a consumer body.
         </p>
+        <p>
+          If you live in Hungary, you can also take a dispute to the conciliation body
+          (békéltető testület) for where you live, free of charge, and we
+          will take part in the procedure. Anywhere in the European Union, the{' '}
+          <a
+            className="text-indigo-300 underline"
+            href="https://www.eccnet.eu"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            European Consumer Centre
+          </a>{' '}
+          in your country helps for free. The contact details are in our{' '}
+          <a className="text-indigo-300 underline" href="/refunds#problems">
+            Refund and Cancellation Policy
+          </a>
+          .
+        </p>
       </LegalSection>
 
       <LegalSection id="law" title="13. Governing law and language">
@@ -452,8 +462,9 @@ export default function TermsPage() {
         </p>
         <p>
           If you are a consumer, that choice does not take away the protection of the
-          mandatory consumer laws of the country where you live, and you may bring
-          proceedings either in the courts of {COMPANY.jurisdiction} or in the courts where
+          mandatory consumer laws of the country where you live, wherever that is. You may
+          bring proceedings either in the courts of {COMPANY.jurisdiction} or in the courts
+          where you live, and we will bring proceedings against you only in the courts where
           you live.
         </p>
         <p>

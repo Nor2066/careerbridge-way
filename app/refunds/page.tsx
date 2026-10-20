@@ -34,10 +34,11 @@ export default function RefundsPage() {
       <LegalSection id="right-to-cancel" title="Your 14-day right to cancel">
         <p>
           You can cancel a purchase within 14 days of buying it and get a full refund &mdash;
-          no reason needed. In the UK this right comes from the Consumer Contracts
-          (Information, Cancellation and Additional Charges) Regulations 2013; in the European
-          Union, from the national rules implementing the EU Consumer Rights Directive. The
-          two work the same way, and we apply them the same way to everyone.
+          no reason needed. This right comes from the EU Consumer Rights Directive. We are a
+          Hungarian company, so we apply it as Hungary has implemented it, in Government
+          Decree 45/2014 (II. 26.), together with the consumer rules of the Hungarian Civil
+          Code. We apply it the same way to everyone, wherever you live, and if the law of
+          your own country gives you more, you get that too.
         </p>
         <p>
           The one exception, and it is an important one: digital content delivered
@@ -108,29 +109,34 @@ export default function RefundsPage() {
           </p>
         </div>
         <p>
-          Digital content you buy must be of satisfactory quality, fit for its purpose, and as
-          described. In the UK that comes from the{' '}
-          <strong className="text-white">Consumer Rights Act 2015</strong>; in the European
-          Union, from the national rules implementing the{' '}
-          <strong className="text-white">EU Digital Content Directive</strong>, which also let
-          you end the contract and get your money back if the problem is not put right. If it
-          is not as it should be, you are entitled to:
+          Digital content you buy must be as described, fit for its purpose, and of the quality
+          you would normally expect. This comes from the{' '}
+          <strong className="text-white">EU Digital Content Directive</strong>{' '}&mdash; in
+          Hungary, Government Decree 373/2021 and the consumer rules of the Civil Code, and
+          elsewhere in the European Union, your own country&rsquo;s rules implementing the same
+          directive. If it is not as it should be, you are entitled to:
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
-            a <strong className="text-white">repair or replacement</strong> &mdash; for us,
+            a <strong className="text-white">repair or replacement</strong>{' '}&mdash; for us,
             regenerating the report or restoring the attempt &mdash; within a reasonable time
             and without significant inconvenience to you; and
           </li>
           <li>
-            a <strong className="text-white">price reduction of up to the full amount</strong>{' '}
-            if that does not work or is not possible.
+            a <strong className="text-white">price reduction</strong>, or to{' '}
+            <strong className="text-white">
+              end the contract and get your money back
+            </strong>
+            , if that does not work or is not possible.
           </li>
         </ul>
         <p>
           If our digital content damages your device or other content, and it would not have
-          done had we taken reasonable care, you are entitled to a repair or to compensation
-          (in the UK, under section 46 of the Consumer Rights Act 2015).
+          done had we taken reasonable care, you are entitled to compensation.
+        </p>
+        <p>
+          Outside the European Union, you keep whatever rights the consumer law of your own
+          country gives you if something is faulty.
         </p>
         <p>
           <strong className="text-white">
@@ -200,18 +206,7 @@ export default function RefundsPage() {
           end here.
         </p>
         <p>
-          You can get free, independent advice in the UK from{' '}
-          <strong className="text-white">Citizens Advice</strong> at{' '}
-          <a
-            className="text-indigo-300 underline"
-            href="https://www.citizensadvice.org.uk"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            citizensadvice.org.uk
-          </a>{' '}
-          or on <strong className="text-white">0808 223 1133</strong>, and in the European
-          Union from the{' '}
+          You can get free, independent advice anywhere in the European Union from the{' '}
           <a
             className="text-indigo-300 underline"
             href="https://www.eccnet.eu"
@@ -221,6 +216,28 @@ export default function RefundsPage() {
             European Consumer Centre
           </a>{' '}
           in your country, which helps for free with purchases from businesses abroad.
+          Outside the European Union, your national consumer body can advise you.
+        </p>
+        <p>
+          If you live in Hungary, you can also take the dispute to the{' '}
+          <strong className="text-white">conciliation body (békéltető testület)</strong>{' '}
+          for the county where you live. It is free, it is quicker than court, and we will
+          take part in the procedure. In Budapest that is the Budapest Conciliation Board
+          (Budapesti Békéltető Testület), 1016 Budapest, Krisztina körút 99; postal address
+          1253 Budapest, Pf. 10; phone +36 1 488 2131;{' '}
+          <a className="text-indigo-300 underline" href="mailto:bekelteto.testulet@bkik.hu">
+            bekelteto.testulet@bkik.hu
+          </a>
+          ;{' '}
+          <a
+            className="text-indigo-300 underline"
+            href="https://bekeltet.bkik.hu"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            bekeltet.bkik.hu
+          </a>
+          .
         </p>
         <p>
           You can also ask your bank or card provider about a chargeback. We would much rather
@@ -231,8 +248,8 @@ export default function RefundsPage() {
 
       <LegalSection id="cancellation-form" title="Model cancellation form">
         <p>
-          You do not have to use this. It is here because UK and EU consumer law require us
-          to make it available &mdash; a plain email saying you want to cancel works just as
+          You do not have to use this. It is here because EU consumer law requires us to make
+          it available (in Hungary, Annex 2 to Government Decree 45/2014) &mdash; a plain email saying you want to cancel works just as
           well, and is faster.
         </p>
         <div className="rounded-lg border border-white/15 bg-white/5 p-4 font-mono text-xs leading-relaxed text-gray-300">

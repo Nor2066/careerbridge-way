@@ -15,8 +15,9 @@ export const metadata: Metadata = {
 /**
  * Split out of the privacy policy, where it had been three sentences.
  *
- * PECR in the UK, and the ePrivacy rules in each EU country, govern storage on
- * a visitor's device separately from the GDPR. The honest version of this page
+ * The ePrivacy rules in each EU country (in Hungary, Eht. 155. § (4)), and
+ * their equivalents elsewhere, govern storage on a visitor's device separately
+ * from the GDPR. The honest version of this page
  * is short enough to be worth publishing in full: every item is strictly
  * necessary or set only when the visitor picks a language, which is an
  * unusually good answer and is invisible if it stays buried in another
@@ -88,13 +89,13 @@ export default function CookiePolicyPage() {
       <LegalSection id="the-law" title="The rule we are working to">
         <p>
           Storing information on your device, or reading what is already there, is governed
-          in the UK by regulation 6 of the Privacy and Electronic Communications (EC
-          Directive) Regulations 2003 &mdash; usually called PECR &mdash; and in the European
-          Union by Article 5(3) of the ePrivacy Directive as each country has implemented it
-          (in Spain, article 22.2 of the LSSI).
+          in the European Union by Article 5(3) of the ePrivacy Directive as each country has
+          implemented it &mdash; in Hungary, where we are based, section 155(4) of Act C of
+          2003 on Electronic Communications; in Spain, article 22.2 of the LSSI. Other
+          countries have similar rules, such as PECR in the United Kingdom.
         </p>
         <p>
-          Both say the same thing: we must tell you what we store and ask permission,{' '}
+          They all say the same thing: we must tell you what we store and ask permission,{' '}
           <strong className="text-white">unless</strong> it is strictly necessary for a
           service you actually asked for. Staying signed in is the textbook example: you
           asked to sign in, and it cannot be done without storing something. Remembering a
@@ -160,19 +161,19 @@ export default function CookiePolicyPage() {
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
-            <code>mainAnswers</code> &mdash; your answers as you move between questions, so
+            <code>mainAnswers</code>{' '}&mdash; your answers as you move between questions, so
             a refresh does not lose your progress.
           </li>
           <li>
-            <code>topClusters</code> &mdash; carries your top career clusters from the
+            <code>topClusters</code>{' '}&mdash; carries your top career clusters from the
             assessment into the follow-up questionnaire.
           </li>
           <li>
-            <code>lastAssessmentId</code> &mdash; remembers which assessment the follow-up
+            <code>lastAssessmentId</code>{' '}&mdash; remembers which assessment the follow-up
             belongs to, including after the trip out to the payment page.
           </li>
           <li>
-            <code>checkoutReturnPath</code> &mdash; remembers which page you were on before
+            <code>checkoutReturnPath</code>{' '}&mdash; remembers which page you were on before
             going to pay, so you come back to it afterwards.
           </li>
         </ul>
@@ -242,14 +243,14 @@ export default function CookiePolicyPage() {
         <p>
           You can block or delete cookies in your browser settings. Instructions are on each
           browser maker&rsquo;s help pages, and data protection authorities publish guidance
-          for the public &mdash; the ICO in the UK at{' '}
+          for the public &mdash; NAIH in Hungary at{' '}
           <a
             className="text-indigo-300 underline"
-            href="https://ico.org.uk"
+            href="https://naih.hu"
             target="_blank"
             rel="noopener noreferrer"
           >
-            ico.org.uk
+            naih.hu
           </a>
           , and the AEPD in Spain at{' '}
           <a

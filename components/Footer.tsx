@@ -116,11 +116,12 @@ export default async function Footer() {
               {t('footer.company', {
                 trading: COMPANY.tradingName,
                 legal: COMPANY.legalName,
-                jurisdiction: COMPANY.jurisdiction,
                 number: COMPANY.companyNumber,
+                court: COMPANY.registryCourt,
                 address: COMPANY.address,
+                tax: COMPANY.taxNumber,
               })}
-              {COMPANY.vatNumber ? ` ${t('footer.vat', { vat: COMPANY.vatNumber })}` : ''}
+              {COMPANY.euVatNumber ? ` ${t('footer.vat', { vat: COMPANY.euVatNumber })}` : ''}
             </p>
           ) : (
             <p className="text-amber-300/80">{t('footer.placeholders')}</p>

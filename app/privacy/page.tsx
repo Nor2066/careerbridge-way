@@ -64,9 +64,11 @@ export default function PrivacyPolicyPage() {
       <LegalSection id="who-we-are" title="Who we are">
         <p>
           {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, a company
-          registered in {COMPANY.jurisdiction} under number {COMPANY.companyNumber}, with a
-          registered office at {COMPANY.address}.
-          {COMPANY.vatNumber ? ` Our VAT number is ${COMPANY.vatNumber}.` : ''}
+          registered in {COMPANY.jurisdiction} under company registration number
+          (cégjegyzékszám) {COMPANY.companyNumber} by the {COMPANY.registryCourt}, with its
+          registered seat at {COMPANY.address}. Our Hungarian tax number is{' '}
+          {COMPANY.taxNumber}.
+          {COMPANY.euVatNumber ? ` Our EU VAT number is ${COMPANY.euVatNumber}.` : ''}
         </p>
         <p>
           We are the <strong className="text-white">data controller</strong> for the personal
@@ -76,9 +78,15 @@ export default function PrivacyPolicyPage() {
           {privacyLink}.
         </p>
         <p>
-          We offer the service to people in many countries. Because we are based outside the
-          European Union, we have a representative in the EU that you can also contact about
-          your data: {COMPANY.euRepresentative}.
+          We offer the service to people in many countries. We are established in Hungary, in
+          the European Union, so the EU General Data Protection Regulation (GDPR) governs how
+          we handle your data wherever you live, and the Hungarian data protection authority,
+          NAIH, is our lead supervisory authority. Where the law of your own country also
+          protects your data, you keep that protection too &mdash; see{' '}
+          <a className="text-indigo-300 underline" href="#your-rights">
+            Your rights
+          </a>
+          .
         </p>
       </LegalSection>
 
@@ -104,7 +112,7 @@ export default function PrivacyPolicyPage() {
             about how accurate a report felt.
           </li>
           <li>
-            <strong className="text-white">Your purchase history</strong> &mdash; what you
+            <strong className="text-white">Your purchase history</strong>{' '}&mdash; what you
             bought, when, and for how much. We never see or store your card number; Stripe
             handles that.
           </li>
@@ -115,7 +123,7 @@ export default function PrivacyPolicyPage() {
             count you in its anonymous totals.
           </li>
           <li>
-            <strong className="text-white">Your language</strong> &mdash; English or Spanish
+            <strong className="text-white">Your language</strong>{' '}&mdash; English or Spanish
             &mdash; so the site and your report are written in it. If you pick one with the
             language switch, a cookie remembers it.
           </li>
@@ -125,7 +133,7 @@ export default function PrivacyPolicyPage() {
             if your answers suggest you may be struggling. We do not store it.
           </li>
           <li>
-            <strong className="text-white">Technical records</strong> &mdash; your IP
+            <strong className="text-white">Technical records</strong>{' '}&mdash; your IP
             address and browser details, in server and error logs. We use these to keep the
             service running and to stop abuse.
           </li>
@@ -480,28 +488,30 @@ export default function PrivacyPolicyPage() {
           from us, only the anonymous totals described above.
         </p>
         <p>
-          Some of these companies process data outside the UK and the European Economic Area,
-          mainly in the United States. Each transfer is covered by a recognised safeguard: an
-          adequacy decision where one exists (including the EU&ndash;US and UK&ndash;US data
-          frameworks, where the company is certified), or otherwise the European
-          Commission&rsquo;s standard contractual clauses together with the UK International
-          Data Transfer Addendum. Ask us for a copy of the safeguard that applies.
+          Some of these companies process data outside the European Economic Area, mainly in
+          the United States. Each transfer is covered by a recognised safeguard under Chapter V
+          of the GDPR: an adequacy decision where one exists (including the EU&ndash;US Data
+          Privacy Framework, where the company is certified), or otherwise the European
+          Commission&rsquo;s standard contractual clauses. Where the law of another country
+          also governs your data &mdash; for example if you live in the United Kingdom or
+          Switzerland &mdash; we rely on that country&rsquo;s matching safeguards as well.
+          Ask us for a copy of the safeguard that applies.
         </p>
       </LegalSection>
 
       <LegalSection id="lawful-basis" title="Why we are allowed to do this">
         <p>
-          We rely on the same grounds under the UK GDPR and, for people in the European
-          Economic Area, the EU GDPR:
+          We rely on these grounds under Article 6 of the GDPR, and on the same grounds under
+          the equivalent laws of other countries where they apply to you:
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
-            <strong className="text-white">Contract</strong> &mdash; for your account, your
+            <strong className="text-white">Contract</strong>{' '}&mdash; for your account, your
             assessment, your reports, your payments, and the free access a partner university
             gives you. We cannot deliver the service without processing this data.
           </li>
           <li>
-            <strong className="text-white">Legitimate interests</strong> &mdash; for security
+            <strong className="text-white">Legitimate interests</strong>{' '}&mdash; for security
             logging, rate limiting and fixing faults; for{' '}
             <a className="text-indigo-300 underline" href="#improving">
               studying answers and results to improve the service
@@ -511,12 +521,12 @@ export default function PrivacyPolicyPage() {
             contact details. In each case the data involved is minimal and you can object.
           </li>
           <li>
-            <strong className="text-white">Legal obligation</strong> &mdash; for keeping
+            <strong className="text-white">Legal obligation</strong>{' '}&mdash; for keeping
             records of sales for tax purposes, and for handling and keeping a record of a
             purchase you cancel.
           </li>
           <li>
-            <strong className="text-white">Explicit consent</strong> &mdash; only for special
+            <strong className="text-white">Explicit consent</strong>{' '}&mdash; only for special
             category information you choose to write into a free-text answer, as explained
             above.
           </li>
@@ -597,8 +607,8 @@ export default function PrivacyPolicyPage() {
           counting you.
         </p>
         <p>
-          Payment records are the one exception: UK tax law requires us to keep a record of
-          each sale for six years. We strip your name and email from those records where we
+          Payment records are the one exception: Hungarian accounting law requires us to keep
+          the records behind each sale for eight years. We strip your name and email from those records where we
           can, leaving only what the law requires. If you cancelled a purchase, we keep what
           you sent us for the same time, with your name, because it is the record that you
           cancelled in time and were refunded.
@@ -607,8 +617,8 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection id="your-rights" title="Your rights">
         <p>
-          Under the UK GDPR, the EU GDPR if you are in the European Economic Area, and similar
-          laws elsewhere, you can ask us to:
+          Under the GDPR &mdash; and under similar laws elsewhere, such as the UK GDPR if you
+          live in the United Kingdom &mdash; you can ask us to:
         </p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>Give you a copy of your data &mdash; there is an export button in your account settings</li>
@@ -637,17 +647,29 @@ export default function PrivacyPolicyPage() {
         <p>
           If you think we have handled your data badly, you can complain to a data protection
           authority at any time, and you do not have to come to us first &mdash; though we
-          would rather you told us so we can put it right. In the UK that is the{' '}
+          would rather you told us so we can put it right.
+        </p>
+        <p>
+          Our lead supervisory authority is Hungary&rsquo;s{' '}
+          <strong className="text-white">
+            Nemzeti Adatvédelmi és Információszabadság Hatóság
+          </strong>{' '}
+          (NAIH, the National Authority for Data Protection and Freedom of Information), 1055
+          Budapest, Falk Miksa utca 9&ndash;11, Hungary,{' '}
+          <a className="text-indigo-300 underline" href="mailto:ugyfelszolgalat@naih.hu">
+            ugyfelszolgalat@naih.hu
+          </a>
+          ,{' '}
           <a
             className="text-indigo-300 underline"
-            href="https://ico.org.uk"
+            href="https://naih.hu"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Information Commissioner&rsquo;s Office
+            naih.hu
           </a>
-          . In the European Economic Area it is the authority in the country where you live or
-          work &mdash; in Spain, the{' '}
+          . You can also complain to the authority in the country where you live or work
+          &mdash; in Spain, the{' '}
           <a
             className="text-indigo-300 underline"
             href="https://www.aepd.es"
@@ -656,7 +678,17 @@ export default function PrivacyPolicyPage() {
           >
             Agencia Española de Protección de Datos
           </a>
-          .
+          ; outside the European Economic Area, your national data protection authority, such
+          as the{' '}
+          <a
+            className="text-indigo-300 underline"
+            href="https://ico.org.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Information Commissioner&rsquo;s Office
+          </a>{' '}
+          in the United Kingdom. You also have the right to go to court.
         </p>
       </LegalSection>
 

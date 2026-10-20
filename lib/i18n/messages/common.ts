@@ -47,10 +47,10 @@ export const common = {
     es: 'Los documentos legales están disponibles solo en inglés por ahora.',
   },
   'footer.company': {
-    en: '{trading} is a trading name of {legal}, registered in {jurisdiction} (company no. {number}). Registered office: {address}.',
-    es: '{trading} es un nombre comercial de {legal}, registrada en {jurisdiction} (n.º de empresa {number}). Domicilio social: {address}.',
+    en: '{trading} is a trading name of {legal}, a company registered in Hungary. Company registration no. (cégjegyzékszám): {number}. Registry court: {court}. Registered seat: {address}. Tax no.: {tax}.',
+    es: '{trading} es un nombre comercial de {legal}, sociedad registrada en Hungría. N.º de registro mercantil (cégjegyzékszám): {number}. Tribunal registral: {court}. Domicilio social: {address}. N.º fiscal: {tax}.',
   },
-  'footer.vat': { en: 'VAT no. {vat}.', es: 'N.º de IVA {vat}.' },
+  'footer.vat': { en: 'EU VAT no.: {vat}.', es: 'N.º de IVA intracomunitario: {vat}.' },
   'footer.placeholders': {
     en: 'Company details are still placeholders — fill them in at lib/legal.ts before launch.',
     es: 'Los datos de la empresa aún son provisionales: complétalos en lib/legal.ts antes del lanzamiento.',

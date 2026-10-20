@@ -15,8 +15,8 @@
 // WHY THIS NEEDS NO COOKIE BANNER
 //
 // Nothing is stored on the visitor's device. No cookie, no localStorage, no
-// sessionStorage. UK PECR regulation 6 is about *storage on terminal
-// equipment*, so writing nothing means the consent rule does not apply — and
+// sessionStorage. The ePrivacy cookie rule (Art. 5(3); in Hungary, Eht. 155. §
+// (4)) is about *storage on terminal equipment*, so writing nothing means the consent rule does not apply — and
 // that is a deliberate design constraint here, not a happy accident.
 //
 // The trade is that a "session" ends when the tab reloads, since the id lives

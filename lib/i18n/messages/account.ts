@@ -67,8 +67,8 @@ export const account = {
     es: 'Esto borra tu perfil, todas tus respuestas, todos tus informes y tu progreso guardado. Ocurre al momento y no se puede deshacer.',
   },
   'account.delete.records': {
-    en: 'We keep a record of your purchases with your name and email removed, because tax law requires us to keep sales records for six years.',
-    es: 'Conservamos un registro de tus compras sin tu nombre ni tu correo, porque la normativa fiscal nos obliga a guardar los registros de ventas durante seis años.',
+    en: 'We keep a record of your purchases with your name and email removed, because accounting law requires us to keep sales records for eight years.',
+    es: 'Conservamos un registro de tus compras sin tu nombre ni tu correo, porque la normativa contable nos obliga a guardar los registros de ventas durante ocho años.',
   },
   'account.delete.refund.before': {
     en: 'Any attempts you have paid for and not used will be lost. If you want a refund for them, ask us ',

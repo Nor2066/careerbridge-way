@@ -101,7 +101,7 @@ function signOff(): string {
  * Formats the amount on a receipt.
  *
  * Previously this mapped GBP to "£" and *everything else* to "€", which meant
- * a UK company issuing a receipt in pounds printed euros whenever Stripe
+ * a receipt for a purchase made in pounds printed euros whenever Stripe
  * omitted the currency. A receipt naming the wrong currency is the document a
  * customer forwards to their bank when they dispute the charge, so it is worth
  * more care than a two-way symbol guess.

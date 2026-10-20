@@ -44,8 +44,9 @@ export function isMissingTableError(error: { code?: string; message?: string } |
 }
 
 /**
- * Deleted last and treated separately, because UK tax law requires a record of
- * each sale to be kept for six years — longer than the customer's account.
+ * Deleted last and treated separately, because Hungarian accounting law (Szt.
+ * 169. §) requires the records behind each sale to be kept for eight years —
+ * longer than the customer's account.
  *
  * We keep the transaction and drop the link to the person where the schema
  * allows it. See app/api/account/delete/route.ts for what happens when it

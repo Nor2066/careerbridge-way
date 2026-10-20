@@ -263,7 +263,7 @@ export default function AiNoticePage() {
         </p>
         <p>
           Because nothing here produces a legal or similarly significant effect on you, we do
-          not consider Article 22 of the UK GDPR &mdash; the right not to be subject to a
+          not consider Article 22 of the GDPR &mdash; the right not to be subject to a
           solely automated decision &mdash; to be engaged. We are showing you our reasoning
           rather than asking you to take it on trust, and our{' '}
           <a className="text-indigo-300 underline" href="/privacy#automated">
@@ -379,8 +379,8 @@ export default function AiNoticePage() {
       <LegalSection id="regulation" title="Where we stand with regulators">
         <p>
           <strong className="text-white">European Union.</strong>{' '}
-            We offer the service in the
-          EU, so the EU AI Act applies to it. Our reading is that it is not a
+            We are based in Hungary and
+          offer the service across the EU, so the EU AI Act applies to it. Our reading is that it is not a
           &ldquo;high-risk&rdquo; system: it is a self-help tool, and it is not used to decide
           admission to education, to evaluate learning, to assign a level of education, to
           monitor students during tests, or to recruit or select anyone &mdash; and our
@@ -390,15 +390,11 @@ export default function AiNoticePage() {
           what that means.
         </p>
         <p>
-          <strong className="text-white">United Kingdom.</strong>{' '}
-            There is no general AI
-          statute in force. Our obligations come from data protection law, consumer law, and
-          the ordinary law of negligence and misrepresentation. This notice is written to meet
-          the transparency expectations in the ICO&rsquo;s guidance on AI and data protection.
-        </p>
-        <p>
-          <strong className="text-white">Elsewhere.</strong> Wherever you use the service,
-          the same notice and the same limits apply. If a law where we offer the service
+          <strong className="text-white">Elsewhere.</strong> Many countries, the United
+          Kingdom among them, have no general AI statute. There our obligations come from
+          data protection law, consumer law, and the ordinary law of negligence and
+          misrepresentation. Wherever you use the service, the same notice and the same
+          limits apply. If a law where we offer the service
           requires more, this page will change with it and we will say so.
         </p>
       </LegalSection>

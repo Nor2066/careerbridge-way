@@ -16,44 +16,60 @@ export const COMPANY = {
   /** Trading name shown to customers. Set in lib/site.ts. */
   tradingName: BRAND.name,
 
-  /** Registered company name, exactly as it appears at Companies House.
-   *  Expected to be ADAQNO LTD, which was free in October 2026. */
+  /** Registered company name, exactly as it appears in the Hungarian company
+   *  register (cégjegyzék). Expected to be ADAQNO Kft. */
   legalName: 'TODO — registered company name',
 
-  /** Companies House registration number. */
-  companyNumber: 'TODO — company number',
+  /** Company registration number (cégjegyzékszám), in the form 01-09-123456.
+   *  The Hungarian e-commerce act (Ekertv. 4. §) requires it on the site,
+   *  together with the court that registered the company. */
+  companyNumber: 'TODO — company registration number (cégjegyzékszám)',
+
+  /** The registry court (cégbíróság) that keeps the company's file, which
+   *  follows the seat — for a Budapest seat, Fővárosi Törvényszék Cégbírósága. */
+  registryCourt: 'TODO — registry court (cégbíróság)',
 
   /**
-   * Registered office address. Use the registered or agent address, never a
-   * home address: this is published on a public page, and once it is indexed
-   * it is very hard to take back.
+   * Registered seat (székhely). Use the seat-service address, never a home
+   * address: this is published on a public page, and once it is indexed it is
+   * very hard to take back.
    */
-  address: 'TODO — registered office address',
+  address: 'TODO — registered seat (székhely)',
 
-  /** VAT number, or null if not registered. UK registration is required above
-   *  the £90,000 threshold; below it, leave this null and charge no UK VAT. */
-  vatNumber: null as string | null,
+  /** Hungarian tax number (adószám), in the form 12345678-1-42. A Kft gets one
+   *  on registration, and Ekertv. 4. § requires it on the site. */
+  taxNumber: 'TODO — Hungarian tax number (adószám)',
 
-  /**
-   * Our representative in the EU under Article 27 of the EU GDPR: a company
-   * outside the EU that offers its service to people in the EU names one, as
-   * their local point of contact. Several firms provide it as a yearly
-   * service. Name and address, as it should appear on the privacy policy.
-   */
-  euRepresentative: 'TODO — EU representative (GDPR Article 27)',
+  /** EU VAT number (közösségi adószám), HU followed by eight digits, or null
+   *  until it is issued. Needed for selling to businesses in other EU
+   *  countries, such as university licences. */
+  euVatNumber: null as string | null,
 
-  jurisdiction: 'England and Wales',
-  country: 'United Kingdom',
+  jurisdiction: 'Hungary',
+  country: 'Hungary',
+} as const;
+
+/**
+ * Who hosts the website. The Hungarian e-commerce act (Ekertv. 4. § h)) asks
+ * for the hosting provider's name, address and email alongside our own
+ * details. Keep it in step with the Vercel row in SUBPROCESSORS.
+ */
+export const HOSTING = {
+  name: 'Vercel Inc.',
+  address: '440 N Barranca Avenue #4133, Covina, CA 91723, United States',
+  email: 'privacy@vercel.com',
 } as const;
 
 /**
  * Minimum age for an account.
  *
- * 16 is a business choice rather than a legal floor — UK law sets the age of
- * consent for information society services at 13 — but the assessment asks
- * personal questions and the report is about life decisions, so the higher
- * line is the defensible one. The signup form asks, and /api/auth/signup
- * refuses without it.
+ * 16 is the age of digital consent in Hungary, where we are established: the
+ * GDPR's default under Article 8, which Hungary has not lowered. Other
+ * countries set it anywhere from 13 to 16, and most of what we do rests on
+ * contract rather than consent, so it is also a business choice — the
+ * assessment asks personal questions and the report is about life decisions,
+ * and one line for everyone is the defensible one. The signup form asks, and
+ * /api/auth/signup refuses without it.
  */
 export const MINIMUM_AGE = 16;
 
@@ -68,7 +84,7 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-10-14';
+export const TERMS_VERSION = '2026-10-20';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
@@ -86,19 +102,19 @@ export const CONTACT = {
  */
 export const LAST_UPDATED = {
   privacy: '20 October 2026',
-  terms: '14 October 2026',
+  terms: '20 October 2026',
   refunds: '20 October 2026',
-  cookies: '13 October 2026',
+  cookies: '20 October 2026',
   acceptableUse: '13 October 2026',
-  aiNotice: '14 October 2026',
+  aiNotice: '20 October 2026',
 } as const;
 
 /**
  * Everyone we send personal data to, and why.
  *
  * This list does triple duty: the privacy policy renders it (the reel costs
- * $7,988 for omitting third-party collectors), the UK GDPR record of
- * processing needs it, and it is the checklist of who you owe a data
+ * $7,988 for omitting third-party collectors), the GDPR record of
+ * processing (Article 30) needs it, and it is the checklist of who you owe a data
  * processing agreement to. Keep it accurate — adding a service to the stack
  * without adding it here is how a policy becomes untrue.
  */
@@ -185,12 +201,12 @@ export const RETENTION = [
   },
   {
     what: 'Payment records',
-    how_long: '6 years from the end of the relevant tax year',
-    why: 'UK tax law requires businesses to keep records of sales for this long. These are kept even after account deletion, with your name and email removed where possible.',
+    how_long: '8 years from the end of the financial year of the sale',
+    why: 'Hungarian accounting law requires us to keep the records behind every sale for at least 8 years. These are kept even after account deletion, with your name and email removed where possible.',
   },
   {
     what: 'Cancellations you send us (the withdrawal form)',
-    how_long: '6 years from the end of the relevant tax year, the same as payment records',
+    how_long: '8 years from the end of the financial year, the same as payment records',
     why: 'They are the record that you cancelled in time and that we refunded you. Kept with your name and email, including after account deletion, because without them that record proves nothing.',
   },
   {
@@ -216,8 +232,9 @@ export function legalDetailsComplete(): boolean {
   return ![
     COMPANY.legalName,
     COMPANY.companyNumber,
+    COMPANY.registryCourt,
     COMPANY.address,
-    COMPANY.euRepresentative,
+    COMPANY.taxNumber,
     CONTACT.support,
     CONTACT.privacy,
   ].some((value) => value.includes('TODO'));

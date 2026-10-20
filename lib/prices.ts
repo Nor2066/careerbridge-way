@@ -6,9 +6,10 @@
 //
 // These are TOTALS, tax included. The Stripe Prices must be created in GBP
 // with "Include tax in price" set, so Stripe takes VAT/sales tax out of the
-// amount rather than adding it at checkout. UK consumer law (the DMCC Act's
-// drip-pricing ban) and the EU price rules both require the first price a
-// consumer sees to be the full amount they pay — showing £3.00 here and
+// amount rather than adding it at checkout. EU consumer law (the Price
+// Indication Directive and the Consumer Rights Directive) requires the first
+// price a consumer sees to be the full amount they pay, and so do most other
+// countries' rules — showing £3.00 here and
 // charging £3.60 at checkout would break that.
 //
 // Stripe stays the source of truth for what is actually charged. Changing a

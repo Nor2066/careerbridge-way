@@ -68,8 +68,8 @@ export const CHECKOUT_BRANDING = {
 /**
  * The consumer-rights sentence that has to be seen BEFORE payment.
  *
- * Under the Consumer Contracts Regulations 2013 a UK buyer has 14 days to
- * change their mind — except for digital content they agreed to receive
+ * Under the EU Consumer Rights Directive (in Hungary, Govt Decree 45/2014) a
+ * buyer has 14 days to change their mind — except for digital content they agreed to receive
  * immediately, having been told they lose that right by doing so. The refund
  * policy leans on this, and it only holds if the customer was actually shown
  * it at the point of payment rather than only on a policy page they never
@@ -84,8 +84,8 @@ export const IMMEDIATE_DELIVERY_NOTICE =
 /**
  * The wording beside the tickbox at checkout.
  *
- * Regulation 37 of the Consumer Contracts Regulations 2013 takes away the
- * 14-day cancellation right for digital content only where the consumer gave
+ * Article 16(m) of the Consumer Rights Directive (in Hungary, 29. § (1) m) of
+ * Govt Decree 45/2014) takes away the 14-day cancellation right for digital content only where the consumer gave
  * EXPRESS CONSENT to supply starting early AND ACKNOWLEDGED that they lose the
  * right by doing so. A sentence displayed under the pay button — which is all
  * IMMEDIATE_DELIVERY_NOTICE was — is arguably neither: nothing records that

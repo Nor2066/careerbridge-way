@@ -5,9 +5,10 @@
 -- WHY
 --
 -- The refund policy says the 14-day cancellation right ends for digital
--- content the customer has received. That is only true under regulation 37 of
--- the Consumer Contracts Regulations 2013 where they gave express consent to
--- supply starting immediately AND acknowledged losing the right.
+-- content the customer has received. That is only true under Article 16(m) of
+-- the Consumer Rights Directive (in Hungary, 29. § (1) m) of Govt Decree
+-- 45/2014) where they gave express consent to supply starting immediately AND
+-- acknowledged losing the right.
 --
 -- Until now the checkout displayed a sentence under the pay button. Nothing
 -- recorded whether anyone saw it, so the evidence for a refused refund was
