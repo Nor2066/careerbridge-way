@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth, AuthRequestError } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MINIMUM_AGE } from '@/lib/legal';
@@ -50,9 +50,16 @@ export default function SignupPage() {
         router.refresh();
       }
     } catch (err) {
-      // Server errors are worded in English; other languages get the general
-      // message rather than a sentence in the wrong language.
-      setError(locale === 'en' && err instanceof Error ? err.message : t('auth.signup.failed'));
+      // Worded here from the route's code, so the reason reaches readers of
+      // every language. The password rules give specific English reasons, so
+      // English readers get those; others get the rule in their language.
+      const code = err instanceof AuthRequestError ? err.code : null;
+      if (code === 'EMAIL_INVALID') setError(t('auth.signup.emailInvalid'));
+      else if (code === 'EMAIL_LIMIT') setError(t('auth.signup.emailLimit'));
+      else if (code === 'TOO_MANY') setError(t('error.tooMany'));
+      else if (code === 'WEAK_PASSWORD') {
+        setError(locale === 'en' && err instanceof Error ? err.message : t('auth.signup.weakPassword'));
+      } else setError(t('auth.signup.failed'));
     }
   };
 

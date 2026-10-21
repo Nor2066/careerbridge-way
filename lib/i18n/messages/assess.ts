@@ -109,8 +109,6 @@ export const assess = {
     en: 'Please wait a moment for the assessment to be saved, then try again.',
     es: 'Espera un momento a que se guarde la evaluación y vuelve a intentarlo.',
   },
-  'assess.results.failed': { en: 'Failed to generate report: {error}', es: 'No se ha podido generar el informe: {error}' },
-  'assess.results.failedUnknown': { en: 'unknown error', es: 'error desconocido' },
 
   // Follow-up decision
   'assess.decision.readyTitle': { en: 'Ready for your detailed roadmap?', es: '¿Listo para tu hoja de ruta detallada?' },

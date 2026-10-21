@@ -57,6 +57,18 @@ export const auth = {
   'auth.signup.submit': { en: 'Sign Up', es: 'Crear cuenta' },
   'auth.signup.acceptFirst': { en: 'Please confirm you are {age} or over and accept the terms.', es: 'Confirma que tienes {age} años o más y acepta los términos.' },
   'auth.signup.failed': { en: 'Signup failed. Please try again.', es: 'No se ha podido crear la cuenta. Inténtalo de nuevo.' },
+  'auth.signup.emailInvalid': {
+    en: 'That email address is not accepted. Check it for typos, or use another address.',
+    es: 'Esa dirección de correo no se acepta. Revisa que esté bien escrita o usa otra.',
+  },
+  'auth.signup.emailLimit': {
+    en: 'We cannot send more confirmation emails right now. Wait a few minutes and try again, or sign up with Google, which needs no email.',
+    es: 'Ahora mismo no podemos enviar más correos de confirmación. Espera unos minutos y vuelve a intentarlo, o regístrate con Google, que no necesita correo.',
+  },
+  'auth.signup.weakPassword': {
+    en: 'Choose a stronger password: at least 10 characters, hard to guess, and without your email address.',
+    es: 'Elige una contraseña más segura: al menos 10 caracteres, difícil de adivinar y sin tu correo.',
+  },
   'auth.signup.googleFailed': { en: 'Google sign-up failed. Please try again.', es: 'No se ha podido crear la cuenta con Google. Inténtalo de nuevo.' },
   'auth.signup.google': { en: 'Sign up with Google', es: 'Crear cuenta con Google' },
   'auth.signup.ageTerms.before': { en: 'I am {age} or over, and I agree to the ', es: 'Tengo {age} años o más y acepto los ' },

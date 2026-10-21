@@ -22,13 +22,10 @@ export const followup = {
     en: 'Your followup access for this attempt is not unlocked. Unlock it from your history page — your answers will still be here.',
     es: 'El seguimiento de este intento no está desbloqueado. Desbloquéalo desde tu historial: tus respuestas seguirán aquí.',
   },
-  'followup.saveFailed': { en: 'Failed to save answers: {error}', es: 'No se han podido guardar las respuestas: {error}' },
-  'followup.unknownError': { en: 'Unknown error', es: 'Error desconocido' },
   'followup.noAssessment': {
     en: 'Assessment ID not found. Please return to history and try again.',
     es: 'No se encuentra la evaluación. Vuelve al historial e inténtalo de nuevo.',
   },
-  'followup.generateFailed': { en: 'Failed to generate report: {error}', es: 'No se ha podido generar el informe: {error}' },
   'followup.networkCheck': {
     en: 'Network error. Please check your connection and try again.',
     es: 'Error de conexión. Comprueba tu conexión e inténtalo de nuevo.',

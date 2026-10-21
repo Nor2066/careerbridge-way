@@ -19,6 +19,8 @@ import { clusterQuestionsEs } from '@/lib/i18n/followup-questions-es';
 import { useI18n } from '@/components/I18nProvider';
 import type { Locale } from '@/lib/i18n/config';
 import ReportText from '@/components/ReportText';
+import InlineError from '@/components/InlineError';
+import { apiErrorMessage } from '@/lib/i18n/api-error';
 
 
 function parseOptions(questionText: string): { letter: string; text: string }[] {
@@ -67,9 +69,11 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const saveFeedback = async () => {
-    if (feedbackRating === 0) { alert(t('assess.feedback.rateFirst')); return; }
+    if (feedbackRating === 0) { setFeedbackError(t('assess.feedback.rateFirst')); return; }
+    setFeedbackError(null);
     setSaving(true);
     try {
       // Only feedbackRating/feedbackComment are sent — topClusters/rawScores/
@@ -82,9 +86,9 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
         body: JSON.stringify({ feedbackRating, feedbackComment }),
       });
       if (res.ok) setSaved(true);
-      else alert(t('common.error.generic'));
+      else setFeedbackError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
     } catch {
-      alert(t('common.error.network'));
+      setFeedbackError(t('common.error.network'));
     } finally {
       setSaving(false);
     }
@@ -131,6 +135,7 @@ function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }
                 className="btn-primary w-full text-sm py-2 disabled:opacity-50">
                 {saving ? t('assess.feedback.saving') : t('assess.feedback.submit')}
               </button>
+              <InlineError message={feedbackError} />
             </>
           )}
         </div>
@@ -156,6 +161,9 @@ export default function FollowUpClient() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
+  // A problem shown under the buttons (these were alert() boxes). toHistory
+  // adds a button there for the cases where the fix is on the history page.
+  const [error, setError] = useState<{ message: string; toHistory?: boolean } | null>(null);
 
   // Which attempt we're answering for, and its clusters, normally come from
   // sessionStorage. That is not always available: a customer who paid for the
@@ -312,6 +320,7 @@ export default function FollowUpClient() {
   };
 
   const submitAnswers = async () => {
+    setError(null);
     setLoading(true);
     try {
       const res = await fetch('/api/save-followup', {
@@ -328,14 +337,13 @@ export default function FollowUpClient() {
       } else {
         const data = await res.json().catch(() => ({}));
         if (data.code === 'FOLLOWUP_LOCKED') {
-          alert(t('followup.locked'));
-          router.push('/history');
+          setError({ message: t('followup.locked'), toHistory: true });
           return;
         }
-        alert(t('followup.saveFailed', { error: data.error || t('followup.unknownError') }));
+        setError({ message: apiErrorMessage(t, res.status, data) });
       }
-    } catch (err) {
-      alert(t('common.error.network'));
+    } catch {
+      setError({ message: t('common.error.network') });
     } finally {
       setLoading(false);
     }
@@ -344,10 +352,10 @@ export default function FollowUpClient() {
   const generateFollowupReport = async () => {
     track('followup_complete');
     if (!assessmentId) {
-      alert(t('followup.noAssessment'));
-      router.push('/history');
+      setError({ message: t('followup.noAssessment'), toHistory: true });
       return;
     }
+    setError(null);
     setLoadingReport(true);
     try {
       const res = await fetch('/api/generate-followup-report', {
@@ -370,14 +378,25 @@ export default function FollowUpClient() {
         sessionStorage.removeItem('lastAssessmentId');
         setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
-        alert(t('followup.generateFailed', { error: data.error || t('followup.unknownError') }));
+        setError({ message: apiErrorMessage(t, res.status, data) });
       }
-    } catch (err) {
-      alert(t('followup.networkCheck'));
+    } catch {
+      setError({ message: t('followup.networkCheck') });
     } finally {
       setLoadingReport(false);
     }
   };
+
+  const errorBlock = error && (
+    <div className="mt-4 flex flex-col items-center gap-3 text-left">
+      <InlineError message={error.message} className="w-full" />
+      {error.toHistory && (
+        <button onClick={() => router.push('/history')} className="btn-secondary text-sm">
+          {t('followup.goHistory')}
+        </button>
+      )}
+    </div>
+  );
 
   let answeredCount = 0;
   for (const cluster of clusters) {
@@ -408,6 +427,7 @@ export default function FollowUpClient() {
                     {t('followup.processing')}
                   </p>
                 )}
+                {errorBlock}
               </div>
             ) : (
               <div className="mt-4">
@@ -479,6 +499,7 @@ export default function FollowUpClient() {
             </button>
           </div>
           {loading && <div className="mt-4 text-center text-gray-300">{t('followup.saving')}</div>}
+          {errorBlock}
         </div>
       </div>
     </div>

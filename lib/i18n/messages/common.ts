@@ -11,6 +11,37 @@ export const common = {
   'common.save': { en: 'Save', es: 'Guardar' },
   'common.error.generic': { en: 'Something went wrong. Please try again.', es: 'Algo ha fallado. Inténtalo de nuevo.' },
   'common.error.network': { en: 'Network error. Please try again.', es: 'Error de conexión. Inténtalo de nuevo.' },
+  // What a failed request means, worded for the reader. The server's own
+  // `error` text is English and never shown; lib/i18n/api-error.ts picks one
+  // of these from the response's code or status.
+  'error.paused': {
+    en: 'Report writing is paused for a few minutes while we fix a problem. Nothing has been used up; please try again shortly.',
+    es: 'La redacción de informes está en pausa unos minutos mientras solucionamos un problema. No se ha gastado nada; vuelve a intentarlo en un rato.',
+  },
+  'error.sessionExpired': {
+    en: 'Your session has expired. Sign in again and you will carry on where you were.',
+    es: 'Tu sesión ha caducado. Vuelve a iniciar sesión y seguirás donde lo dejaste.',
+  },
+  'error.emailNotVerified': {
+    en: 'Please confirm your email address first, using the link we sent you.',
+    es: 'Primero confirma tu correo con el enlace que te enviamos.',
+  },
+  'error.noAttempts': {
+    en: 'You have no attempts left. Choose a plan to continue.',
+    es: 'No te quedan intentos. Elige un plan para continuar.',
+  },
+  'error.generationFailed': {
+    en: 'The AI could not write this just now. Nothing has been used up; please try again in a moment.',
+    es: 'La IA no ha podido escribirlo ahora mismo. No se ha gastado nada; vuelve a intentarlo en un momento.',
+  },
+  'error.alreadyRunning': {
+    en: 'This is already being written. Wait a moment, then refresh the page.',
+    es: 'Ya se está escribiendo. Espera un momento y recarga la página.',
+  },
+  'error.tooMany': {
+    en: 'Too many tries in a short time. Wait a minute and try again.',
+    es: 'Demasiados intentos en poco tiempo. Espera un minuto y vuelve a intentarlo.',
+  },
   'common.or': { en: 'or', es: 'o' },
 
   'nav.language': { en: 'Language', es: 'Idioma' },

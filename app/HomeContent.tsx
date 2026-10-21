@@ -37,6 +37,8 @@ import {
   CRITICISM,
 } from '@/lib/assessment-options';
 import ReportText from '@/components/ReportText';
+import InlineError from '@/components/InlineError';
+import { apiErrorMessage } from '@/lib/i18n/api-error';
 
 type Answers = {
   subjects: string[];
@@ -155,6 +157,9 @@ export default function Home() {
   // (pay for followup / go to followup / skip)
   const [awaitingFollowupDecision, setAwaitingFollowupDecision] = useState(false);
   const [skipLoading, setSkipLoading] = useState(false);
+  // Problems shown on the page next to the button that failed (these were alert() boxes).
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   // Controls the pricing modal overlay shown at the step-10 gate
   const [showPricingModal, setShowPricingModal] = useState(false);
   // Controls the side feedback popup — shown after AI report is generated
@@ -560,9 +565,10 @@ export default function Home() {
     track('report_generate_start');
     const assessmentId = sessionStorage.getItem('lastAssessmentId');
     if (!assessmentId) {
-      alert(t('assess.results.waitSave'));
+      setReportError(t('assess.results.waitSave'));
       return;
     }
+    setReportError(null);
     setLoadingReport(true);
     try {
       const res = await fetchWithAuth('/api/generate-report', {
@@ -596,10 +602,10 @@ export default function Home() {
         setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         track('report_failed', { code: data.code ?? null, status: res.status });
-        alert(t('assess.results.failed', { error: data.error || t('assess.results.failedUnknown') }));
+        setReportError(apiErrorMessage(t, res.status, data));
       }
-    } catch (err) {
-      alert(t('common.error.network'));
+    } catch {
+      setReportError(t('common.error.network'));
     } finally {
       setLoadingReport(false);
     }
@@ -613,6 +619,7 @@ export default function Home() {
 
   const handleSkipFollowup = async () => {
     setSkipLoading(true);
+    setActionError(null);
     try {
       const res = await fetch('/api/skip-followup', {
         method: 'POST',
@@ -622,10 +629,10 @@ export default function Home() {
       if (res.ok) {
         router.push('/history');
       } else {
-        alert(t('common.error.generic'));
+        setActionError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
       }
-    } catch (err) {
-      alert(t('common.error.network'));
+    } catch {
+      setActionError(t('common.error.network'));
     } finally {
       setSkipLoading(false);
     }
@@ -638,6 +645,7 @@ export default function Home() {
   // attempt stays in history and can still be completed later.
   const handleSkipFromGate = async () => {
     setSkipLoading(true);
+    setActionError(null);
     try {
       const res = await fetch('/api/skip-followup', {
         method: 'POST',
@@ -648,10 +656,10 @@ export default function Home() {
         setShowMustFinishModal(false);
         await refetchSubStatus();
       } else {
-        alert(t('common.error.generic'));
+        setActionError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
       }
-    } catch (err) {
-      alert(t('common.error.network'));
+    } catch {
+      setActionError(t('common.error.network'));
     } finally {
       setSkipLoading(false);
     }
@@ -903,6 +911,7 @@ export default function Home() {
             >
               {skipLoading ? t('common.pleaseWait') : t('assess.mustFinish.skip')}
             </button>
+            <InlineError message={actionError} className="mt-3" />
           </div>
         </div>
       </div>
@@ -958,9 +967,11 @@ export default function Home() {
     const [saved, setSaved] = useState(false);
     const [saving, setSaving] = useState(false);
     const [expanded, setExpanded] = useState(true);
+    const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
     const saveFeedback = async () => {
-      if (feedbackRating === 0) { alert(t('assess.feedback.rateFirst')); return; }
+      if (feedbackRating === 0) { setFeedbackError(t('assess.feedback.rateFirst')); return; }
+      setFeedbackError(null);
       setSaving(true);
       try {
         // Only send rating + comment — the assessment data (topClusters,
@@ -977,9 +988,9 @@ export default function Home() {
           body: JSON.stringify({ feedbackRating, feedbackComment }),
         });
         if (res.ok) setSaved(true);
-        else alert(t('common.error.generic'));
-      } catch (err) {
-        alert(t('common.error.network'));
+        else setFeedbackError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
+      } catch {
+        setFeedbackError(t('common.error.network'));
       } finally {
         setSaving(false);
       }
@@ -1026,6 +1037,7 @@ export default function Home() {
                   className="btn-primary w-full text-sm py-2 disabled:opacity-50">
                   {saving ? t('assess.feedback.saving') : t('assess.feedback.submit')}
                 </button>
+                <InlineError message={feedbackError} />
               </>
             )}
           </div>
@@ -1124,6 +1136,7 @@ export default function Home() {
                   >
                     {skipLoading ? t('common.pleaseWait') : t('assess.decision.notNow')}
                   </button>
+                  <InlineError message={actionError} />
                 </div>
               </>
             )}
@@ -1175,6 +1188,7 @@ export default function Home() {
                     {t('assess.results.processing')}
                   </p>
                 )}
+                <InlineError message={reportError} className="mt-4 text-left" />
               </div>
             )}
           </div>

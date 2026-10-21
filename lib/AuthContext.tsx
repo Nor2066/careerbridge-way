@@ -43,6 +43,28 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** An auth request that failed, with the route's machine-readable code. */
+export class AuthRequestError extends Error {
+  code: string | null;
+  constructor(message: string, code: string | null) {
+    super(message);
+    this.name = 'AuthRequestError';
+    this.code = code;
+  }
+}
+
+async function readErrorBody(res: Response, fallback: string): Promise<AuthRequestError> {
+  try {
+    const body = await res.json();
+    return new AuthRequestError(
+      typeof body?.error === 'string' ? body.error : fallback,
+      typeof body?.code === 'string' ? body.code : null
+    );
+  } catch {
+    return new AuthRequestError(fallback, null);
+  }
+}
+
 async function readError(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json();
@@ -137,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }),
     });
 
-    if (!res.ok) throw new Error(await readError(res, 'Signup failed. Please try again.'));
+    if (!res.ok) throw await readErrorBody(res, 'Signup failed. Please try again.');
 
     const data = await res.json();
     // When email confirmation is off, Supabase signs the user straight in.

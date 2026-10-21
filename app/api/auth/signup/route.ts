@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const { success: emailOk } = await authLimiter.limit(`signup_${emailIdentifier(email)}`);
     if (!emailOk) {
       return NextResponse.json(
-        { error: 'Too many sign-up attempts. Please try again later.' },
+        { error: 'Too many sign-up attempts. Please try again later.', code: 'TOO_MANY' },
         { status: 429, headers: NO_STORE_HEADERS }
       );
     }
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     const verdict = await assessPassword(password, email);
     if (!verdict.ok) {
       return NextResponse.json(
-        { error: verdict.reason },
+        { error: verdict.reason, code: 'WEAK_PASSWORD' },
         { status: 400, headers: NO_STORE_HEADERS }
       );
     }
@@ -109,9 +109,27 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Signup error:', error.message);
       // Don't echo the provider message back — "User already registered"
-      // would turn this endpoint into an account-existence oracle.
+      // would turn this endpoint into an account-existence oracle. Two causes
+      // are safe to name, and naming them is what lets the person fix it: a
+      // malformed address, and Supabase's limit on confirmation emails (until
+      // custom SMTP is set up it allows a couple an hour for the whole site,
+      // so a class signing up together hits it at once).
+      const providerCode = (error as { code?: string }).code ?? '';
+      if (providerCode === 'email_address_invalid') {
+        return NextResponse.json(
+          { error: 'That email address is not accepted. Check it, or use another address.', code: 'EMAIL_INVALID' },
+          { status: 400, headers: NO_STORE_HEADERS }
+        );
+      }
+      if (providerCode === 'over_email_send_rate_limit' || /email rate limit/i.test(error.message)) {
+        Sentry.captureMessage('Supabase confirmation-email limit reached at signup', 'warning');
+        return NextResponse.json(
+          { error: 'We cannot send more confirmation emails right now. Please try again in a few minutes.', code: 'EMAIL_LIMIT' },
+          { status: 429, headers: NO_STORE_HEADERS }
+        );
+      }
       return NextResponse.json(
-        { error: 'Could not create that account. Please try a different email.' },
+        { error: 'Could not create that account. Please try a different email.', code: 'SIGNUP_FAILED' },
         { status: 400, headers: NO_STORE_HEADERS }
       );
     }

@@ -11,6 +11,8 @@ import { formatPrice } from '@/lib/prices';
 import { useI18n } from '@/components/I18nProvider';
 import { INTL_LOCALE } from '@/lib/i18n/config';
 import ReportText from '@/components/ReportText';
+import InlineError from '@/components/InlineError';
+import { apiErrorMessage } from '@/lib/i18n/api-error';
 
 type HistoryItem = {
   id: string;
@@ -58,6 +60,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
   const [showBundleModal, setShowBundleModal] = useState(false);
   const [hasSavedProgress, setHasSavedProgress] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [skipError, setSkipError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,6 +97,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
   };
 
   const handleSkipPendingFollowup = async () => {
+    setSkipError(null);
     setSkipping(true);
     try {
       const res = await fetch('/api/skip-followup', {
@@ -106,10 +110,10 @@ export default function HistoryClient({ userId }: { userId: string }) {
         const sub = await getSubscriptionStatus({ force: true });
         if (sub) setSubStatus(sub);
       } else {
-        alert(t('common.error.generic'));
+        setSkipError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
       }
     } catch {
-      alert(t('common.error.network'));
+      setSkipError(t('common.error.network'));
     } finally {
       setSkipping(false);
     }
@@ -246,6 +250,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
           >
             {skipping ? t('common.pleaseWait') : t('history.waiting.skip')}
           </button>
+          <InlineError message={skipError} className="mt-3" />
         </div>
       )}
 
