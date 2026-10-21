@@ -21,6 +21,7 @@ import type { Locale } from '@/lib/i18n/config';
 import ReportText from '@/components/ReportText';
 import InlineError from '@/components/InlineError';
 import { apiErrorMessage } from '@/lib/i18n/api-error';
+import FeedbackCard from '@/components/FeedbackCard';
 
 
 function parseOptions(questionText: string): { letter: string; text: string }[] {
@@ -52,98 +53,6 @@ function questionsToShow(cluster: string, locale: Locale): string[] | undefined 
   return clusterQuestions[cluster];
 }
 
-// Hoisted out of the render body of FollowUpClient.
-//
-// It was declared inside the component, so every parent render produced a new
-// component type. React cannot know that is "the same" component, so it
-// unmounted the old one and mounted a fresh one -- discarding its state. This
-// component holds the rating and the comment the customer is part-way through
-// typing, so a parent re-render silently wiped their feedback mid-sentence.
-//
-// Declared at module scope it keeps a stable identity, and the two values it
-// needed from the parent come in as props.
-function FeedbackPopup({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useI18n();
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackComment, setFeedbackComment] = useState('');
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [expanded, setExpanded] = useState(true);
-  const [feedbackError, setFeedbackError] = useState<string | null>(null);
-
-  const saveFeedback = async () => {
-    if (feedbackRating === 0) { setFeedbackError(t('assess.feedback.rateFirst')); return; }
-    setFeedbackError(null);
-    setSaving(true);
-    try {
-      // Only feedbackRating/feedbackComment are sent — topClusters/rawScores/
-      // answers are now optional on the backend (see save-results route fix),
-      // since this popup has no access to the original assessment data.
-      const res = await fetch('/api/save-results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ feedbackRating, feedbackComment }),
-      });
-      if (res.ok) setSaved(true);
-      else setFeedbackError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
-    } catch {
-      setFeedbackError(t('common.error.network'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!open) return null;
-
-  return (
-    <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-stretch">
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2 py-6 rounded-l-lg shadow-lg transition-colors"
-        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-        aria-label={t('assess.feedback.toggleLabel')}
-      >
-        {expanded ? t('assess.feedback.toggleClose') : t('assess.feedback.toggleOpen')}
-      </button>
-      {expanded && (
-        <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-t border-b border-white/20 rounded-l-xl shadow-2xl p-5 flex flex-col gap-4">
-          {saved ? (
-            <div className="text-center py-4">
-              <div className="text-3xl mb-2">🎉</div>
-              <p className="text-green-400 font-semibold">{t('assess.feedback.thanks')}</p>
-              <button onClick={() => onClose()} className="mt-4 text-xs text-gray-400 hover:text-white">{t('common.close')}</button>
-            </div>
-          ) : (
-            <>
-              <div>
-                <h3 className="text-white font-bold text-sm mb-1">{t('assess.feedback.title')}</h3>
-                <p className="text-gray-400 text-xs">{t('followup.feedback.question')}</p>
-              </div>
-              <div className="flex gap-2 justify-center">
-                {[1, 2, 3, 4, 5].map(r => (
-                  <button key={r} onClick={() => setFeedbackRating(r)}
-                    className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
-                    {r}
-                  </button>
-                ))}
-              </div>
-              <textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)}
-                rows={3} placeholder={t('assess.feedback.placeholder')}
-                className="w-full p-2 text-sm border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-              <button onClick={saveFeedback} disabled={saving || feedbackRating === 0}
-                className="btn-primary w-full text-sm py-2 disabled:opacity-50">
-                {saving ? t('assess.feedback.saving') : t('assess.feedback.submit')}
-              </button>
-              <InlineError message={feedbackError} />
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function FollowUpClient() {
   const router = useRouter();
   const { t, tCluster, locale } = useI18n();
@@ -160,7 +69,6 @@ export default function FollowUpClient() {
   const [support, setSupport] = useState<SupportNoticeData | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
-  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   // A problem shown under the buttons (these were alert() boxes). toHistory
   // adds a button there for the cases where the fix is on the history page.
   const [error, setError] = useState<{ message: string; toHistory?: boolean } | null>(null);
@@ -376,7 +284,6 @@ export default function FollowUpClient() {
         setReportGenerated(true);
         sessionStorage.removeItem('topClusters');
         sessionStorage.removeItem('lastAssessmentId');
-        setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         setError({ message: apiErrorMessage(t, res.status, data) });
       }
@@ -412,7 +319,6 @@ export default function FollowUpClient() {
       <div className="relative min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4"
            style={{ backgroundImage: "url('/images/bg-assess.webp')" }}>
         <div className="absolute inset-0 bg-black/30 z-0" />
-        <FeedbackPopup open={showFeedbackPopup} onClose={() => setShowFeedbackPopup(false)} />
         <div className="relative z-10 max-w-2xl w-full mx-auto">
           <div className="glass-card text-center">
             <h1 className="text-2xl font-bold text-white mb-4">{t('followup.thanks')}</h1>
@@ -435,10 +341,11 @@ export default function FollowUpClient() {
                 <div className="p-4 bg-white/20 rounded-lg">
                   <h2 className="text-xl font-bold text-white mb-2">{t('followup.roadmapTitle')}</h2>
                   <ReportText text={followupReport} />
-                  <button onClick={() => router.push('/history')} className="btn-primary mt-4">
-                    {t('followup.goHistory')}
-                  </button>
                 </div>
+                <FeedbackCard questionKey="followup.feedback.question" className="mt-6 text-left" />
+                <button onClick={() => router.push('/history')} className="btn-primary mt-6">
+                  {t('followup.goHistory')}
+                </button>
               </div>
             )}
           </div>

@@ -40,6 +40,7 @@ import ReportText from '@/components/ReportText';
 import InlineError from '@/components/InlineError';
 import { apiErrorMessage } from '@/lib/i18n/api-error';
 import { formatPercent } from '@/lib/i18n/format';
+import FeedbackCard from '@/components/FeedbackCard';
 
 type Answers = {
   subjects: string[];
@@ -163,8 +164,6 @@ export default function Home() {
   const [actionError, setActionError] = useState<string | null>(null);
   // Controls the pricing modal overlay shown at the step-10 gate
   const [showPricingModal, setShowPricingModal] = useState(false);
-  // Controls the side feedback popup — shown after AI report is generated
-  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   // Shown when the user tries to access /assess with an unfinished
   // attempt (current_attempt_status === 'awaiting_followup_decision')
   // from a previous session — explains why they can't start fresh
@@ -598,9 +597,6 @@ export default function Home() {
 
         await refetchSubStatus();
         setAwaitingFollowupDecision(true);
-        // Show the feedback popup after a short delay so it doesn't
-        // compete with the report appearing on screen
-        setTimeout(() => setShowFeedbackPopup(true), 1500);
       } else {
         track('report_failed', { code: data.code ?? null, status: res.status });
         setReportError(apiErrorMessage(t, res.status, data));
@@ -958,95 +954,6 @@ export default function Home() {
     );
   }
 
-  // ---------- SIDE FEEDBACK POPUP ----------
-  // Defined here so it's available to both the results screen and the
-  // followup decision screen. Shown as a slide-in tab from the right
-  // after the AI report is generated — does not block the page.
-  const FeedbackPopup = () => {
-    const [feedbackRating, setFeedbackRating] = useState(0);
-    const [feedbackComment, setFeedbackComment] = useState('');
-    const [saved, setSaved] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [expanded, setExpanded] = useState(true);
-    const [feedbackError, setFeedbackError] = useState<string | null>(null);
-
-    const saveFeedback = async () => {
-      if (feedbackRating === 0) { setFeedbackError(t('assess.feedback.rateFirst')); return; }
-      setFeedbackError(null);
-      setSaving(true);
-      try {
-        // Only send rating + comment — the assessment data (topClusters,
-        // rawScores, answers) was already saved via /api/save-result at
-        // submission time. Resending it here broke validation: after the
-        // AI report generates, clearProgressAfterReport() sets
-        // submittedAnswers to null, and the backend schema only accepts
-        // undefined (not null) for optional fields, causing every feedback
-        // submission after the main questionnaire to fail silently.
-        const res = await fetchWithAuth('/api/save-results', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ feedbackRating, feedbackComment }),
-        });
-        if (res.ok) setSaved(true);
-        else setFeedbackError(apiErrorMessage(t, res.status, await res.json().catch(() => null)));
-      } catch {
-        setFeedbackError(t('common.error.network'));
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    if (!showFeedbackPopup) return null;
-
-    return (
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-stretch">
-        <button
-          onClick={() => setExpanded(e => !e)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-2 py-6 rounded-l-lg shadow-lg transition-colors"
-          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-          aria-label={t('assess.feedback.toggleLabel')}
-        >
-          {expanded ? t('assess.feedback.toggleClose') : t('assess.feedback.toggleOpen')}
-        </button>
-        {expanded && (
-          <div className="w-72 bg-gray-900/95 backdrop-blur-sm border-l border-t border-b border-white/20 rounded-l-xl shadow-2xl p-5 flex flex-col gap-4">
-            {saved ? (
-              <div className="text-center py-4">
-                <div className="text-3xl mb-2">🎉</div>
-                <p className="text-green-400 font-semibold">{t('assess.feedback.thanks')}</p>
-                <button onClick={() => setShowFeedbackPopup(false)} className="mt-4 text-xs text-gray-400 hover:text-white">{t('common.close')}</button>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <h3 className="text-white font-bold text-sm mb-1">{t('assess.feedback.title')}</h3>
-                  <p className="text-gray-400 text-xs">{t('assess.feedback.question')}</p>
-                </div>
-                <div className="flex gap-2 justify-center">
-                  {[1, 2, 3, 4, 5].map(r => (
-                    <button key={r} onClick={() => setFeedbackRating(r)}
-                      className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${feedbackRating === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
-                      {r}
-                    </button>
-                  ))}
-                </div>
-                <textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)}
-                  rows={3} placeholder={t('assess.feedback.placeholder')}
-                  className="w-full p-2 text-sm border border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
-                <button onClick={saveFeedback} disabled={saving || feedbackRating === 0}
-                  className="btn-primary w-full text-sm py-2 disabled:opacity-50">
-                  {saving ? t('assess.feedback.saving') : t('assess.feedback.submit')}
-                </button>
-                <InlineError message={feedbackError} />
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // ---------- FOLLOWUP DECISION SCREEN ----------
   if (awaitingFollowupDecision && result) {
     const plan = subStatus?.plan ?? 'free';
@@ -1054,7 +961,6 @@ export default function Home() {
 
     return (
       <div className={containerClasses}>
-        <FeedbackPopup />
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">{BRAND.name}</h1>
@@ -1084,6 +990,8 @@ export default function Home() {
             <h3 className="text-xl font-bold text-white mb-3">{t('assess.results.reportTitle')}</h3>
             <ReportText text={aiReport} />
           </div>
+
+          <FeedbackCard questionKey="assess.feedback.question" className="mb-8" />
 
           <div className="glass-card">
             {plan === 'full' || subStatus?.followupBundlePurchased || subStatus?.currentAttemptFollowupIncluded ? (
@@ -1151,7 +1059,6 @@ export default function Home() {
   if (result) {
     return (
       <div className={containerClasses}>
-        <FeedbackPopup />
         <div className="w-full max-w-2xl">
           <div className="mb-8 text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">{BRAND.name}</h1>
