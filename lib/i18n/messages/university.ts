@@ -58,4 +58,21 @@ export const university = {
   'uni.months.title': { en: 'Reports per month', es: 'Informes por mes' },
   'uni.months.hidden': { en: 'fewer than {k}', es: 'menos de {k}' },
   'uni.months.none': { en: 'No reports yet.', es: 'Todavía no hay informes.' },
+
+  // /university/sample: the same dashboard filled with invented numbers, so a
+  // careers team can see what it becomes before many students have joined.
+  'uni.sample.link': {
+    en: 'See what this page looks like with more students (sample data)',
+    es: 'Ver cómo queda esta página con más estudiantes (datos de muestra)',
+  },
+  'uni.sample.title': { en: 'Sample university dashboard', es: 'Ejemplo del panel para universidades' },
+  'uni.sample.eyebrow': { en: 'University dashboard · sample', es: 'Panel de la universidad · ejemplo' },
+  'uni.sample.name': { en: 'Example University', es: 'Universidad de ejemplo' },
+  'uni.sample.banner': {
+    en: 'This is an example with invented numbers. It shows what your careers team would see once about 200 students have used ADAQNO. With real students, any group smaller than {k} is hidden to keep them anonymous.',
+    es: 'Esto es un ejemplo con cifras inventadas. Muestra lo que vería vuestro servicio de orientación cuando unos 200 estudiantes hayan usado ADAQNO. Con estudiantes reales, cualquier grupo de menos de {k} se oculta para mantener su anonimato.',
+  },
+  'uni.sample.domain': { en: 'students.example.edu', es: 'alumnos.ejemplo.edu' },
+  'uni.sample.report': { en: 'See a sample student report', es: 'Ver un informe de estudiante de ejemplo' },
+  'uni.sample.home': { en: 'Back to ADAQNO', es: 'Volver a ADAQNO' },
 } satisfies Record<string, Entry>;
