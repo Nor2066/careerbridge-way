@@ -10,7 +10,7 @@ import {
   emailNotVerifiedResponse,
 } from '@/lib/api-errors';
 import { safeReturnTo } from '@/lib/auth-cookies';
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL, brandFull } from '@/lib/site';
 import { getLocale } from '@/lib/i18n/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
@@ -145,6 +145,7 @@ export async function POST(request: Request) {
       locale,
       branding_settings: {
         ...CHECKOUT_BRANDING,
+        display_name: brandFull(locale),
         ...(logoUrl ? { logo: { type: 'url' as const, url: logoUrl } } : {}),
         ...(iconUrl ? { icon: { type: 'url' as const, url: iconUrl } } : {}),
       },

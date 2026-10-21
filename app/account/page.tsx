@@ -10,13 +10,17 @@ import { getAuthenticatedUser } from '@/lib/supabase-server-auth';
 import { isEmailVerified } from '@/lib/auth';
 import AccountClient from './AccountClient';
 import { BRAND } from '@/lib/site';
+import { getTranslator } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Your account',
-  description: `Download or delete your ${BRAND.name} data.`,
-  // Nothing here should ever appear in a search result.
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator();
+  return {
+    title: t('meta.account.title'),
+    description: t('meta.account.description', { brand: BRAND.name }),
+    // Nothing here should ever appear in a search result.
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function AccountPage() {
   const user = await getAuthenticatedUser();

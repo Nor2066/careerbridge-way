@@ -13,6 +13,7 @@ import { INTL_LOCALE } from '@/lib/i18n/config';
 import ReportText from '@/components/ReportText';
 import InlineError from '@/components/InlineError';
 import { apiErrorMessage } from '@/lib/i18n/api-error';
+import { formatPercent } from '@/lib/i18n/format';
 
 type HistoryItem = {
   id: string;
@@ -297,7 +298,7 @@ export default function HistoryClient({ userId }: { userId: string }) {
                   <div key={cluster.cluster}>
                     <div className="flex justify-between text-sm font-semibold text-white mb-1">
                       <span>{tCluster(cluster.cluster)}</span>
-                      <span className="text-indigo-300">{cluster.percentage}%</span>
+                      <span className="text-indigo-300">{formatPercent(cluster.percentage, locale)}</span>
                     </div>
                     <div className="w-full bg-white/20 rounded-full h-2">
                       <div

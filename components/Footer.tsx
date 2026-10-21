@@ -10,7 +10,7 @@
 
 import Link from 'next/link';
 import { COMPANY, CONTACT, legalDetailsComplete } from '@/lib/legal';
-import { BRAND } from '@/lib/site';
+import { BRAND_DESCRIPTOR } from '@/lib/site';
 import { getTranslator } from '@/lib/i18n/server';
 import type { MessageKey } from '@/lib/i18n/messages';
 
@@ -53,7 +53,7 @@ export default async function Footer() {
           <div className="max-w-xs">
             <p className="text-base font-semibold tracking-wider text-white">
               {COMPANY.tradingName}{' '}
-              <span className="font-normal tracking-normal text-gray-400">{BRAND.descriptor}</span>
+              <span className="font-normal tracking-normal text-gray-400">{BRAND_DESCRIPTOR[locale]}</span>
             </p>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
               {t('footer.blurb')}

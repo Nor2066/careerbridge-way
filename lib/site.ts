@@ -14,6 +14,8 @@
 // development the answer is localhost. This one asks for the site's public
 // address, so it never depends on a request.
 
+import type { Locale } from '@/lib/i18n/config';
+
 /**
  * The brand, in one place, because it has already changed once. Everything
  * customer-facing reads from here or from COMPANY.tradingName, which is set
@@ -28,6 +30,18 @@ export const BRAND = {
 } as const;
 
 export const BRAND_FULL = `${BRAND.name} ${BRAND.descriptor}`;
+
+/** The descriptor in the reader's language, for pages, link previews and the
+ *  checkout header. "Orientación profesional" is the Spanish term for career
+ *  guidance; a literal "planificación de carrera" reads as a translation. */
+export const BRAND_DESCRIPTOR: Record<Locale, string> = {
+  en: BRAND.descriptor,
+  es: 'Orientación profesional',
+};
+
+export function brandFull(locale: Locale): string {
+  return `${BRAND.name} ${BRAND_DESCRIPTOR[locale]}`;
+}
 
 /**
  * Social profiles, or null for one that is not ours yet.

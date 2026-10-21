@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { BRAND, BRAND_FULL, SITE_URL } from '@/lib/site';
+import { BRAND, SITE_URL, brandFull } from '@/lib/site';
 import { I18nProvider } from '@/components/I18nProvider';
 import { getLocale } from '@/lib/i18n/server';
 import './globals.css';
@@ -55,7 +55,9 @@ const META_TEXT = {
 } as const;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const m = META_TEXT[await getLocale()];
+  const locale = await getLocale();
+  const m = META_TEXT[locale];
+  const full = brandFull(locale);
   return {
     metadataBase: new URL(SITE_URL),
     title: {
@@ -70,8 +72,8 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       locale: m.ogLocale,
       url: SITE_URL,
-      siteName: BRAND_FULL,
-      title: `${BRAND_FULL} — ${m.title}`,
+      siteName: full,
+      title: `${full} — ${m.title}`,
       description: m.ogDescription,
       // No images here: app/opengraph-image.png and app/twitter-image.png are
       // picked up by file convention, with their size and alt text. This used
@@ -80,7 +82,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${BRAND_FULL} — ${m.twitterTitle}`,
+      title: `${full} — ${m.twitterTitle}`,
       description: m.twitterDescription,
     },
     robots: {

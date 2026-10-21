@@ -1,4 +1,5 @@
-// The 404 page and the sample report.
+// The 404 page, the sample report, and page titles and descriptions
+// (the browser tab and search results).
 import type { Entry } from './types';
 
 export const misc = {
@@ -62,4 +63,22 @@ El cuestionario de seguimiento es donde todo esto se concreta: puestos específi
   'sample.disclaimer.after': { en: ' for what that means.', es: ' para saber qué significa.' },
   'sample.assess': { en: 'Take the assessment', es: 'Hacer la evaluación' },
   'sample.pricing': { en: 'See pricing', es: 'Ver precios' },
+
+  'meta.account.title': { en: 'Your account', es: 'Tu cuenta' },
+  'meta.account.description': { en: 'Download or delete your {brand} data.', es: 'Descarga o elimina tus datos de {brand}.' },
+  'meta.assess.title': { en: 'Career Assessment Test', es: 'Test de orientación profesional' },
+  'meta.assess.description': {
+    en: 'Take our full AI-powered career assessment. Answer 46 in-depth questions and get a personalised career report matching your skills and interests to real career paths.',
+    es: 'Haz nuestra evaluación completa de orientación profesional con IA: 46 preguntas a fondo y un informe personalizado que relaciona tus habilidades e intereses con salidas profesionales reales.',
+  },
+  'meta.sample.title': { en: 'Sample career report', es: 'Informe de carrera de ejemplo' },
+  'meta.sample.description': {
+    en: 'An example of the AI-generated career report {brand} produces, so you can see what you get before you buy.',
+    es: 'Un ejemplo del informe de carrera que escribe la IA de {brand}, para que veas lo que recibes antes de comprar.',
+  },
+  'meta.withdraw.title': { en: 'Withdraw from contract', es: 'Desistir del contrato' },
+  'meta.withdraw.description': {
+    en: 'Withdraw from a purchase within 14 days, without giving a reason.',
+    es: 'Desiste de una compra en los 14 días siguientes, sin dar ningún motivo.',
+  },
 } satisfies Record<string, Entry>;

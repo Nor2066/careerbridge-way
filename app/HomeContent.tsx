@@ -39,6 +39,7 @@ import {
 import ReportText from '@/components/ReportText';
 import InlineError from '@/components/InlineError';
 import { apiErrorMessage } from '@/lib/i18n/api-error';
+import { formatPercent } from '@/lib/i18n/format';
 
 type Answers = {
   subjects: string[];
@@ -132,7 +133,7 @@ const initialAnswers: Answers = {
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
-  const { t, tOption, tCluster } = useI18n();
+  const { t, tOption, tCluster, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
@@ -1067,7 +1068,7 @@ export default function Home() {
                 <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-semibold text-white text-lg">{tCluster(item.cluster)}</span>
-                    <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                    <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{formatPercent(item.percentage, locale)}</span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3">
                     <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>
@@ -1103,7 +1104,7 @@ export default function Home() {
               <>
                 <h3 className="text-xl font-bold text-white mb-3 text-center">{t('assess.decision.wantTitle')}</h3>
                 <p className="text-gray-300 mb-6 text-center">
-                  {t('assess.decision.wantBody', { price: formatPrice('followup_unlock') })}
+                  {t('assess.decision.wantBody', { price: formatPrice('followup_unlock', locale) })}
                 </p>
                 <div className="flex flex-col gap-3">
                   <PricingContent
@@ -1163,7 +1164,7 @@ export default function Home() {
                 <li key={idx} className="bg-white/20 backdrop-blur-sm p-5 rounded-xl">
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-semibold text-white text-lg">{tCluster(item.cluster)}</span>
-                    <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{item.percentage}%</span>
+                    <span className="text-transparent bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text font-bold text-xl">{formatPercent(item.percentage, locale)}</span>
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-3">
                     <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all" style={{ width: `${item.percentage}%` }}></div>

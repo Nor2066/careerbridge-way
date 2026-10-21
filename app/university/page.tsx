@@ -11,10 +11,10 @@ import { getStaffInstitutions } from '@/lib/institutions';
 import { getTranslator } from '@/lib/i18n/server';
 import UniversityDashboard from './UniversityDashboard';
 
-export const metadata: Metadata = {
-  title: 'University dashboard',
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator();
+  return { title: t('uni.title'), robots: { index: false, follow: false } };
+}
 
 export default async function UniversityPage() {
   const user = await getAuthenticatedUser();

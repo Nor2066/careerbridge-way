@@ -4,11 +4,12 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import AssessClient from './AssessClient';
+import { getTranslator } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Career Assessment Test',
-  description: 'Take our full AI-powered career assessment. Answer 46 in-depth questions and get a personalised career report matching your skills and interests to real career paths.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator();
+  return { title: t('meta.assess.title'), description: t('meta.assess.description') };
+}
 
 export default async function AssessPage() {
   const cookieStore = await cookies();

@@ -19,12 +19,16 @@ import {
   type PaymentForWithdrawal,
 } from '@/lib/withdrawal-rules';
 import WithdrawClient, { type WithdrawablePurchase } from './WithdrawClient';
+import { getTranslator } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Withdraw from contract',
-  description: 'Withdraw from a purchase within 14 days, without giving a reason.',
-  robots: { index: false, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator();
+  return {
+    title: t('meta.withdraw.title'),
+    description: t('meta.withdraw.description'),
+    robots: { index: false, follow: true },
+  };
+}
 
 export const dynamic = 'force-dynamic';
 

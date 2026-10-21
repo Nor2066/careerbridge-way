@@ -22,12 +22,15 @@ import Link from 'next/link';
 import { BRAND } from '@/lib/site';
 import { getTranslator } from '@/lib/i18n/server';
 import type { MessageKey } from '@/lib/i18n/messages';
+import { formatPercent } from '@/lib/i18n/format';
 
-export const metadata: Metadata = {
-  title: 'Sample career report',
-  description:
-    `An example of the AI-generated career report ${BRAND.name} produces, so you can see what you get before you buy.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslator();
+  return {
+    title: t('meta.sample.title'),
+    description: t('meta.sample.description', { brand: BRAND.name }),
+  };
+}
 
 const CLUSTERS: { name: MessageKey; pct: number }[] = [
   { name: 'sample.cluster.1', pct: 78.4 },
@@ -38,7 +41,7 @@ const CLUSTERS: { name: MessageKey; pct: number }[] = [
 // The report text lives in lib/i18n/messages/misc.ts, one version per language.
 
 export default async function SampleReportPage() {
-  const { t } = await getTranslator();
+  const { t, locale } = await getTranslator();
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-14">
       <div className="mx-auto w-full max-w-3xl">
@@ -63,7 +66,7 @@ export default async function SampleReportPage() {
               <li key={c.name}>
                 <div className="flex items-baseline justify-between gap-4">
                   <span className="font-medium text-white">{t(c.name)}</span>
-                  <span className="font-mono text-sm text-indigo-300">{c.pct}%</span>
+                  <span className="font-mono text-sm text-indigo-300">{formatPercent(c.pct, locale)}</span>
                 </div>
                 <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-700">
                   <div
