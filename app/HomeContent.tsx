@@ -36,6 +36,7 @@ import {
   TEAM_ENVIRONMENTS,
   CRITICISM,
 } from '@/lib/assessment-options';
+import ReportText from '@/components/ReportText';
 
 type Answers = {
   subjects: string[];
@@ -1068,7 +1069,7 @@ export default function Home() {
 
           <div className="glass-card mb-8">
             <h3 className="text-xl font-bold text-white mb-3">{t('assess.results.reportTitle')}</h3>
-            <p className="text-gray-200 whitespace-pre-wrap">{aiReport}</p>
+            <ReportText text={aiReport} />
           </div>
 
           <div className="glass-card">

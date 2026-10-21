@@ -10,6 +10,7 @@ import PricingContent from '@/components/PricingContent';
 import { formatPrice } from '@/lib/prices';
 import { useI18n } from '@/components/I18nProvider';
 import { INTL_LOCALE } from '@/lib/i18n/config';
+import ReportText from '@/components/ReportText';
 
 type HistoryItem = {
   id: string;
@@ -312,8 +313,8 @@ export default function HistoryClient({ userId }: { userId: string }) {
                   <span>{expanded[item.id]?.first ? '▲' : '▼'}</span>
                 </button>
                 {expanded[item.id]?.first && (
-                  <div className="mt-3 p-4 bg-black/30 rounded-xl text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-                    {item.firstAIReport || <em className="text-gray-400">{t('history.item.noReport')}</em>}
+                  <div className="mt-3 p-4 bg-black/30 rounded-xl text-sm">
+                    {item.firstAIReport ? <ReportText text={item.firstAIReport} /> : <em className="text-gray-400">{t('history.item.noReport')}</em>}
                   </div>
                 )}
               </div>
@@ -327,8 +328,8 @@ export default function HistoryClient({ userId }: { userId: string }) {
                   <span>{expanded[item.id]?.second ? '▲' : '▼'}</span>
                 </button>
                 {expanded[item.id]?.second && (
-                  <div className="mt-3 p-4 bg-black/30 rounded-xl text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-                    {item.detailedRoadmap || <em className="text-gray-400">{t('history.item.noRoadmap')}</em>}
+                  <div className="mt-3 p-4 bg-black/30 rounded-xl text-sm">
+                    {item.detailedRoadmap ? <ReportText text={item.detailedRoadmap} /> : <em className="text-gray-400">{t('history.item.noRoadmap')}</em>}
                   </div>
                 )}
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">

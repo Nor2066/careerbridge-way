@@ -18,6 +18,7 @@ import { clusterQuestions } from '@/lib/followup-questions';
 import { clusterQuestionsEs } from '@/lib/i18n/followup-questions-es';
 import { useI18n } from '@/components/I18nProvider';
 import type { Locale } from '@/lib/i18n/config';
+import ReportText from '@/components/ReportText';
 
 
 function parseOptions(questionText: string): { letter: string; text: string }[] {
@@ -413,7 +414,7 @@ export default function FollowUpClient() {
                 {support && <SupportNotice data={support} />}
                 <div className="p-4 bg-white/20 rounded-lg">
                   <h2 className="text-xl font-bold text-white mb-2">{t('followup.roadmapTitle')}</h2>
-                  <p className="text-gray-200 whitespace-pre-wrap">{followupReport}</p>
+                  <ReportText text={followupReport} />
                   <button onClick={() => router.push('/history')} className="btn-primary mt-4">
                     {t('followup.goHistory')}
                   </button>
