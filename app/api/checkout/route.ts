@@ -11,6 +11,7 @@ import {
 } from '@/lib/api-errors';
 import { safeReturnTo } from '@/lib/auth-cookies';
 import { SITE_URL } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
 import { isDisabled, DISABLED_MESSAGE } from '@/lib/kill-switch';
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
     }
 
     const baseUrl = SITE_URL;
+    const locale = await getLocale();
     const returnPath = safeReturnTo(parsed.data.returnPath, '/assess');
 
     // A logo only appears if one is actually reachable — pointing Stripe at a
@@ -137,7 +139,10 @@ export async function POST(request: Request) {
       // means changing the mix is a Dashboard toggle rather than a deploy.
       line_items: [{ price: priceId, quantity: 1 }],
       // Follows the browser's language rather than defaulting to English.
-      locale: 'auto',
+      // The language the customer chose on the site, not the browser's: a
+      // student reading the site in Spanish on an English browser was sent
+      // to an English checkout.
+      locale,
       branding_settings: {
         ...CHECKOUT_BRANDING,
         ...(logoUrl ? { logo: { type: 'url' as const, url: logoUrl } } : {}),
@@ -148,14 +153,14 @@ export async function POST(request: Request) {
         // get, and the fact that receiving it immediately ends their 14-day
         // cancellation right. See IMMEDIATE_DELIVERY_NOTICE in lib/plans.ts.
         submit: {
-          message: `${CHECKOUT_SUBMIT_MESSAGE[productType]} ${IMMEDIATE_DELIVERY_NOTICE}`,
+          message: `${CHECKOUT_SUBMIT_MESSAGE[locale][productType as ProductType]} ${IMMEDIATE_DELIVERY_NOTICE[locale]}`,
         },
         // Replaces Stripe's default "I agree to the terms of service" beside
         // the tickbox with wording that also carries the regulation 37
         // express consent and acknowledgement. Only rendered when the
         // tickbox itself is, so it is gated on the same flag.
         ...(tosRequired
-          ? { terms_of_service_acceptance: { message: TERMS_ACCEPTANCE_MESSAGE } }
+          ? { terms_of_service_acceptance: { message: TERMS_ACCEPTANCE_MESSAGE[locale] } }
           : {}),
       },
       // The tickbox that makes the refund policy hold up. Behind an env flag

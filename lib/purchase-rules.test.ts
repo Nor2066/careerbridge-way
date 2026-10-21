@@ -114,16 +114,23 @@ describe('checkout copy', () => {
 
     // If someone changes ATTEMPTS_GRANTED without touching the copy, the
     // customer is told one number under the Pay button and credited another.
-    expect(CHECKOUT_SUBMIT_MESSAGE.basic).toContain(String(ATTEMPTS_GRANTED.basic));
-    expect(CHECKOUT_SUBMIT_MESSAGE.full).toContain(String(ATTEMPTS_GRANTED.full));
-    expect(CHECKOUT_SUBMIT_MESSAGE.topup).toContain(String(ATTEMPTS_GRANTED.topup));
+    for (const messages of Object.values(CHECKOUT_SUBMIT_MESSAGE)) {
+      expect(messages.basic).toContain(String(ATTEMPTS_GRANTED.basic));
+      expect(messages.full).toContain(String(ATTEMPTS_GRANTED.full));
+      expect(messages.topup).toContain(String(ATTEMPTS_GRANTED.topup));
+    }
   });
 
   it('gives every product a message inside Stripe’s length limit', async () => {
     const { CHECKOUT_SUBMIT_MESSAGE } = await import('@/lib/plans');
-    for (const [product, message] of Object.entries(CHECKOUT_SUBMIT_MESSAGE)) {
-      expect(message.length, product).toBeGreaterThan(0);
-      expect(message.length, product).toBeLessThanOrEqual(1200);
+    const { IMMEDIATE_DELIVERY_NOTICE } = await import('@/lib/plans');
+    for (const [locale, messages] of Object.entries(CHECKOUT_SUBMIT_MESSAGE)) {
+      for (const [product, message] of Object.entries(messages)) {
+        // Sent as one string with the delivery notice appended.
+        const full = `${message} ${IMMEDIATE_DELIVERY_NOTICE[locale as keyof typeof IMMEDIATE_DELIVERY_NOTICE]}`;
+        expect(message.length, `${locale} ${product}`).toBeGreaterThan(0);
+        expect(full.length, `${locale} ${product}`).toBeLessThanOrEqual(1200);
+      }
     }
   });
 

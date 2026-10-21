@@ -5,6 +5,7 @@
 
 import { BRAND_FULL } from '@/lib/site';
 import { PRICES_CENTS } from '@/lib/prices';
+import type { Locale } from '@/lib/i18n/config';
 
 export type ProductType = 'basic' | 'full' | 'followup_unlock' | 'topup';
 
@@ -42,12 +43,23 @@ export const ATTEMPTS_GRANTED: Record<ProductType, number> = {
 // asking exactly one question — "what do I actually get?" — so each
 // product answers it in its own words. Counts are interpolated from
 // ATTEMPTS_GRANTED so the copy can never drift from what is granted.
-export const CHECKOUT_SUBMIT_MESSAGE: Record<ProductType, string> = {
-  basic: `Your ${ATTEMPTS_GRANTED.basic} assessment attempts are added to your account the moment payment completes.`,
-  full: `All ${ATTEMPTS_GRANTED.full} complete attempts — main and followup questionnaire each — are added the moment payment completes.`,
-  followup_unlock:
-    'Unlocks the followup questionnaire for every attempt on your account, and adds a bonus attempt straight away.',
-  topup: `Adds ${ATTEMPTS_GRANTED.topup} complete attempts — main and followup for each — to your existing plan.`,
+// In the language the customer chose on the site: Stripe's own labels follow
+// the session's `locale`, but these sentences are ours.
+export const CHECKOUT_SUBMIT_MESSAGE: Record<Locale, Record<ProductType, string>> = {
+  en: {
+    basic: `Your ${ATTEMPTS_GRANTED.basic} assessment attempts are added to your account the moment payment completes.`,
+    full: `All ${ATTEMPTS_GRANTED.full} complete attempts — main and followup questionnaire each — are added the moment payment completes.`,
+    followup_unlock:
+      'Unlocks the followup questionnaire for every attempt on your account, and adds a bonus attempt straight away.',
+    topup: `Adds ${ATTEMPTS_GRANTED.topup} complete attempts — main and followup for each — to your existing plan.`,
+  },
+  es: {
+    basic: `Tus ${ATTEMPTS_GRANTED.basic} intentos de evaluación se añaden a tu cuenta en cuanto se completa el pago.`,
+    full: `Los ${ATTEMPTS_GRANTED.full} intentos completos (cuestionario principal y de seguimiento en cada uno) se añaden en cuanto se completa el pago.`,
+    followup_unlock:
+      'Desbloquea el cuestionario de seguimiento en todos los intentos de tu cuenta y añade un intento extra al momento.',
+    topup: `Añade ${ATTEMPTS_GRANTED.topup} intentos completos (principal y seguimiento en cada uno) a tu plan actual.`,
+  },
 };
 
 // Brand colours mirror --btn-primary-bg-start and --card-bg in globals.css.
@@ -78,8 +90,10 @@ export const CHECKOUT_BRANDING = {
  * Kept short on purpose. A paragraph of legalese under a Pay button is read by
  * nobody, which defeats the point of showing it.
  */
-export const IMMEDIATE_DELIVERY_NOTICE =
-  'Your purchase is available straight away, so your 14-day right to cancel ends once you generate a report with it. Anything you have not used stays refundable for 14 days.';
+export const IMMEDIATE_DELIVERY_NOTICE: Record<Locale, string> = {
+  en: 'Your purchase is available straight away, so your 14-day right to cancel ends once you generate a report with it. Anything you have not used stays refundable for 14 days.',
+  es: 'Tu compra está disponible al momento, así que tu derecho a desistir en 14 días termina cuando generes un informe con ella. Lo que no hayas usado sigue siendo reembolsable durante 14 días.',
+};
 
 /**
  * The wording beside the tickbox at checkout.
@@ -105,10 +119,17 @@ export const IMMEDIATE_DELIVERY_NOTICE =
  * refund policy is resting on the weaker position — see the warning in
  * app/api/checkout/route.ts.
  */
-export const TERMS_ACCEPTANCE_MESSAGE =
-  'I agree to the Terms of Service. I ask for my purchase to be made available immediately, ' +
-  'and I understand that once I generate a report with it I lose my 14-day right to cancel ' +
-  'that part. Anything I have not used stays refundable for 14 days.';
+export const TERMS_ACCEPTANCE_MESSAGE: Record<Locale, string> = {
+  en:
+    'I agree to the Terms of Service. I ask for my purchase to be made available immediately, ' +
+    'and I understand that once I generate a report with it I lose my 14-day right to cancel ' +
+    'that part. Anything I have not used stays refundable for 14 days.',
+  // Spanish wording for the lawyer to confirm, alongside the English one.
+  es:
+    'Acepto los Términos del servicio. Pido que mi compra esté disponible de inmediato ' +
+    'y entiendo que, cuando genere un informe con ella, pierdo mi derecho a desistir en 14 días ' +
+    'respecto de esa parte. Lo que no haya usado sigue siendo reembolsable durante 14 días.',
+};
 
 // Which plan a purchase sets the user to (only basic/full change the plan)
 export const PLAN_FOR_PRODUCT: Record<ProductType, 'basic' | 'full' | null> = {
