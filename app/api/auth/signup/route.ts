@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import {
   createBufferedServerClient,
+  createEmailLinkClient,
   applyCookies,
   isSameOrigin,
   siteOrigin,
@@ -97,10 +98,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
-
-    const { data, error } = await supabase.auth.signUp({
+    // The implicit-flow client, so the confirmation link works on any device
+    // at any time. See createEmailLinkClient.
+    const { data, error } = await createEmailLinkClient().auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${siteOrigin(request)}/auth/callback` },
@@ -146,7 +146,18 @@ export async function POST(request: Request) {
       { needsConfirmation: !data.session },
       { headers: NO_STORE_HEADERS }
     );
-    applyCookies(response, pending);
+    // Only when the project has email confirmation turned off does Supabase
+    // return a session here; it then goes into httpOnly cookies like every
+    // other login.
+    if (data.session) {
+      const cookieStore = await cookies();
+      const { supabase, pending } = createBufferedServerClient(() => cookieStore.getAll());
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      applyCookies(response, pending);
+    }
     return response;
   } catch (err) {
     Sentry.captureException(err);

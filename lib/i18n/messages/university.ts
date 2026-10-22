@@ -23,7 +23,7 @@ export const university = {
   'uni.licence.status.paused': { en: 'Paused', es: 'En pausa' },
   'uni.licence.status.not_started': { en: 'Starts later', es: 'Aún no ha empezado' },
   'uni.licence.status.expired': { en: 'Expired', es: 'Caducada' },
-  'uni.licence.attempts': { en: '{count} attempt(s) per student', es: '{count} intento(s) por estudiante' },
+  'uni.licence.attempts': { en: '{count} {count|attempt|attempts} per student', es: '{count} {count|intento|intentos} por estudiante' },
   'uni.licence.followupYes': { en: 'Follow-up roadmap included', es: 'Hoja de ruta de seguimiento incluida' },
   'uni.licence.followupNo': { en: 'Follow-up roadmap not included', es: 'Hoja de ruta de seguimiento no incluida' },
   'uni.licence.howToJoin': {

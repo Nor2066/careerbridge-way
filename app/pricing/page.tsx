@@ -4,6 +4,11 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import PricingContent from '@/components/PricingContent';
 import { getSubscription } from '@/lib/subscription';
+import { pageMetadata } from '@/lib/i18n/server';
+
+export function generateMetadata() {
+  return pageMetadata('meta.pricing.title', { index: true });
+}
 
 export default async function PricingPage() {
   const cookieStore = await cookies();

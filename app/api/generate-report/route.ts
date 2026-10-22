@@ -46,6 +46,7 @@ import {
 import { BRAND } from '@/lib/site';
 import { localeFromRequest } from '@/lib/i18n/config';
 import { reportContextInstruction, clusterForPrompt, supportCountry } from '@/lib/report-locale';
+import { formatPercent } from '@/lib/i18n/format';
 import { buildMainReportPrompt, formatClusters } from '@/lib/report-prompt';
 
 // A hung OpenAI call used to hold the serverless function open for its whole
@@ -307,7 +308,11 @@ export async function POST(request: Request) {
         ? (resultRow.answers as Record<string, unknown>)
         : answers;
     const userPrompt = buildMainReportPrompt({
-      clusters: formatClusters(topClusters, (cluster) => clusterForPrompt(locale, cluster)),
+      clusters: formatClusters(
+        topClusters,
+        (cluster) => clusterForPrompt(locale, cluster),
+        (value) => formatPercent(value, locale)
+      ),
       mainAnswers,
     });
 

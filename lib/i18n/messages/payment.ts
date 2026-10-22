@@ -4,11 +4,11 @@ import type { Entry } from './types';
 export const payment = {
   'payment.product.basic': { en: 'Basic plan — 2 assessment attempts added', es: 'Plan Básico: se han añadido 2 intentos de evaluación' },
   'payment.product.full': { en: 'Full plan — 3 complete attempts added', es: 'Plan Completo: se han añadido 3 intentos completos' },
-  'payment.product.followup_unlock': { en: 'All followups unlocked, plus 1 bonus attempt', es: 'Todos los seguimientos desbloqueados, más 1 intento extra' },
+  'payment.product.followup_unlock': { en: 'All follow-ups unlocked, plus 1 bonus attempt', es: 'Todos los seguimientos desbloqueados, más 1 intento extra' },
   'payment.product.topup': { en: '3 extra attempts added', es: 'Se han añadido 3 intentos extra' },
 
   'payment.dest./assess': { en: 'your assessment', es: 'tu evaluación' },
-  'payment.dest./followup': { en: 'your followup questionnaire', es: 'tu cuestionario de seguimiento' },
+  'payment.dest./followup': { en: 'your follow-up questionnaire', es: 'tu cuestionario de seguimiento' },
   'payment.dest./history': { en: 'your history', es: 'tu historial' },
   'payment.dest./pricing': { en: 'the pricing page', es: 'la página de precios' },
   'payment.dest.default': { en: 'where you left off', es: 'donde lo dejaste' },
@@ -44,7 +44,7 @@ export const payment = {
     es: 'No se ha hecho ningún cargo y no has perdido nada de lo que ya respondiste. Puedes seguir justo donde lo dejaste cuando quieras.',
   },
   'payment.cancelled.back./assess': { en: 'Back to my assessment', es: 'Volver a mi evaluación' },
-  'payment.cancelled.back./followup': { en: 'Back to my followup', es: 'Volver a mi seguimiento' },
+  'payment.cancelled.back./followup': { en: 'Back to my follow-up', es: 'Volver a mi seguimiento' },
   'payment.cancelled.back./history': { en: 'Back to my history', es: 'Volver a mi historial' },
   'payment.cancelled.back./pricing': { en: 'Back to Pricing', es: 'Volver a precios' },
   'payment.cancelled.goBack': { en: 'Go back', es: 'Volver' },

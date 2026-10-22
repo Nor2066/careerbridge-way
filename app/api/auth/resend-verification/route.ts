@@ -23,14 +23,12 @@
 // discover which addresses are registered.
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 import { requireAuth, isEmailVerified } from '@/lib/auth';
 import { isUnauthorized } from '@/lib/api-errors';
 import {
-  createBufferedServerClient,
+  createEmailLinkClient,
   isSameOrigin,
   siteOrigin,
   NO_STORE_HEADERS,
@@ -97,10 +95,10 @@ export async function POST(request: Request) {
         );
       }
 
-      const cookieStore = await cookies();
-      const { supabase } = createBufferedServerClient(() => cookieStore.getAll());
-
-      const { error } = await supabase.auth.resend({
+      // Implicit flow, like the sign-up email it replaces: this client used
+      // to send a PKCE link that only worked in the same browser for ten
+      // minutes. See createEmailLinkClient.
+      const { error } = await createEmailLinkClient().auth.resend({
         type: 'signup',
         email: user.email,
         options: { emailRedirectTo: redirectTo },
@@ -136,12 +134,7 @@ export async function POST(request: Request) {
       // Anon key: resending a confirmation needs no elevated privileges, and
       // the service role here would mean a compromised route had full database
       // access. Same reasoning as /api/auth/magic-link.
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const { error } = await supabase.auth.resend({
+      const { error } = await createEmailLinkClient().auth.resend({
         type: 'signup',
         email: parsed.data.email,
         options: { emailRedirectTo: redirectTo },

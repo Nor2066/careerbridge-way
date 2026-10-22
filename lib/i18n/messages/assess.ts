@@ -64,7 +64,7 @@ export const assess = {
     es: '¿Qué hiciste? ¿Por qué te pareció importante?',
   },
   'assess.q.past': {
-    en: 'What career(s) have you considered before? Why did you consider them? Why did you get discouraged from them, if you got discouraged?',
+    en: 'What careers have you considered before? Why did you consider them? Why did you get discouraged from them, if you got discouraged?',
     es: '¿Qué profesiones has considerado antes? ¿Por qué? Y si te echaron atrás, ¿qué te hizo desistir?',
   },
   'assess.q.past.placeholder': {
@@ -113,21 +113,21 @@ export const assess = {
   // Follow-up decision
   'assess.decision.readyTitle': { en: 'Ready for your detailed roadmap?', es: '¿Listo para tu hoja de ruta detallada?' },
   'assess.decision.planIncludes': {
-    en: 'Your plan includes the followup questionnaire — answer a few more questions for an in-depth career roadmap.',
+    en: 'Your plan includes the follow-up questionnaire — answer a few more questions for an in-depth career roadmap.',
     es: 'Tu plan incluye el cuestionario de seguimiento: responde unas preguntas más para recibir una hoja de ruta en profundidad.',
   },
   'assess.decision.bundleUnlocked': {
-    en: "You've already unlocked all followups — answer a few more questions for an in-depth career roadmap.",
+    en: "You've already unlocked all follow-ups — answer a few more questions for an in-depth career roadmap.",
     es: 'Ya has desbloqueado todos los seguimientos: responde unas preguntas más para recibir una hoja de ruta en profundidad.',
   },
   'assess.decision.universityIncludes': {
-    en: '{university} includes the followup questionnaire — answer a few more questions for an in-depth career roadmap.',
+    en: '{university} includes the follow-up questionnaire — answer a few more questions for an in-depth career roadmap.',
     es: '{university} incluye el cuestionario de seguimiento: responde unas preguntas más para recibir una hoja de ruta en profundidad.',
   },
-  'assess.decision.continue': { en: '📋 Continue to Followup Questionnaire', es: '📋 Continuar al cuestionario de seguimiento' },
+  'assess.decision.continue': { en: '📋 Continue to Follow-up Questionnaire', es: '📋 Continuar al cuestionario de seguimiento' },
   'assess.decision.wantTitle': { en: 'Want a more detailed roadmap?', es: '¿Quieres una hoja de ruta más detallada?' },
   'assess.decision.wantBody': {
-    en: 'Unlock the followup questionnaire and get a second, more detailed AI report with concrete job titles, courses, and a 3-month action plan — one purchase covers both of your attempts, for {price}.',
+    en: 'Unlock the follow-up questionnaire and get a second, more detailed AI report with concrete job titles, courses, and a 3-month action plan — one purchase covers both of your attempts, for {price}.',
     es: 'Desbloquea el cuestionario de seguimiento y recibe un segundo informe con IA, más detallado, con puestos concretos, cursos y un plan de acción de 3 meses. Una sola compra cubre tus dos intentos, por {price}.',
   },
   'assess.decision.notNow': { en: 'Not now — go to my history', es: 'Ahora no, ir a mi historial' },
@@ -144,7 +144,7 @@ export const assess = {
     en: "Here's exactly what's blocking this attempt, and what unblocks it.",
     es: 'Esto es exactamente lo que bloquea este intento y cómo desbloquearlo.',
   },
-  'assess.paywall.seeAttempts': { en: 'See my attempts and followups', es: 'Ver mis intentos y seguimientos' },
+  'assess.paywall.seeAttempts': { en: 'See my attempts and follow-ups', es: 'Ver mis intentos y seguimientos' },
   'assess.paywall.progressSaved': {
     en: "Your progress is saved. After payment you'll continue exactly where you left off.",
     es: 'Tu progreso está guardado. Después del pago seguirás justo donde lo dejaste.',
@@ -157,19 +157,19 @@ export const assess = {
   // Must finish
   'assess.mustFinish.title': { en: 'One Attempt Left to Finish', es: 'Te queda un intento por terminar' },
   'assess.mustFinish.reason': {
-    en: "You have a previous assessment that's still waiting on its followup questionnaire.",
+    en: "You have a previous assessment that's still waiting on its follow-up questionnaire.",
     es: 'Tienes una evaluación anterior que aún espera su cuestionario de seguimiento.',
   },
   'assess.mustFinish.unlocked': {
-    en: 'Open it from your history page and finish the followup — then you’re free to start a new assessment. Or skip it below if you’d rather move on; you can always come back to it later.',
+    en: 'Open it from your history page and finish the follow-up — then you’re free to start a new assessment. Or skip it below if you’d rather move on; you can always come back to it later.',
     es: 'Ábrela desde tu historial y termina el seguimiento; después podrás empezar una evaluación nueva. O sáltalo abajo si prefieres seguir adelante: siempre podrás volver a él más tarde.',
   },
   'assess.mustFinish.locked': {
-    en: 'Your followups aren’t unlocked yet, so you can finish this attempt by unlocking them from your history page — or skip the followup below and start fresh. Skipping loses nothing: the attempt stays in your history.',
+    en: 'Your follow-ups aren’t unlocked yet, so you can finish this attempt by unlocking them from your history page — or skip the follow-up below and start fresh. Skipping loses nothing: the attempt stays in your history.',
     es: 'Tus seguimientos aún no están desbloqueados: puedes terminar este intento desbloqueándolos desde tu historial, o saltarte el seguimiento abajo y empezar de nuevo. Saltarlo no te hace perder nada: el intento sigue en tu historial.',
   },
   'assess.mustFinish.goHistory': { en: 'Go to My History →', es: 'Ir a mi historial →' },
-  'assess.mustFinish.skip': { en: 'Skip that followup and start a new assessment', es: 'Saltar ese seguimiento y empezar una evaluación nueva' },
+  'assess.mustFinish.skip': { en: 'Skip that follow-up and start a new assessment', es: 'Saltar ese seguimiento y empezar una evaluación nueva' },
 
   // Attempt errors
   'assess.noAttempts': {
@@ -179,9 +179,6 @@ export const assess = {
   'assess.needPlan': { en: 'You need to purchase a plan to continue.', es: 'Necesitas comprar un plan para continuar.' },
 
   // Feedback
-  'assess.feedback.toggleOpen': { en: '💬 Feedback', es: '💬 Opinión' },
-  'assess.feedback.toggleClose': { en: '✕ Close', es: '✕ Cerrar' },
-  'assess.feedback.toggleLabel': { en: 'Toggle feedback', es: 'Mostrar u ocultar opinión' },
   'assess.feedback.thanks': { en: 'Thank you for your feedback!', es: '¡Gracias por tu opinión!' },
   'assess.feedback.title': { en: 'Help us improve', es: 'Ayúdanos a mejorar' },
   'assess.feedback.question': { en: 'How accurate were your results?', es: '¿Hasta qué punto acertaron tus resultados?' },
@@ -192,7 +189,7 @@ export const assess = {
 
   // University access banner on the assessment
   'assess.university.banner': {
-    en: 'Free through {university} · {count} attempt(s) left',
-    es: 'Gratis gracias a {university} · te quedan {count} intento(s)',
+    en: 'Free through {university} · {count} {count|attempt|attempts} left',
+    es: 'Gratis gracias a {university} · te {count|queda|quedan} {count} {count|intento|intentos}',
   },
 } satisfies Record<string, Entry>;

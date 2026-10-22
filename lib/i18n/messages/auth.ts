@@ -122,7 +122,7 @@ export const auth = {
   },
   'auth.reset.new': { en: 'New password', es: 'Contraseña nueva' },
   'auth.reset.again': { en: 'Type it again', es: 'Repítela' },
-  'auth.reset.toGo': { en: '{count} more character(s) to go.', es: 'Faltan {count} carácter(es).' },
+  'auth.reset.toGo': { en: '{count} more {count|character|characters} to go.', es: '{count|Falta|Faltan} {count} {count|carácter|caracteres}.' },
   'auth.reset.mismatchLive': { en: 'These do not match yet.', es: 'Todavía no coinciden.' },
   'auth.reset.mismatch': { en: 'The two passwords do not match.', es: 'Las dos contraseñas no coinciden.' },
   'auth.reset.expired': {
@@ -154,4 +154,9 @@ export const auth = {
   'auth.callback.signingIn': { en: 'Signing you in...', es: 'Iniciando sesión...' },
   'auth.callback.invalid': { en: 'This sign-in link is invalid or has expired. Please try again.', es: 'Este enlace de acceso no es válido o ha caducado. Inténtalo de nuevo.' },
   'auth.callback.failed': { en: 'Something went wrong signing you in. Please try again.', es: 'Algo ha fallado al iniciar sesión. Inténtalo de nuevo.' },
+  'auth.callback.confirmed': {
+    en: 'Your email is confirmed. Sign in to continue.',
+    es: 'Tu correo está confirmado. Inicia sesión para continuar.',
+  },
+  'auth.callback.signIn': { en: 'Sign in', es: 'Iniciar sesión' },
 } satisfies Record<string, Entry>;

@@ -33,7 +33,10 @@ describe('choosing the language', () => {
 });
 
 describe('the dictionaries', () => {
-  const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+  // Plural forms ({count|one|other}) count as their variable. A set, since
+  // Spanish can need more of them than English to make the verb agree.
+  const placeholders = (s: string) =>
+    [...new Set([...s.matchAll(/\{(\w+)(?:\|[^}]*)?\}/g)].map((m) => m[1]))].sort();
 
   // A Spanish string missing a {placeholder} the English has would silently
   // drop a number or a name from the sentence.
@@ -60,6 +63,24 @@ describe('the dictionaries', () => {
   it('fills placeholders and leaves unknown ones visible', () => {
     expect(translate('es', 'assess.stepOf', { step: 3, total: 46 })).toBe('Paso 3 de 46');
     expect(translate('en', 'assess.stepOf', { step: 3 })).toBe('Step 3 of {total}');
+  });
+
+  it('picks the singular or plural word by number', () => {
+    expect(translate('en', 'history.banner.attempts', { count: 1 })).toBe('1 attempt remaining');
+    expect(translate('en', 'history.banner.attempts', { count: 0 })).toBe('0 attempts remaining');
+    expect(translate('es', 'history.banner.attempts', { count: 1 })).toBe('1 intento disponible');
+    expect(translate('es', 'history.banner.attempts', { count: 2 })).toBe('2 intentos disponibles');
+    expect(translate('es', 'account.university.attempts', { count: 1, total: 3 })).toBe(
+      'Te queda 1 de 3 intentos de la universidad.'
+    );
+  });
+
+  it('writes no "(s)" plurals any more', () => {
+    for (const [key, entry] of Object.entries(MESSAGES)) {
+      for (const locale of LOCALES) {
+        expect(entry[locale], `${key} (${locale})`).not.toMatch(/\w\((s|es)\)/);
+      }
+    }
   });
 });
 

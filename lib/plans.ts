@@ -48,10 +48,10 @@ export const ATTEMPTS_GRANTED: Record<ProductType, number> = {
 export const CHECKOUT_SUBMIT_MESSAGE: Record<Locale, Record<ProductType, string>> = {
   en: {
     basic: `Your ${ATTEMPTS_GRANTED.basic} assessment attempts are added to your account the moment payment completes.`,
-    full: `All ${ATTEMPTS_GRANTED.full} complete attempts — main and followup questionnaire each — are added the moment payment completes.`,
+    full: `All ${ATTEMPTS_GRANTED.full} complete attempts — main and follow-up questionnaire each — are added the moment payment completes.`,
     followup_unlock:
-      'Unlocks the followup questionnaire for every attempt on your account, and adds a bonus attempt straight away.',
-    topup: `Adds ${ATTEMPTS_GRANTED.topup} complete attempts — main and followup for each — to your existing plan.`,
+      'Unlocks the follow-up questionnaire for every attempt on your account, and adds a bonus attempt straight away.',
+    topup: `Adds ${ATTEMPTS_GRANTED.topup} complete attempts — main and follow-up for each — to your existing plan.`,
   },
   es: {
     basic: `Tus ${ATTEMPTS_GRANTED.basic} intentos de evaluación se añaden a tu cuenta en cuanto se completa el pago.`,

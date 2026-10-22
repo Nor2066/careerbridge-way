@@ -12,6 +12,14 @@ const LANGUAGE_NAMES: Record<Locale, string> = {
   es: 'Spanish (as written in Spain, addressing the reader as "tú")',
 };
 
+/** What the site calls a career cluster in each language. The prompts say
+ *  "cluster" throughout, and without this the model copied the English word
+ *  into Spanish reports ("estos clusters"). */
+const AREA_TERM: Record<Locale, string> = {
+  en: 'career areas',
+  es: 'áreas profesionales',
+};
+
 /** Country names the prompt can use. Anything else is passed as its code. */
 const COUNTRY_NAMES: Record<string, string> = {
   ES: 'Spain',
@@ -43,7 +51,8 @@ export function reportContextInstruction(locale: Locale, country?: string | null
   if (locale !== 'en') {
     parts.push(
       `- Write the entire report in ${LANGUAGE_NAMES[locale]}, including headings. The assessment data may be in English or another language; the report must still be in ${LANGUAGE_NAMES[locale].split(' (')[0]}.`,
-      '- Use the career cluster names exactly as they are given in the data.'
+      '- Use the career cluster names exactly as they are given in the data.',
+      `- Never write the English word "cluster" in the report. Call them "${AREA_TERM[locale]}".`
     );
   }
   if (country) {

@@ -231,7 +231,12 @@ export default function HistoryClient({ userId }: { userId: string }) {
 
       {/* Answers "what did I pay for, and what happens next" without anyone
           having to email support. Derived from data this page already has. */}
-      <ProgressChecklist sub={subStatus} hasHistory={history.length > 0} className="mb-6" />
+      <ProgressChecklist
+        sub={subStatus}
+        hasHistory={history.length > 0}
+        hasRoadmap={history.some((item) => !!item.detailedRoadmap)}
+        className="mb-6"
+      />
 
       {/* Attempt parked awaiting its followup — say what's holding things up
           and give both ways out, so this page is never a dead end. */}

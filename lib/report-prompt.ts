@@ -105,9 +105,16 @@ export function formatMainAnswers(answers: Record<string, unknown> | null | unde
 export type ClusterScore = { cluster: string; percentage: number };
 
 /** "- Social Impact: 72.4%" per line, names already in the reader's language. */
-export function formatClusters(clusters: ClusterScore[], displayName: (cluster: string) => string): string {
+export function formatClusters(
+  clusters: ClusterScore[],
+  displayName: (cluster: string) => string,
+  // The model copies numbers as it sees them, so a Spanish report got
+  // "52.9%" next to the site's "52,9 %" unless they arrive written the
+  // reader's way.
+  percent: (value: number) => string = (value) => `${value}%`
+): string {
   return clusters
-    .map((c) => `- ${sanitizePromptText(displayName(c.cluster), 100)}: ${c.percentage}%`)
+    .map((c) => `- ${sanitizePromptText(displayName(c.cluster), 100)}: ${percent(c.percentage)}`)
     .join('\n');
 }
 

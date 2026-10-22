@@ -3,6 +3,11 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import FollowUpClient from './FollowUpClient';
+import { pageMetadata } from '@/lib/i18n/server';
+
+export function generateMetadata() {
+  return pageMetadata('meta.followup.title');
+}
 
 export default async function FollowUpPage() {
   const cookieStore = await cookies();

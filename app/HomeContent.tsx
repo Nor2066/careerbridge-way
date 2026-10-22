@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { getSubscriptionStatus, invalidateSubscriptionStatus } from '@/lib/subscription-client';
 import { track } from '@/lib/analytics';
 import SupportNotice, { type SupportNoticeData } from '@/components/SupportNotice';
@@ -41,6 +41,7 @@ import InlineError from '@/components/InlineError';
 import { apiErrorMessage } from '@/lib/i18n/api-error';
 import { formatPercent } from '@/lib/i18n/format';
 import FeedbackCard from '@/components/FeedbackCard';
+import ChoiceMark from '@/components/ChoiceMark';
 
 type Answers = {
   subjects: string[];
@@ -131,6 +132,157 @@ const initialAnswers: Answers = {
   teamEnvironment: '',
   criticismHandling: '',
 };
+
+// ***** STYLING *****
+const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
+const buttonPrimaryClasses = "btn-primary";
+const buttonSecondaryClasses = "btn-secondary";
+
+// ---------- Step building blocks ----------
+// Declared out here rather than inside Home on purpose. Inside it, every
+// render made them new component types, so React rebuilt the question after
+// each answer and keyboard focus fell back to the top of the page. The
+// open-text steps still save on blur from when that was worked around.
+
+/** One step is on screen at a time, so the answer groups can name the
+ *  question by a fixed id. */
+const STEP_TITLE_ID = 'step-title';
+
+// relative: keeps the sr-only input inside the card, so focusing it does not
+// scroll the page. The ring shows which answer the keyboard is on.
+const optionClasses = (isChecked: boolean) =>
+  `relative flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-300 ${
+    isChecked
+      ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
+      : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30 hover:shadow-md hover:shadow-indigo-500/20'
+  }`;
+
+type StepShellProps = {
+  title: string;
+  isValid?: boolean;
+  stepLabel: string;
+  /** 0 to 100. */
+  progress: number;
+  backLabel: string;
+  nextLabel: string;
+  /** Left out on the first step, which has nothing to go back to. */
+  onBack?: () => void;
+  onNext: () => void;
+  /** The pricing modal, drawn over the step when the paywall is hit. */
+  overlay?: React.ReactNode;
+  /** One line under the progress bar, e.g. that a university is paying. */
+  notice?: string;
+  children: React.ReactNode;
+};
+
+function StepShell({ title, isValid = true, stepLabel, progress, backLabel, nextLabel, onBack, onNext, overlay, notice, children }: StepShellProps) {
+  return (
+    <>
+      {overlay}
+      <div className={containerClasses}>
+        <div className="w-full max-w-2xl">
+          <div className="mb-8 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
+            </div>
+            <span className="text-sm font-medium text-gray-300 block mb-4">{stepLabel}</span>
+            <div className="w-full bg-gray-600 rounded-full h-2">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+            </div>
+            {notice && <p className="mt-3 text-sm text-indigo-200">{notice}</p>}
+          </div>
+          <div className="glass-card">
+            <h2 id={STEP_TITLE_ID} className="text-2xl font-bold text-white mb-6 text-center">{title}</h2>
+            {children}
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+              {onBack && <button onClick={onBack} className={buttonSecondaryClasses}>{backLabel}</button>}
+              <button onClick={onNext} disabled={!isValid} className={buttonPrimaryClasses}>{nextLabel}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+type OptionListProps = {
+  options: readonly string[];
+  /** The option in the reader's language. The value saved stays English. */
+  label: (option: string) => string;
+};
+
+function CheckboxGroup({ options, label, selected, onChange, maxSelections }: OptionListProps & {
+  selected: string[];
+  onChange: (val: string[]) => void;
+  maxSelections: number;
+}) {
+  return (
+    <div role="group" aria-labelledby={STEP_TITLE_ID} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {options.map((option) => {
+        const isChecked = selected.includes(option);
+        return (
+          <label key={option} className={optionClasses(isChecked)}>
+            {/* sr-only, not hidden: a display:none input cannot be reached
+                with Tab or read by a screen reader. */}
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={isChecked}
+              onChange={(e) => {
+                if (e.target.checked && selected.length < maxSelections) {
+                  onChange([...selected, option]);
+                } else if (!e.target.checked) {
+                  onChange(selected.filter((x) => x !== option));
+                }
+              }}
+            />
+            <ChoiceMark checked={isChecked} kind="checkbox" />
+            <span className="text-white font-medium">{label(option)}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function RadioGroup({ options, label, selected, onChange }: OptionListProps & {
+  selected: string;
+  onChange: (val: string) => void;
+}) {
+  // A shared name makes the answers one group: Tab enters it once and the
+  // arrow keys move between them.
+  const name = useId();
+  return (
+    <div role="radiogroup" aria-labelledby={STEP_TITLE_ID} className="space-y-3">
+      {options.map((option) => {
+        const isChecked = selected === option;
+        return (
+          <label key={option} className={optionClasses(isChecked)}>
+            <input
+              type="radio"
+              name={name}
+              className="sr-only"
+              checked={isChecked}
+              onChange={() => onChange(option)}
+            />
+            <ChoiceMark checked={isChecked} kind="radio" />
+            <span className="text-white font-medium">{label(option)}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function RatingButtons({ ratings, selected, onChange }: { ratings: number[]; selected: number; onChange: (val: number) => void }) {
+  return (
+    <div role="group" aria-labelledby={STEP_TITLE_ID} className="flex gap-4 justify-center flex-wrap">
+      {ratings.map((r) => (
+        <button key={r} type="button" aria-pressed={selected === r} onClick={() => onChange(r)} className={`w-14 h-14 rounded-full font-bold transition-all ${selected === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>{r}</button>
+      ))}
+    </div>
+  );
+}
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -563,13 +715,20 @@ export default function Home() {
   const generateAIReport = async () => {
     if (!result) return;
     track('report_generate_start');
-    const assessmentId = sessionStorage.getItem('lastAssessmentId');
+    setReportError(null);
+    setLoadingReport(true);
+    // The save starts the moment the results appear, so a quick click can
+    // beat it. Wait for it rather than asking the student to try again.
+    let assessmentId = sessionStorage.getItem('lastAssessmentId');
+    for (let i = 0; i < 20 && !assessmentId; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      assessmentId = sessionStorage.getItem('lastAssessmentId');
+    }
     if (!assessmentId) {
+      setLoadingReport(false);
       setReportError(t('assess.results.waitSave'));
       return;
     }
-    setReportError(null);
-    setLoadingReport(true);
     try {
       const res = await fetchWithAuth('/api/generate-report', {
         method: 'POST',
@@ -673,11 +832,6 @@ export default function Home() {
     return r.warningMessage ?? '';
   };
 
-  // ***** STYLING *****
-  const containerClasses = "min-h-[calc(100vh-4rem)] flex items-center justify-center px-4";
-  const buttonPrimaryClasses = "btn-primary";
-  const buttonSecondaryClasses = "btn-secondary";
-
   // ---------- AUTH GUARD ----------
   // Wait for AuthContext to finish initializing before rendering anything.
   // Without this, fetchWithAuth calls fire before the session is ready,
@@ -698,102 +852,10 @@ export default function Home() {
     return null;
   }
 
-  const StepContainer = ({ title, children, isValid = true }: { title: string; children: React.ReactNode; isValid?: boolean }) => (
-    <>
-      <PricingModal />
-      <div className={containerClasses}>      <div className="w-full max-w-2xl">
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <h1 className="text-3xl font-bold text-white">{BRAND.name}</h1>
-          </div>
-          <span className="text-sm font-medium text-gray-300 block mb-4">
-            {t('assess.stepOf', { step: step + 1, total: totalSteps })}
-          </span>
-          <div className="w-full bg-gray-600 rounded-full h-2">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${((step + 1) / totalSteps) * 100}%` }}></div>
-          </div>
-        </div>
-        <div className="glass-card">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">{title}</h2>
-          {children}
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            {step > 0 && <button onClick={prevStep} className={buttonSecondaryClasses}>{t('common.back')}</button>}
-            <button onClick={nextStep} disabled={!isValid} className={buttonPrimaryClasses}>{t('common.next')}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    </>
-  );
-
-  const CheckboxGroup = ({ options, selected, onChange, maxSelections }: any) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {options.map((option: string) => {
-        const isChecked = selected.includes(option);
-        return (
-          <label
-            key={option}
-            className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm ${
-              isChecked
-                ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
-                : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30 hover:shadow-md hover:shadow-indigo-500/20'
-            }`}
-          >
-            <input
-              type="checkbox"
-              className="hidden"
-              checked={isChecked}
-              onChange={(e) => {
-                if (e.target.checked && selected.length < maxSelections) {
-                  onChange([...selected, option]);
-                } else if (!e.target.checked) {
-                  onChange(selected.filter((x: string) => x !== option));
-                }
-              }}
-            />
-            <span className="text-white font-medium">{tOption(option)}</span>
-          </label>
-        );
-      })}
-    </div>
-  );
-
-  const RadioGroup = ({ options, selected, onChange }: any) => (
-    <div className="space-y-3">
-      {options.map((option: string) => {
-        const isChecked = selected === option;
-        return (
-          <label
-            key={option}
-            className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm ${
-              isChecked
-                ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
-                : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30 hover:shadow-md hover:shadow-indigo-500/20'
-            }`}
-          >
-            <input
-              type="radio"
-              className="hidden"
-              checked={isChecked}
-              onChange={() => onChange(option)}
-            />
-            <span className="text-white font-medium">{tOption(option)}</span>
-          </label>
-        );
-      })}
-    </div>
-  );
-
-  const RatingButtons = ({ ratings, selected, onChange }: any) => (
-    <div className="flex gap-4 justify-center flex-wrap">
-      {ratings.map((r: number) => (
-        <button key={r} onClick={() => onChange(r)} className={`w-14 h-14 rounded-full font-bold transition-all ${selected === r ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg scale-110' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>{r}</button>
-      ))}
-    </div>
-  );
-
   // ---------- PRICING MODAL OVERLAY ----------
-  const PricingModal = () => {
+  // This and the modal below are render functions, not components: declared
+  // in here, a component is a new type on every render and gets rebuilt.
+  const renderPricingModal = () => {
     if (!showPricingModal || !subStatus) return null;
 
     // The heading has to match the actual reason the customer is blocked.
@@ -846,6 +908,7 @@ export default function Home() {
               followupBundlePurchased={subStatus.followupBundlePurchased}
               currentAttemptStatus={subStatus.currentAttemptStatus}
               showReasonNotice
+              hideHeader
             />
             <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center items-center">
               <button
@@ -868,7 +931,7 @@ export default function Home() {
   // Shown when the user tries to access /assess while a previous attempt
   // is still awaiting its followup decision. Explains why they can't start
   // fresh and offers a direct path to their history page to finish it.
-  const MustFinishModal = () => {
+  const renderMustFinishModal = () => {
     if (!showMustFinishModal) return null;
 
     const followupsUnlocked =
@@ -917,7 +980,7 @@ export default function Home() {
 
   // ---------- SUBSCRIPTION GATE ----------
   if (showMustFinishModal) {
-    return <MustFinishModal />;
+    return renderMustFinishModal();
   }
 
   if (user && subLoading) {
@@ -1106,18 +1169,37 @@ export default function Home() {
   }
 
   // ---------- STEP RENDERING ----------
+  // What every question card shares, spread into StepShell.
+  const shell = {
+    stepLabel: t('assess.stepOf', { step: step + 1, total: totalSteps }),
+    progress: ((step + 1) / totalSteps) * 100,
+    backLabel: t('common.back'),
+    nextLabel: t('common.next'),
+    onBack: step > 0 ? prevStep : undefined,
+    onNext: nextStep,
+    overlay: renderPricingModal(),
+    // A university student never meets the paywall; this says why up front,
+    // so they are not waiting for one.
+    notice: subStatus?.institution?.active && subStatus.institution.attemptsRemaining > 0
+      ? t('assess.university.banner', {
+          university: subStatus.institution.name,
+          count: subStatus.institution.attemptsRemaining,
+        })
+      : undefined,
+  };
+
   if (step === 0) {
     return (
-      <StepContainer title={t('assess.q.subjects')}>
-        <CheckboxGroup options={SUBJECTS} selected={answers.subjects} onChange={(val: string[]) => update('subjects', val)} maxSelections={3} />
-      </StepContainer>
+      <StepShell {...shell}title={t('assess.q.subjects')}>
+        <CheckboxGroup label={tOption}options={SUBJECTS} selected={answers.subjects} onChange={(val: string[]) => update('subjects', val)} maxSelections={3} />
+      </StepShell>
     );
   }
   if (step === 1) {
     return (
-      <StepContainer title={t('assess.q.activities')}>
-        <CheckboxGroup options={ACTIVITIES} selected={answers.activities} onChange={(val: string[]) => update('activities', val)} maxSelections={3} />
-      </StepContainer>
+      <StepShell {...shell}title={t('assess.q.activities')}>
+        <CheckboxGroup label={tOption}options={ACTIVITIES} selected={answers.activities} onChange={(val: string[]) => update('activities', val)} maxSelections={3} />
+      </StepShell>
     );
   }
   if (step >= 2 && step < 2 + SKILL_NAMES.length) {
@@ -1125,42 +1207,42 @@ export default function Home() {
     const skill = SKILL_NAMES[skillIndex];
     const currentRating = answers.skills[skill.id as keyof Answers['skills']];
     return (
-      <StepContainer title={t('assess.q.rateSkill', { skill: tOption(skill.label) })}>
+      <StepShell {...shell}title={t('assess.q.rateSkill', { skill: tOption(skill.label) })}>
         <div className="text-sm text-gray-300 mb-4 text-center">
           {t('assess.q.rateScale')}
         </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={currentRating} onChange={(val: number) => updateSkill(skill.id as keyof Answers['skills'], val)} />
-      </StepContainer>
+      </StepShell>
     );
   }
 
   stepOffset = 2 + SKILL_NAMES.length;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.thinking')}><RadioGroup options={THINKING_STYLES} selected={answers.thinkingStyle} onChange={(val: string) => update('thinkingStyle', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.thinking')}><RadioGroup label={tOption} options={THINKING_STYLES} selected={answers.thinkingStyle} onChange={(val: string) => update('thinkingStyle', val)} /></StepShell>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.learning')}><RadioGroup options={LEARNING_STYLES} selected={answers.learningStyle} onChange={(val: string) => update('learningStyle', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.learning')}><RadioGroup label={tOption} options={LEARNING_STYLES} selected={answers.learningStyle} onChange={(val: string) => update('learningStyle', val)} /></StepShell>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.motivations')}><CheckboxGroup options={MOTIVATIONS} selected={answers.motivations} onChange={(val: string[]) => update('motivations', val)} maxSelections={2} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.motivations')}><CheckboxGroup label={tOption}options={MOTIVATIONS} selected={answers.motivations} onChange={(val: string[]) => update('motivations', val)} maxSelections={2} /></StepShell>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.whatMatters')}><RadioGroup options={WHAT_MATTERS} selected={answers.whatMattersMore} onChange={(val: string) => update('whatMattersMore', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.whatMatters')}><RadioGroup label={tOption} options={WHAT_MATTERS} selected={answers.whatMattersMore} onChange={(val: string) => update('whatMattersMore', val)} /></StepShell>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.studyHours')}><RadioGroup options={YES_NO} selected={answers.studyHours} onChange={(val: string) => update('studyHours', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.studyHours')}><RadioGroup label={tOption} options={YES_NO} selected={answers.studyHours} onChange={(val: string) => update('studyHours', val)} /></StepShell>);
   stepOffset++;
   if (step === stepOffset) {
     return (
-      <StepContainer title={t('assess.q.academic')}>
+      <StepShell {...shell}title={t('assess.q.academic')}>
         <div className="text-sm text-gray-300 mb-4 text-center space-y-1">
           {ACADEMIC_LEVEL_LABELS.map(label => <div key={label}>{tOption(label)}</div>)}
         </div>
         <RatingButtons ratings={[1,2,3,4,5]} selected={answers.academicLevel} onChange={(val: number) => update('academicLevel', val)} />
-      </StepContainer>
+      </StepShell>
     );
   }
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.social')}><RadioGroup options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.social')}><RadioGroup label={tOption} options={SOCIAL_PREFERENCES} selected={answers.socialPreference} onChange={(val: string) => update('socialPreference', val)} /></StepShell>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.environment')}><CheckboxGroup options={WORK_ENVIRONMENTS} selected={answers.workEnvironment} onChange={(val: string[]) => update('workEnvironment', val)} maxSelections={2} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.environment')}><CheckboxGroup label={tOption}options={WORK_ENVIRONMENTS} selected={answers.workEnvironment} onChange={(val: string[]) => update('workEnvironment', val)} maxSelections={2} /></StepShell>);
   stepOffset++;
-  if (step === stepOffset) return (<StepContainer title={t('assess.q.jobTypes')}><CheckboxGroup options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepContainer>);
+  if (step === stepOffset) return (<StepShell {...shell}title={t('assess.q.jobTypes')}><CheckboxGroup label={tOption}options={JOB_TYPES} selected={answers.jobVision} onChange={(val: string[]) => update('jobVision', val)} maxSelections={Infinity} /></StepShell>);
 
   if (step === dealbreakerStep) {
     return (
@@ -1174,9 +1256,9 @@ export default function Home() {
             </div>
           </div>
           <div className="glass-card">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">{t('assess.q.dealbreakers')}</h2>
+            <h2 id={STEP_TITLE_ID} className="text-2xl font-bold text-white mb-6 text-center">{t('assess.q.dealbreakers')}</h2>
             <p className="text-sm text-gray-300 mb-4">{t('assess.q.dealbreakersHint')}</p>
-            <CheckboxGroup options={JOB_TYPES} selected={answers.dealbreakerJobs} onChange={(val: string[]) => update('dealbreakerJobs', val)} maxSelections={Infinity} />
+            <CheckboxGroup label={tOption}options={JOB_TYPES} selected={answers.dealbreakerJobs} onChange={(val: string[]) => update('dealbreakerJobs', val)} maxSelections={Infinity} />
             <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <button onClick={prevStep} className={buttonSecondaryClasses}>{t('common.back')}</button>
               <button onClick={nextStep} className={buttonPrimaryClasses}>{t('common.next')}</button>
@@ -1190,8 +1272,8 @@ export default function Home() {
   if (step === profileStep) {
     const currentProfile = PROFILE_OPTIONS.find((p) => p.value === answers.careerContext?.profile);
     return (
-      <StepContainer title={t('assess.q.profile')} isValid={answers.careerContext.profile !== ''}>
-        <RadioGroup
+      <StepShell {...shell}title={t('assess.q.profile')} isValid={answers.careerContext.profile !== ''}>
+        <RadioGroup label={tOption}
           options={PROFILE_OPTIONS.map((p) => p.label)}
           selected={currentProfile?.label || ''}
           onChange={(val: string) => {
@@ -1200,7 +1282,7 @@ export default function Home() {
             setAnswers(prev => ({ ...prev, careerContext: { profile: picked.value, subAnswers: {} } }));
           }}
         />
-      </StepContainer>
+      </StepShell>
     );
   }
 
@@ -1212,11 +1294,11 @@ export default function Home() {
   if (profileQuestionIndex >= 0) {
     const question = PROFILE_FOLLOWUPS[profile]?.[profileQuestionIndex as 0 | 1 | 2];
     if (!question) {
-      return <StepContainer title={t('assess.error')}>{t('assess.selectProfile')}</StepContainer>;
+      return <StepShell {...shell}title={t('assess.error')}>{t('assess.selectProfile')}</StepShell>;
     }
     return (
-      <StepContainer title={tOption(question.title)}>
-        <RadioGroup
+      <StepShell {...shell}title={tOption(question.title)}>
+        <RadioGroup label={tOption}
           options={question.options}
           selected={answers.careerContext?.subAnswers?.[question.field] || ''}
           onChange={(val: string) =>
@@ -1229,7 +1311,7 @@ export default function Home() {
             }))
           }
         />
-      </StepContainer>
+      </StepShell>
     );
   }
 
@@ -1247,18 +1329,18 @@ export default function Home() {
   const preference = preferenceSteps.find((p) => p.step === step);
   if (preference) {
     return (
-      <StepContainer title={preference.title}>
-        <RadioGroup
+      <StepShell {...shell}title={preference.title}>
+        <RadioGroup label={tOption}
           options={preference.options}
           selected={answers[preference.field] as string}
           onChange={(val: string) => update(preference.field, val)}
         />
-      </StepContainer>
+      </StepShell>
     );
   }
   if (step === dreamJobStep) {
     return (
-      <StepContainer title={t('assess.q.dreamJob')}>
+      <StepShell {...shell}title={t('assess.q.dreamJob')}>
         <textarea
           key="dreamJob"
           defaultValue={answers.dreamJob}
@@ -1267,12 +1349,12 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.dreamJob.placeholder')}
         />
-      </StepContainer>
+      </StepShell>
     );
   }
   if (step === topValuesStep) {
     return (
-      <StepContainer title={t('assess.q.topValues')}>
+      <StepShell {...shell}title={t('assess.q.topValues')}>
         <textarea
           key="topValues"
           defaultValue={answers.topValues}
@@ -1281,12 +1363,12 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.topValues.placeholder')}
         />
-      </StepContainer>
+      </StepShell>
     );
   }
   if (step === fulfillingStep) {
     return (
-      <StepContainer title={t('assess.q.fulfilling')}>
+      <StepShell {...shell}title={t('assess.q.fulfilling')}>
         <textarea
           key="fulfillingProject"
           defaultValue={answers.fulfillingProject}
@@ -1295,12 +1377,12 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.fulfilling.placeholder')}
         />
-      </StepContainer>
+      </StepShell>
     );
   }
   if (step === pastConsiderationsStep) {
     return (
-      <StepContainer title={t('assess.q.past')}>
+      <StepShell {...shell}title={t('assess.q.past')}>
         <textarea
           key="pastConsiderations"
           defaultValue={answers.pastConsiderations}
@@ -1309,7 +1391,7 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.past.placeholder')}
         />
-      </StepContainer>
+      </StepShell>
     );
   }
 

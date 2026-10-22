@@ -36,6 +36,10 @@ interface PricingContentProps {
   // stuck and which purchase actually gets them moving again. Off by default
   // so the plain "choose a plan" surfaces stay uncluttered.
   showReasonNotice?: boolean;
+  // For a modal that already has its own title and close button, such as
+  // the assessment paywall. Without it the two headers stacked, each with
+  // its own ×.
+  hideHeader?: boolean;
 }
 
 export default function PricingContent({
@@ -49,6 +53,7 @@ export default function PricingContent({
   onBeforeCheckout,
   returnPath,
   showReasonNotice = false,
+  hideHeader = false,
 }: PricingContentProps) {
   const { t, locale } = useI18n();
   const formatPrice = (product: ProductType) => formatPriceIn(product, locale);
@@ -168,10 +173,10 @@ export default function PricingContent({
           </div>
         )}
 
-        {compact && onClose && (
+        {compact && onClose && !hideHeader && (
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-white">{t('pricing.title')}</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none">
+            <button onClick={onClose} aria-label={t('common.close')} className="text-gray-400 hover:text-white text-2xl leading-none">
               &times;
             </button>
           </div>

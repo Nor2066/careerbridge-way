@@ -36,6 +36,7 @@ import { localeFromRequest } from '@/lib/i18n/config';
 import { getLicence } from '@/lib/institutions';
 import { buildFollowupPrompt, formatClusters, formatFollowupAnswers } from '@/lib/report-prompt';
 import { reportContextInstruction, clusterForPrompt, supportCountry } from '@/lib/report-locale';
+import { formatPercent } from '@/lib/i18n/format';
 
 // A hung OpenAI call used to hold the serverless function open for its whole
 // allowance while the customer stared at a spinner. Cap it: 25s per attempt,
@@ -237,7 +238,7 @@ export async function POST(request: Request) {
     // Built in lib/report-prompt.ts, where a test checks nothing is dropped.
     const displayCluster = (cluster: string) => clusterForPrompt(locale, cluster);
     const userPrompt = buildFollowupPrompt({
-      clusters: formatClusters(topClusters, displayCluster),
+      clusters: formatClusters(topClusters, displayCluster, (value) => formatPercent(value, locale)),
       mainAnswers,
       firstReport: firstReportRow?.report ?? null,
       followupAnswers: formatFollowupAnswers(followupAnswers, displayCluster),

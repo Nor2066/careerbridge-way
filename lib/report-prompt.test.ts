@@ -82,6 +82,11 @@ describe('what the model is told about the main questionnaire', () => {
       mainAnswers: answers,
     });
     expect(prompt).toContain('- Engineering: 81.5%');
+    // Written the reader's way when a formatter is given, so the model
+    // copies "81,5 %" into a Spanish report.
+    expect(formatClusters([{ cluster: 'Engineering', percentage: 81.5 }], asIs, (v) => `${String(v).replace('.', ',')} %`)).toBe(
+      '- Engineering: 81,5 %'
+    );
     expect(prompt).toContain('Door-to-door sales');
     expect(prompt).toContain('Hybrid');
     expect(prompt.indexOf('[ASSESSMENT DATA')).toBeLessThan(prompt.indexOf('Door-to-door'));

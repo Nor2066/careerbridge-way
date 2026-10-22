@@ -23,7 +23,7 @@ export const account = {
     en: '{university} provides your access. They see only anonymous totals for all their students together — never your answers, your reports or your name.',
     es: '{university} te da el acceso. Solo ven totales anónimos de todos sus estudiantes juntos: nunca tus respuestas, tus informes ni tu nombre.',
   },
-  'account.university.attempts': { en: '{count} of {total} university attempt(s) left.', es: 'Te quedan {count} de {total} intento(s) de la universidad.' },
+  'account.university.attempts': { en: '{count} of {total} university {total|attempt|attempts} left.', es: 'Te {count|queda|quedan} {count} de {total} {total|intento|intentos} de la universidad.' },
   'account.university.ended': { en: 'This access has ended or is used up.', es: 'Este acceso ha terminado o se ha agotado.' },
 
   'account.password.title': { en: 'Change your password', es: 'Cambia tu contraseña' },

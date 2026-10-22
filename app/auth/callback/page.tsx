@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { useI18n } from '@/components/I18nProvider';
 
@@ -22,7 +23,7 @@ export default function AuthCallbackPage() {
   const { t } = useI18n();
   // A code rather than a sentence, so the effect below does not depend on
   // the language and the message follows the switcher at render.
-  const [error, setError] = useState<'' | 'invalid' | 'failed'>('');
+  const [error, setError] = useState<'' | 'invalid' | 'failed' | 'confirmed'>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +38,16 @@ export default function AuthCallbackPage() {
       try {
         const hash = typeof window !== 'undefined' ? window.location.hash : '';
         if (!hash) {
+          // A PKCE link (?code=...) rather than a session in the fragment.
+          // Sign-up sent these from August to October 2026, so some are still
+          // in inboxes. By the time the browser gets here Supabase has already
+          // confirmed the address, so say that and offer sign-in, instead of
+          // "invalid link". Nothing to exchange: the code needs a verifier
+          // cookie that only lived ten minutes, in the browser that signed up.
+          if (new URLSearchParams(window.location.search).get('code')) {
+            if (!cancelled) setError('confirmed');
+            return;
+          }
           failOut('invalid');
           return;
         }
@@ -93,8 +104,15 @@ export default function AuthCallbackPage() {
             ? t('auth.callback.invalid')
             : error === 'failed'
               ? t('auth.callback.failed')
-              : t('auth.callback.signingIn')}
+              : error === 'confirmed'
+                ? t('auth.callback.confirmed')
+                : t('auth.callback.signingIn')}
         </p>
+        {error === 'confirmed' && (
+          <Link href="/login" className="btn-primary mt-6 inline-block">
+            {t('auth.callback.signIn')}
+          </Link>
+        )}
       </div>
     </div>
   );

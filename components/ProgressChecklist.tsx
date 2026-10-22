@@ -51,7 +51,7 @@ const PLAN_NAME_KEYS = {
   full: 'pricing.planName.full',
 } as const;
 
-function buildSteps(sub: ChecklistSubscription | null, hasHistory: boolean, t: Translator['t']): Step[] {
+function buildSteps(sub: ChecklistSubscription | null, hasHistory: boolean, hasRoadmap: boolean, t: Translator['t']): Step[] {
   if (!sub) return [];
 
   // A university student has access without buying anything; for them the
@@ -97,22 +97,25 @@ function buildSteps(sub: ChecklistSubscription | null, hasHistory: boolean, t: T
       state: hasHistory || awaitingFollowup ? 'done' : 'todo',
       href: hasHistory || awaitingFollowup ? '/history' : undefined,
     },
-    {
-      label: t('checklist.roadmap.label'),
-      detail: followupsAvailable
-        ? awaitingFollowup
-          ? t('checklist.roadmap.waiting')
-          : t('checklist.roadmap.unlocked')
-        : t('checklist.roadmap.locked'),
-      state: !followupsAvailable
-        ? 'locked'
-        : awaitingFollowup
-          ? 'current'
-          : hasHistory
-            ? 'todo'
-            : 'todo',
-      href: followupsAvailable ? (awaitingFollowup ? '/followup' : '/history') : '/pricing',
-    },
+    // Ticked once any attempt has a roadmap. It never was before: whoever
+    // finished the follow-up still saw "3 of 4" with this step open.
+    hasRoadmap && !awaitingFollowup
+      ? {
+          label: t('checklist.roadmap.label'),
+          detail: t('checklist.report.ready'),
+          state: 'done',
+          href: '/history',
+        }
+      : {
+          label: t('checklist.roadmap.label'),
+          detail: followupsAvailable
+            ? awaitingFollowup
+              ? t('checklist.roadmap.waiting')
+              : t('checklist.roadmap.unlocked')
+            : t('checklist.roadmap.locked'),
+          state: !followupsAvailable ? 'locked' : awaitingFollowup ? 'current' : 'todo',
+          href: followupsAvailable ? (awaitingFollowup ? '/followup' : '/history') : '/pricing',
+        },
   ];
 }
 
@@ -126,14 +129,17 @@ const MARK: Record<StepState, { symbol: string; className: string }> = {
 export default function ProgressChecklist({
   sub,
   hasHistory = false,
+  hasRoadmap = false,
   className = '',
 }: {
   sub: ChecklistSubscription | null;
   hasHistory?: boolean;
+  /** Whether any attempt already has its detailed roadmap. */
+  hasRoadmap?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
-  const steps = buildSteps(sub, hasHistory, t);
+  const steps = buildSteps(sub, hasHistory, hasRoadmap, t);
   if (steps.length === 0) return null;
 
   const done = steps.filter((s) => s.state === 'done').length;

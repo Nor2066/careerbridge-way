@@ -16,6 +16,10 @@ describe('telling the model about language and place', () => {
     expect(text).toMatch(/entire report in Spanish/);
   });
 
+  it('keeps the English word "cluster" out of Spanish reports', () => {
+    expect(reportContextInstruction('es')).toMatch(/Never write the English word "cluster".*"áreas profesionales"/);
+  });
+
   it('names the university’s country when it is known', () => {
     expect(reportContextInstruction('es', 'ES')).toMatch(/studies in Spain/);
     expect(reportContextInstruction('en', 'BR')).toMatch(/studies in BR/);

@@ -13,14 +13,21 @@ export type Vars = Record<string, string | number>;
  * A placeholder with no value is left visible rather than silently dropped,
  * so a missing variable shows up on screen instead of producing a sentence
  * with a hole in it.
+ *
+ * {count|one|other} picks a word by number: "one" when count is 1, "other"
+ * otherwise. Both English and Spanish need only those two forms, and it
+ * replaces the "attempt(s)" that used to be written out.
  */
 export function translate(locale: Locale, key: MessageKey, vars?: Vars): string {
   const entry = MESSAGES[key];
   const text: string = entry ? entry[locale] ?? entry.en : key;
   if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (match, name: string) =>
-    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match
-  );
+  const has = (name: string) => Object.prototype.hasOwnProperty.call(vars, name);
+  return text
+    .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (match, name: string, one: string, other: string) =>
+      has(name) ? (Number(vars[name]) === 1 ? one : other) : match
+    )
+    .replace(/\{(\w+)\}/g, (match, name: string) => (has(name) ? String(vars[name]) : match));
 }
 
 /**

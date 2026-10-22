@@ -22,6 +22,7 @@ import ReportText from '@/components/ReportText';
 import InlineError from '@/components/InlineError';
 import { apiErrorMessage } from '@/lib/i18n/api-error';
 import FeedbackCard from '@/components/FeedbackCard';
+import ChoiceMark from '@/components/ChoiceMark';
 
 
 function parseOptions(questionText: string): { letter: string; text: string }[] {
@@ -376,14 +377,17 @@ export default function FollowUpClient() {
               const isChecked = currentAnswer === opt.letter;
               return (
                 <label key={opt.letter}
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm ${
+                  className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all duration-200 backdrop-blur-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-300 ${
                     isChecked
                       ? 'border-indigo-400 bg-indigo-900/40 shadow-md shadow-indigo-500/30'
                       : 'border-gray-300 bg-black/20 hover:border-indigo-400 hover:bg-indigo-800/30'
                   }`}>
+                  {/* sr-only, not hidden: a display:none radio cannot be
+                      reached with Tab or read by a screen reader. */}
                   <input type="radio" name="question" value={opt.letter}
-                    className="hidden" checked={isChecked}
+                    className="sr-only" checked={isChecked}
                     onChange={() => handleAnswer(opt.letter)} />
+                  <ChoiceMark checked={isChecked} kind="radio" />
                   <span className="text-white font-medium">{opt.text}</span>
                 </label>
               );

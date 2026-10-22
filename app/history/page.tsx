@@ -3,9 +3,14 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import HistoryClient from './HistoryClient';
+import { pageMetadata } from '@/lib/i18n/server';
 
 // This is a SERVER component — auth is verified before any HTML is sent to the browser.
 // If the user is not logged in, they are redirected server-side and never see this page.
+export function generateMetadata() {
+  return pageMetadata('meta.history.title');
+}
+
 export default async function HistoryPage() {
   const cookieStore = await cookies();
 
@@ -23,7 +28,7 @@ export default async function HistoryPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Server-side redirect — unauthenticated users never receive the page HTML
-  if (!user) redirect('/login');
+  if (!user) redirect('/login?returnTo=/history');
 
   // Pass the verified user id down to the client component
   return <HistoryClient userId={user.id} />;

@@ -15,6 +15,7 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -70,6 +71,27 @@ export function createBufferedServerClient(getRequestCookies: () => { name: stri
   );
 
   return { supabase, pending };
+}
+
+/**
+ * A client for the emails that carry a sign-in link: sign-up confirmation,
+ * resending it, the login link and password reset.
+ *
+ * These must use the implicit flow, where the link brings the session back
+ * in the URL fragment that /auth/callback reads. The server client above uses
+ * PKCE, whose link can only be redeemed in the same browser, within the ten
+ * minutes the verifier cookie lives. Sign-up used it from August to October
+ * 2026, and every confirmation link landed on "invalid link": the callback
+ * page found no fragment, and a student who opened the email on their phone
+ * or the next day could never have been signed in by it anyway.
+ *
+ * No session is kept in this client. Anything that needs cookies goes
+ * through createBufferedServerClient.
+ */
+export function createEmailLinkClient() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { flowType: 'implicit', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
 }
 
 /**

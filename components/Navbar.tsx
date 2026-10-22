@@ -9,7 +9,7 @@ import { useI18n } from '@/components/I18nProvider';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { t } = useI18n();
   const [inProgress, setInProgress] = useState(false);
   // Set when this person is on a university's staff list — they get a link to
@@ -43,14 +43,18 @@ export default function Navbar() {
   }, [user]);
 
   return (
-    <nav className="bg-gray-900/70 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+    // Sticky from md up only: on a phone the links wrap to three rows, and a
+    // header that never scrolls away covered a fifth of every question.
+    <nav className="bg-gray-900/70 backdrop-blur-md border-b border-gray-800 relative md:sticky md:top-0 z-50">
       <div className="container mx-auto flex flex-wrap justify-between items-center gap-y-3 py-4 px-6">
         <Link href="/" className="text-xl font-bold tracking-wider text-white">{BRAND.name}</Link>
         <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2">
           <Link href="/assess" className="text-gray-300 hover:text-white transition text-sm font-medium">
             {inProgress ? t('nav.continueAssessment') : t('nav.fullAssessment')}
           </Link>
-          {user ? (
+          {/* Neither set of links until the session check answers: "Sign in"
+              used to flash for signed-in students on every full page load. */}
+          {loading ? null : user ? (
             <>
               {isUniversityStaff && (
                 <Link href="/university" className="text-indigo-300 hover:text-white transition text-sm font-medium">

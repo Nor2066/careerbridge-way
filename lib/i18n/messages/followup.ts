@@ -19,7 +19,7 @@ export const followup = {
   'followup.saving': { en: 'Saving...', es: 'Guardando...' },
   'followup.typeAnswer': { en: 'Type your answer', es: 'Escribe tu respuesta' },
   'followup.locked': {
-    en: 'Your followup access for this attempt is not unlocked. Unlock it from your history page — your answers will still be here.',
+    en: 'Your follow-up access for this attempt is not unlocked. Unlock it from your history page — your answers will still be here.',
     es: 'El seguimiento de este intento no está desbloqueado. Desbloquéalo desde tu historial: tus respuestas seguirán aquí.',
   },
   'followup.noAssessment': {

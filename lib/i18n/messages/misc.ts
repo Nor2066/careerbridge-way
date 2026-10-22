@@ -81,4 +81,16 @@ El cuestionario de seguimiento es donde todo esto se concreta: puestos específi
     en: 'Withdraw from a purchase within 14 days, without giving a reason.',
     es: 'Desiste de una compra en los 14 días siguientes, sin dar ningún motivo.',
   },
+  // Tab titles for pages that used to show the homepage's.
+  'meta.pricing.title': { en: 'Pricing', es: 'Precios' },
+  'meta.history.title': { en: 'Your assessment history', es: 'Tu historial de evaluaciones' },
+  'meta.followup.title': { en: 'Follow-up questions', es: 'Cuestionario de seguimiento' },
+  'meta.paymentSuccess.title': { en: 'Payment complete', es: 'Pago completado' },
+  'meta.paymentCancelled.title': { en: 'Payment cancelled', es: 'Pago cancelado' },
+  'meta.login.title': { en: 'Sign in', es: 'Iniciar sesión' },
+  'meta.signup.title': { en: 'Create your account', es: 'Crea tu cuenta' },
+  'meta.forgotPassword.title': { en: 'Forgotten password', es: 'Contraseña olvidada' },
+  'meta.resetPassword.title': { en: 'Choose a new password', es: 'Elige una contraseña nueva' },
+  'meta.resendConfirmation.title': { en: 'Resend the confirmation email', es: 'Reenviar el correo de confirmación' },
+  'meta.callback.title': { en: 'Signing you in', es: 'Iniciando sesión' },
 } satisfies Record<string, Entry>;
