@@ -10,7 +10,7 @@
 // image competing with the text.
 
 import Link from 'next/link';
-import { COMPANY, legalDetailsComplete } from '@/lib/legal';
+import { COMPANY } from '@/lib/legal';
 
 export function LegalSection({
   id,
@@ -42,8 +42,6 @@ export default function LegalPage({
   intro?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const incomplete = !legalDetailsComplete();
-
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-14">
       <article className="mx-auto w-full max-w-3xl">
@@ -58,14 +56,6 @@ export default function LegalPage({
         <p className="mt-2 font-mono text-xs uppercase tracking-widest text-gray-500">
           Last updated {lastUpdated}
         </p>
-
-        {incomplete && (
-          <div className="mt-6 rounded-lg border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100">
-            <strong className="font-semibold">This document is not finished.</strong>{' '}
-            Company details are still placeholders in <code>lib/legal.ts</code>. Fill them
-            in before launch — this banner disappears on its own once they are set.
-          </div>
-        )}
 
         {intro && (
           <div className="mt-6 flex flex-col gap-3 text-[15px] leading-relaxed text-gray-300">

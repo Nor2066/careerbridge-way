@@ -15,6 +15,7 @@ import { getLocale } from '@/lib/i18n/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { getStripe } from '@/lib/stripe';
 import { isDisabled, DISABLED_MESSAGE } from '@/lib/kill-switch';
+import { legalDetailsComplete } from '@/lib/legal';
 import {
   STRIPE_PRICE_IDS,
   CHECKOUT_BRANDING,
@@ -62,6 +63,19 @@ export async function POST(request: Request) {
     // Emergency brake — see lib/kill-switch.ts. Checked after the rate limit
     // so a flood still costs nothing, and before any spend.
     if (await isDisabled('checkout')) {
+      return NextResponse.json(
+        { error: DISABLED_MESSAGE.checkout, code: 'SERVICE_PAUSED' },
+        { status: 503 }
+      );
+    }
+
+    // No real money before the company can be named in full. Hungarian law
+    // (Ekertv. 4. §) wants the registration number, registry court, seat and
+    // tax number on the site of anyone selling online, and they exist only once
+    // ADAQNO Kft. is registered. Test keys are unaffected, so the sandbox keeps
+    // working. Set the details in lib/legal.ts before switching to live keys.
+    if (process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') && !legalDetailsComplete()) {
+      console.error('CHECKOUT: live Stripe key in use but the company details in lib/legal.ts are not set — refusing.');
       return NextResponse.json(
         { error: DISABLED_MESSAGE.checkout, code: 'SERVICE_PAUSED' },
         { status: 503 }

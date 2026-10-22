@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
-import { COMPANY, CONTACT, HOSTING, LAST_UPDATED, MINIMUM_AGE } from '@/lib/legal';
+import { COMPANY, CONTACT, HOSTING, LAST_UPDATED, MINIMUM_AGE, registrationDetails } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -67,12 +67,9 @@ export default function TermsPage() {
     >
       <LegalSection id="who-we-are" title="1. Who you are contracting with">
         <p>
-          {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, a company
-          registered in {COMPANY.jurisdiction} under company registration number
-          (cégjegyzékszám) {COMPANY.companyNumber} by the {COMPANY.registryCourt}, with its
-          registered seat at {COMPANY.address}. Tax number: {COMPANY.taxNumber}.
-          {COMPANY.euVatNumber ? ` EU VAT number: ${COMPANY.euVatNumber}.` : ''} Contact us
-          at{' '}
+          {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, a limited liability
+          company established in {COMPANY.jurisdiction}.
+          {registrationDetails() ? ` ${registrationDetails()}` : ''} Contact us at{' '}
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.support}`}>
             {CONTACT.support}
           </a>
@@ -265,6 +262,18 @@ export default function TermsPage() {
           </a>
           .
         </p>
+        <p>
+          <strong className="text-white">How a purchase is made online.</strong> You choose a
+          product on the pricing page, sign in, and go to a payment page run by Stripe, which
+          shows the product, the price and your email address. You tick the box described
+          above and press pay. Until then you can go back, choose a different product, correct
+          your payment details, or leave without paying, and nothing is charged. The contract
+          is made when the payment succeeds, and we confirm it on screen and by email. Under
+          Hungarian law a contract made this way is not a written contract (írásba foglalt
+          szerződés): we keep an electronic record of each purchase, with the version of these
+          terms that applied to it, and your purchases are shown in your account. The contract
+          is made in English. We have not signed up to any code of conduct.
+        </p>
       </LegalSection>
 
       <LegalSection id="acceptable-use" title="7. How you may use it">
@@ -447,11 +456,12 @@ export default function TermsPage() {
           >
             European Consumer Centre
           </a>{' '}
-          in your country helps for free. The contact details are in our{' '}
+          in your country helps for free. The eight Hungarian conciliation boards, and the
+          counties each one covers, are listed in our{' '}
           <a className="text-indigo-300 underline" href="/refunds#problems">
             Refund and Cancellation Policy
           </a>
-          .
+          .{' '}We have not joined any other dispute resolution scheme.
         </p>
       </LegalSection>
 

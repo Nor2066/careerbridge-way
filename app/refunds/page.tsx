@@ -220,9 +220,20 @@ export default function RefundsPage() {
         </p>
         <p>
           If you live in Hungary, you can also take the dispute to the{' '}
-          <strong className="text-white">conciliation body (békéltető testület)</strong>{' '}
-          for the county where you live. It is free, it is quicker than court, and we will
-          take part in the procedure. In Budapest that is the Budapest Conciliation Board
+          <strong className="text-white">conciliation board (békéltető testület)</strong>{' '}
+          for where you live. It is free, it is quicker than court, and we will take part in
+          the procedure. Since 1 January 2024 there are eight regional boards; the national
+          portal,{' '}
+          <a
+            className="text-indigo-300 underline"
+            href="https://bekeltetes.hu"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            bekeltetes.hu
+          </a>
+          , has their current contact details and a form to start a case online. The Budapest
+          board is the Budapest Conciliation Board
           (Budapesti Békéltető Testület), 1016 Budapest, Krisztina körút 99; postal address
           1253 Budapest, Pf. 10; phone +36 1 488 2131;{' '}
           <a className="text-indigo-300 underline" href="mailto:bekelteto.testulet@bkik.hu">
@@ -237,8 +248,59 @@ export default function RefundsPage() {
           >
             bekeltet.bkik.hu
           </a>
-          .
+          . We have not joined any other dispute resolution scheme. The boards, and the
+          counties each one covers:
         </p>
+        <ul className="ml-5 flex list-disc flex-col gap-1 text-sm">
+          <li>
+            <strong className="text-white">Budapesti Békéltető Testület</strong>{' '}&mdash; Budapest.{' '}
+            <a className="text-indigo-300 underline" href="https://bekeltet.bkik.hu" target="_blank" rel="noopener noreferrer">
+              bekeltet.bkik.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Pest Vármegyei Békéltető Testület</strong>{' '}&mdash; Pest county.{' '}
+            <a className="text-indigo-300 underline" href="https://pestmegyeibekelteto.hu" target="_blank" rel="noopener noreferrer">
+              pestmegyeibekelteto.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Baranya Vármegyei Békéltető Testület (Pécs)</strong>{' '}&mdash; Baranya, Somogy and Tolna.{' '}
+            <a className="text-indigo-300 underline" href="https://baranyabekeltetes.hu" target="_blank" rel="noopener noreferrer">
+              baranyabekeltetes.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Borsod-Abaúj-Zemplén Vármegyei Békéltető Testület (Miskolc)</strong>{' '}&mdash; Borsod-Abaúj-Zemplén, Heves and Nógrád.{' '}
+            <a className="text-indigo-300 underline" href="https://bekeltetes.borsodmegye.hu" target="_blank" rel="noopener noreferrer">
+              bekeltetes.borsodmegye.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Csongrád-Csanád Vármegyei Békéltető Testület (Szeged)</strong>{' '}&mdash; Csongrád-Csanád, Bács-Kiskun and Békés.{' '}
+            <a className="text-indigo-300 underline" href="https://bekeltetes-csongrad.hu" target="_blank" rel="noopener noreferrer">
+              bekeltetes-csongrad.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Fejér Vármegyei Békéltető Testület (Székesfehérvár)</strong>{' '}&mdash; Fejér, Komárom-Esztergom and Veszprém.{' '}
+            <a className="text-indigo-300 underline" href="https://bekeltetesfejer.hu" target="_blank" rel="noopener noreferrer">
+              bekeltetesfejer.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Győr-Moson-Sopron Vármegyei Békéltető Testület (Győr)</strong>{' '}&mdash; Győr-Moson-Sopron, Vas and Zala.{' '}
+            <a className="text-indigo-300 underline" href="https://bekeltetesgyor.hu" target="_blank" rel="noopener noreferrer">
+              bekeltetesgyor.hu
+            </a>
+          </li>
+          <li>
+            <strong className="text-white">Hajdú-Bihar Vármegyei Békéltető Testület (Debrecen)</strong>{' '}&mdash; Hajdú-Bihar, Jász-Nagykun-Szolnok and Szabolcs-Szatmár-Bereg.{' '}
+            <a className="text-indigo-300 underline" href="https://hbmbekeltetes.hu" target="_blank" rel="noopener noreferrer">
+              hbmbekeltetes.hu
+            </a>
+          </li>
+        </ul>
         <p>
           You can also ask your bank or card provider about a chargeback. We would much rather
           resolve it with you directly, and we will not close your account for raising one.
@@ -254,7 +316,8 @@ export default function RefundsPage() {
         </p>
         <div className="rounded-lg border border-white/15 bg-white/5 p-4 font-mono text-xs leading-relaxed text-gray-300">
           <p>
-            To: {COMPANY.legalName}, {COMPANY.address}
+            To: {COMPANY.legalName}
+            {COMPANY.address ? `, ${COMPANY.address}` : ''}
           </p>
           <p>Email: {CONTACT.support}</p>
           <p className="mt-3">

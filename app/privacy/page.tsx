@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
-import { COMPANY, CONTACT, LAST_UPDATED, MINIMUM_AGE, SUBPROCESSORS, RETENTION } from '@/lib/legal';
+import { COMPANY, CONTACT, LAST_UPDATED, MINIMUM_AGE, SUBPROCESSORS, RETENTION, registrationDetails } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -63,19 +63,18 @@ export default function PrivacyPolicyPage() {
     >
       <LegalSection id="who-we-are" title="Who we are">
         <p>
-          {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, a company
-          registered in {COMPANY.jurisdiction} under company registration number
-          (cégjegyzékszám) {COMPANY.companyNumber} by the {COMPANY.registryCourt}, with its
-          registered seat at {COMPANY.address}. Our Hungarian tax number is{' '}
-          {COMPANY.taxNumber}.
-          {COMPANY.euVatNumber ? ` Our EU VAT number is ${COMPANY.euVatNumber}.` : ''}
+          {COMPANY.tradingName} is a trading name of {COMPANY.legalName}, a limited liability
+          company established in {COMPANY.jurisdiction}.
+          {registrationDetails() ? ` ${registrationDetails()}` : ''}
         </p>
         <p>
           We are the <strong className="text-white">data controller</strong> for the personal
           data described on this page. That includes students who come to us through a
           partner university: you have your own account with us, and we decide how your data
           is used, not the university. For anything to do with your data, write to{' '}
-          {privacyLink}.
+          {privacyLink}. Our managing directors are responsible for data protection; we have
+          not appointed a Data Protection Officer, because the GDPR does not require one for
+          what we do.
         </p>
         <p>
           We offer the service to people in many countries. We are established in Hungary, in
@@ -241,9 +240,10 @@ export default function PrivacyPolicyPage() {
           identifier or your IP address.
         </p>
         <p>
-          OpenAI processes this data on our instructions, as our processor. Under their API
-          terms, data sent through the API is not used to train their models. Their
-          processing takes place in the United States.
+          OpenAI processes this data on our instructions, as our processor, under its Data
+          Processing Addendum. Under its API terms, data sent through the API is not used to
+          train its models; OpenAI keeps it for up to 30 days to detect abuse, and then
+          deletes it. Its processing takes place in the United States.
         </p>
         <p>
           AI-generated text can be wrong, and sometimes confidently so. Your report is

@@ -4,11 +4,10 @@
 // each name the company, the contact address, and their own last-updated date
 // will drift apart within a month if each carries its own copy.
 //
-// ─────────────────────────────────────────────────────────────────────────
-// BEFORE LAUNCH: replace every value marked TODO. They are deliberately
-// obvious rather than plausible-looking placeholders, so an unfinished one is
-// impossible to miss on the rendered page.
-// ─────────────────────────────────────────────────────────────────────────
+// The registration details (number, registry court, seat, tax numbers) exist
+// only once ADAQNO Kft. is registered, so they are null until then. The pages
+// leave out whatever is null, and checkout refuses real-money payments until
+// legalDetailsComplete() is true — see app/api/checkout/route.ts.
 
 import { BRAND } from '@/lib/site';
 
@@ -17,28 +16,29 @@ export const COMPANY = {
   tradingName: BRAND.name,
 
   /** Registered company name, exactly as it appears in the Hungarian company
-   *  register (cégjegyzék). Expected to be ADAQNO Kft. */
-  legalName: 'TODO — registered company name',
+   *  register (cégjegyzék). The full form is ADAQNO Korlátolt Felelősségű
+   *  Társaság; the short form is what customers see. */
+  legalName: 'ADAQNO Kft.',
 
   /** Company registration number (cégjegyzékszám), in the form 01-09-123456.
    *  The Hungarian e-commerce act (Ekertv. 4. §) requires it on the site,
    *  together with the court that registered the company. */
-  companyNumber: 'TODO — company registration number (cégjegyzékszám)',
+  companyNumber: null as string | null,
 
   /** The registry court (cégbíróság) that keeps the company's file, which
    *  follows the seat — for a Budapest seat, Fővárosi Törvényszék Cégbírósága. */
-  registryCourt: 'TODO — registry court (cégbíróság)',
+  registryCourt: null as string | null,
 
   /**
    * Registered seat (székhely). Use the seat-service address, never a home
    * address: this is published on a public page, and once it is indexed it is
    * very hard to take back.
    */
-  address: 'TODO — registered seat (székhely)',
+  address: null as string | null,
 
   /** Hungarian tax number (adószám), in the form 12345678-1-42. A Kft gets one
    *  on registration, and Ekertv. 4. § requires it on the site. */
-  taxNumber: 'TODO — Hungarian tax number (adószám)',
+  taxNumber: null as string | null,
 
   /** EU VAT number (közösségi adószám), HU followed by eight digits, or null
    *  until it is issued. Needed for selling to businesses in other EU
@@ -84,13 +84,13 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-10-20';
+export const TERMS_VERSION = '2026-10-22';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
-  support: 'TODO@example.com',
+  support: 'support@adaqno.com',
   /** Data protection requests: access, deletion, export, objections. */
-  privacy: 'TODO@example.com',
+  privacy: 'privacy@adaqno.com',
 } as const;
 
 /**
@@ -101,12 +101,12 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '20 October 2026',
-  terms: '20 October 2026',
-  refunds: '20 October 2026',
-  cookies: '20 October 2026',
-  acceptableUse: '13 October 2026',
-  aiNotice: '20 October 2026',
+  privacy: '22 October 2026',
+  terms: '22 October 2026',
+  refunds: '22 October 2026',
+  cookies: '22 October 2026',
+  acceptableUse: '22 October 2026',
+  aiNotice: '22 October 2026',
 } as const;
 
 /**
@@ -210,6 +210,11 @@ export const RETENTION = [
     why: 'They are the record that you cancelled in time and that we refunded you. Kept with your name and email, including after account deletion, because without them that record proves nothing.',
   },
   {
+    what: 'Emails you send us',
+    how_long: '2 years after your last message',
+    why: 'So we have the history if you write to us again about the same thing.',
+  },
+  {
     what: 'Error and security logs',
     how_long: 'Up to 90 days',
     why: 'Long enough to investigate a fault or a security incident, and no longer.',
@@ -222,20 +227,32 @@ export const RETENTION = [
 ];
 
 /**
- * True once the placeholders have been filled in.
+ * True once the company is registered and its details are filled in above.
  *
- * Used to render an unmissable banner on the legal pages while the details are
- * still TODO — a privacy policy that names "TODO — registered company name" in
- * production is worse than not shipping one, because it looks like you tried.
+ * Hungarian law (Ekertv. 4. §) wants the registration number, registry court,
+ * seat and tax number on the site of anyone selling online, so checkout takes
+ * no real money until this is true. Test payments are unaffected.
  */
 export function legalDetailsComplete(): boolean {
-  return ![
-    COMPANY.legalName,
-    COMPANY.companyNumber,
-    COMPANY.registryCourt,
-    COMPANY.address,
-    COMPANY.taxNumber,
-    CONTACT.support,
-    CONTACT.privacy,
-  ].some((value) => value.includes('TODO'));
+  return [COMPANY.companyNumber, COMPANY.registryCourt, COMPANY.address, COMPANY.taxNumber].every(Boolean);
+}
+
+/**
+ * The registration details that exist, as one or more sentences:
+ * "Company registration number (cégjegyzékszám): 01-09-123456, registered by
+ * the Fővárosi Törvényszék Cégbírósága. Registered seat: … Tax number: …".
+ * Empty until the company is registered.
+ */
+export function registrationDetails(): string {
+  const parts: string[] = [];
+  if (COMPANY.companyNumber) {
+    parts.push(
+      `Company registration number (cégjegyzékszám): ${COMPANY.companyNumber}` +
+        (COMPANY.registryCourt ? `, registered by the ${COMPANY.registryCourt}.` : '.')
+    );
+  }
+  if (COMPANY.address) parts.push(`Registered seat (székhely): ${COMPANY.address}.`);
+  if (COMPANY.taxNumber) parts.push(`Tax number (adószám): ${COMPANY.taxNumber}.`);
+  if (COMPANY.euVatNumber) parts.push(`EU VAT number: ${COMPANY.euVatNumber}.`);
+  return parts.join(' ');
 }

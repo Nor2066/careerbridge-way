@@ -94,38 +94,32 @@ export default async function Footer() {
             {locale !== 'en' && (
               <p className="max-w-[12rem] text-xs leading-snug text-gray-500">{t('footer.legalEnglishOnly')}</p>
             )}
-            {/* Only rendered once a real address exists. A live "Contact us"
-                link opening a mail window addressed to TODO@example.com is
-                worse than no link — it looks like the site is abandoned. */}
-            {detailsReady && (
-              <a
-                href={`mailto:${CONTACT.support}`}
-                className="text-sm text-gray-300 transition hover:text-white"
-              >
-                {t('footer.link.contact')}
-              </a>
-            )}
+            <a
+              href={`mailto:${CONTACT.support}`}
+              className="text-sm text-gray-300 transition hover:text-white"
+            >
+              {t('footer.link.contact')}
+            </a>
           </nav>
         </div>
 
         {/* Seller identity. Required for a site selling to consumers, and the
             thing a cautious buyer looks for before entering a card number. */}
         <div className="border-t border-white/10 pt-6 text-xs leading-relaxed text-gray-500">
-          {detailsReady ? (
-            <p>
-              {t('footer.company', {
-                trading: COMPANY.tradingName,
-                legal: COMPANY.legalName,
-                number: COMPANY.companyNumber,
-                court: COMPANY.registryCourt,
-                address: COMPANY.address,
-                tax: COMPANY.taxNumber,
-              })}
-              {COMPANY.euVatNumber ? ` ${t('footer.vat', { vat: COMPANY.euVatNumber })}` : ''}
-            </p>
-          ) : (
-            <p className="text-amber-300/80">{t('footer.placeholders')}</p>
-          )}
+          {/* The registration details exist only once the company is
+              registered (lib/legal.ts); until then the name stands alone. */}
+          <p>
+            {t('footer.company', { trading: COMPANY.tradingName, legal: COMPANY.legalName })}
+            {detailsReady
+              ? ` ${t('footer.registration', {
+                  number: COMPANY.companyNumber ?? '',
+                  court: COMPANY.registryCourt ?? '',
+                  address: COMPANY.address ?? '',
+                  tax: COMPANY.taxNumber ?? '',
+                })}`
+              : ''}
+            {COMPANY.euVatNumber ? ` ${t('footer.vat', { vat: COMPANY.euVatNumber })}` : ''}
+          </p>
           <p className="mt-2">{t('footer.rights', { year, trading: COMPANY.tradingName })}</p>
         </div>
       </div>
