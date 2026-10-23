@@ -177,10 +177,16 @@ async function joinByEmailDomain(user: AuthUser): Promise<Licence | null> {
     return null;
   }
 
+  // Its own abort signal keeps this from being the same request as the
+  // membership lookup at the top of getLicence. Called from a page rather
+  // than an API route, Next.js memoizes identical GETs within a render, so
+  // this used to get that lookup's "no row" back: a student's first visit to
+  // /pricing came back without their licence.
   const { data: saved, error: rereadError } = await supabaseServer
     .from('institution_members')
     .select('user_id, institution_id, joined_at, licence_period_start, attempts_used')
     .eq('user_id', user.id)
+    .abortSignal(new AbortController().signal)
     .maybeSingle();
 
   if (rereadError || !saved) {

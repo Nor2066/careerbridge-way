@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { track } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import BaitQuiz from '@/components/BaitQuiz';
+import DemoResultCard from '@/components/DemoResultCard';
+import type { DemoResult } from '@/lib/demo-quiz';
 import GlassTextLogo from '@/components/GlassTextLogo';
 import { CONTACT } from '@/lib/legal';
 import { BRAND, BRAND_FULL, SITE_URL, SOCIAL } from '@/lib/site';
@@ -126,7 +128,8 @@ const ContactLink = ({ href, label, children }: { href: string; label: string; c
 
 export default function LandingPage() {
   const [quizStarted, setQuizStarted] = useState(false);
-  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [demoResult, setDemoResult] = useState<DemoResult | null>(null);
+  const quizCompleted = demoResult !== null;
   const router = useRouter();
   const { t } = useI18n();
 
@@ -139,10 +142,14 @@ export default function LandingPage() {
     track('demo_quiz_start');
     setQuizStarted(true);
   };
-  const handleBaitComplete = () => {
-    track('demo_quiz_complete');
+  const handleBaitComplete = (result: DemoResult) => {
+    track('demo_quiz_complete', { style: result.top });
     setQuizStarted(false);
-    setQuizCompleted(true);
+    setDemoResult(result);
+  };
+  const handleRetake = () => {
+    setDemoResult(null);
+    handleStartQuiz();
   };
   const handleFullAssessment = () => router.push('/assess');
 
@@ -222,20 +229,9 @@ export default function LandingPage() {
         )}
 
         {/* ── Quiz completed ── */}
-        {quizCompleted && (
+        {demoResult && (
           <div className="w-full max-w-2xl mx-auto mb-16">
-            <div className="glass-card text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">{t('home.demoDone.title')}</h2>
-              <p className="text-gray-200 mb-6">
-                {t('home.demoDone.body')}
-              </p>
-              <button
-                onClick={handleFullAssessment}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-8 py-3 rounded-full transition-all"
-              >
-                {t('home.demoDone.cta')}
-              </button>
-            </div>
+            <DemoResultCard result={demoResult} onStart={handleFullAssessment} onRetake={handleRetake} />
           </div>
         )}
 

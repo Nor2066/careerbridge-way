@@ -78,6 +78,20 @@ export const pricing = {
     en: 'Your answers are saved. Pick a plan and you’ll pick up at exactly the question you left off on.',
     es: 'Tus respuestas están guardadas. Elige un plan y seguirás justo en la pregunta donde lo dejaste.',
   },
+  'pricing.notice.universityTitle': { en: 'Free through {university}', es: 'Gratis gracias a {university}' },
+  'pricing.notice.universityBody': {
+    en: 'Your university covers the assessment: you have {count} {count|attempt|attempts} left, so there is nothing to buy.',
+    es: 'Tu universidad cubre la evaluación: te {count|queda|quedan} {count} {count|intento|intentos}, así que no tienes que comprar nada.',
+  },
+  // Shown to visitors without an account
+  'pricing.visitor.title': { en: 'How buying works', es: 'Cómo se compra' },
+  'pricing.visitor.body': {
+    en: 'Create a free account and start the assessment. After the first 10 questions you choose a plan and carry on from the same question, so nothing you have answered is lost. If your university has a licence, sign up with your university email and it is free.',
+    es: 'Crea una cuenta gratis y empieza la evaluación. Tras las 10 primeras preguntas eliges un plan y sigues en la misma pregunta, así que no pierdes nada de lo que has respondido. Si tu universidad tiene licencia, regístrate con el correo de la universidad y es gratis.',
+  },
+  'pricing.visitor.signup': { en: 'Create a free account', es: 'Crear una cuenta gratis' },
+  'pricing.visitor.signin': { en: 'Sign in', es: 'Iniciar sesión' },
+  'pricing.visitor.sample': { en: 'See a sample report first', es: 'Ver antes un informe de ejemplo' },
 
   // Progress checklist
   'checklist.label': { en: 'Your progress', es: 'Tu progreso' },

@@ -20,11 +20,6 @@ export const home = {
   'home.stats.questions': { en: 'In-depth questions', es: 'Preguntas en profundidad' },
   'home.stats.report': { en: 'Personalised report', es: 'Informe personalizado' },
   'home.stats.ai': { en: 'AI', es: 'IA' },
-  'home.demoDone.title': { en: 'Great work! Ready for the real thing?', es: '¡Buen trabajo! ¿Listo para la evaluación de verdad?' },
-  'home.demoDone.body': {
-    en: 'The demo gives you a taste. Our full career assessment goes much deeper: it analyses your skills, learning style, values, and ambitions across 46 questions, then generates a personalised AI career report with your top career clusters and why they fit you.',
-    es: 'La demostración es solo una muestra. La evaluación completa va mucho más allá: analiza tus habilidades, tu forma de aprender, tus valores y tus ambiciones en 46 preguntas, y genera un informe de carrera personalizado con IA con tus áreas profesionales principales y por qué encajan contigo.',
-  },
   'home.demoDone.cta': { en: 'Start Full Career Assessment →', es: 'Empezar la evaluación completa →' },
 
   'home.how.title': { en: 'How the Career Assessment Works', es: 'Cómo funciona la evaluación' },
@@ -119,4 +114,40 @@ export const home = {
   'demo.progress': { en: 'Question {current} of {total}', es: 'Pregunta {current} de {total}' },
   'demo.complete': { en: '{percent}% Complete', es: '{percent} % completado' },
   'demo.previous': { en: '← Previous question', es: '← Pregunta anterior' },
+
+  // Demo quiz result (scoring in lib/demo-quiz.ts)
+  'demo.result.kicker': { en: 'Your work style', es: 'Tu estilo de trabajo' },
+  'demo.result.second': { en: 'with a {trait} side too', es: 'y también un lado {trait}' },
+  'demo.result.mix': { en: 'Your answers by style', es: 'Tus respuestas por estilo' },
+  'demo.result.areas': { en: 'Career areas to explore first', es: 'Áreas profesionales para empezar a explorar' },
+  'demo.result.disclaimer': {
+    en: 'This demo is a quick taste: 8 questions and a simple tally, not a real assessment. The full assessment asks 46 questions about your skills, values and ambitions, compares you with 15 career areas and writes you a personal AI report.',
+    es: 'Esta demo es solo una muestra rápida: 8 preguntas y un recuento sencillo, no una evaluación de verdad. La evaluación completa te hace 46 preguntas sobre tus habilidades, valores y ambiciones, te compara con 15 áreas profesionales y te escribe un informe personal con IA.',
+  },
+  'demo.result.sample': { en: 'See a sample report', es: 'Ver un informe de ejemplo' },
+  'demo.result.retake': { en: 'Retake the demo', es: 'Repetir la demo' },
+  'demo.style.analytical.name': { en: 'Analytical', es: 'Analítico' },
+  'demo.style.analytical.trait': { en: 'analytical', es: 'analítico' },
+  'demo.style.analytical.body': {
+    en: 'You like to understand how things work before you act. Facts, patterns and a quiet space to think are where you do your best work.',
+    es: 'Te gusta entender cómo funcionan las cosas antes de actuar. Rindes al máximo con datos, patrones y un espacio tranquilo para pensar.',
+  },
+  'demo.style.creative.name': { en: 'Creative', es: 'Creativo' },
+  'demo.style.creative.trait': { en: 'creative', es: 'creativo' },
+  'demo.style.creative.body': {
+    en: 'You learn by making things. You would rather try, build and improve than wait for a perfect plan, and you value freedom in how you work.',
+    es: 'Aprendes haciendo. Prefieres probar, construir y mejorar antes que esperar al plan perfecto, y valoras tener libertad en tu forma de trabajar.',
+  },
+  'demo.style.social.name': { en: 'Social', es: 'Social' },
+  'demo.style.social.trait': { en: 'social', es: 'social' },
+  'demo.style.social.body': {
+    en: 'People give you energy. You read others well, you like working together, and you want your work to make a real difference to someone.',
+    es: 'Las personas te dan energía. Entiendes bien a los demás, te gusta trabajar en equipo y quieres que tu trabajo cambie algo de verdad para alguien.',
+  },
+  'demo.style.strategic.name': { en: 'Strategic', es: 'Estratégico' },
+  'demo.style.strategic.trait': { en: 'strategic', es: 'estratégico' },
+  'demo.style.strategic.body': {
+    en: 'You see where things should go and how to get there. Clear goals, structure and responsibility bring out your best.',
+    es: 'Ves hacia dónde deberían ir las cosas y cómo llegar. Los objetivos claros, el orden y la responsabilidad sacan lo mejor de ti.',
+  },
 } satisfies Record<string, Entry>;

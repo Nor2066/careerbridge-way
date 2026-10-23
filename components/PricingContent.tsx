@@ -40,6 +40,12 @@ interface PricingContentProps {
   // the assessment paywall. Without it the two headers stacked, each with
   // its own ×.
   hideHeader?: boolean;
+  // A visitor with no account: the plans are shown with their prices, but
+  // buying needs an account, so the buttons give way to how to get one.
+  signedOut?: boolean;
+  // Set when the student's university pays, so the page says there is
+  // nothing to buy instead of "choose a plan to see your results".
+  university?: { name: string; attemptsRemaining: number } | null;
 }
 
 export default function PricingContent({
@@ -54,6 +60,8 @@ export default function PricingContent({
   returnPath,
   showReasonNotice = false,
   hideHeader = false,
+  signedOut = false,
+  university = null,
 }: PricingContentProps) {
   const { t, locale } = useI18n();
   const formatPrice = (product: ProductType) => formatPriceIn(product, locale);
@@ -149,14 +157,22 @@ export default function PricingContent({
   // questionnaire with no attempts left: the customer gets blocked without
   // being told what would actually unblock them. This spells it out.
   let notice: { title: string; body: string } | null = null;
-  if (showReasonNotice) {
+  if (showReasonNotice && !signedOut) {
     if (awaitingFollowup) {
       notice = { title: t('pricing.notice.finishTitle'), body: t('pricing.notice.finishBody') };
+    } else if (university) {
+      notice = {
+        title: t('pricing.notice.universityTitle', { university: university.name }),
+        body: t('pricing.notice.universityBody', { count: university.attemptsRemaining }),
+      };
     } else if (hasPlan && outOfAttempts && !followupsUnlocked) {
       notice = { title: t('pricing.notice.basicUsedTitle'), body: t('pricing.notice.basicUsedBody') };
     } else if (hasPlan && outOfAttempts) {
       notice = { title: t('pricing.notice.allUsedTitle'), body: t('pricing.notice.allUsedBody') };
-    } else if (!hasPlan) {
+    } else if (!hasPlan && compact) {
+      // "Your answers are saved" is for the paywall after question 10, the
+      // only compact view that asks for this notice. On the full pricing
+      // page it told students who had not started that answers were saved.
       notice = { title: t('pricing.notice.choosePlanTitle'), body: t('pricing.notice.choosePlanBody') };
     }
   }
@@ -222,13 +238,15 @@ export default function PricingContent({
                 <li>{t('pricing.basic.f2')}</li>
                 <li>{t('pricing.basic.f3', { price: formatPrice('followup_unlock') })}</li>
               </ul>
-              <button
-                onClick={() => startCheckout('basic')}
-                disabled={loadingProduct !== null}
-                className="btn-primary w-full"
-              >
-                {loadingProduct === 'basic' ? t('pricing.redirecting') : t('pricing.basic.cta')}
-              </button>
+              {!signedOut && (
+                <button
+                  onClick={() => startCheckout('basic')}
+                  disabled={loadingProduct !== null}
+                  className="btn-primary w-full"
+                >
+                  {loadingProduct === 'basic' ? t('pricing.redirecting') : t('pricing.basic.cta')}
+                </button>
+              )}
             </div>
           )}
 
@@ -248,13 +266,15 @@ export default function PricingContent({
                 <li>{t('pricing.full.f3')}</li>
                 <li>{t('pricing.full.f4')}</li>
               </ul>
-              <button
-                onClick={() => startCheckout('full')}
-                disabled={loadingProduct !== null}
-                className="btn-primary w-full"
-              >
-                {loadingProduct === 'full' ? t('pricing.redirecting') : t('pricing.full.cta')}
-              </button>
+              {!signedOut && (
+                <button
+                  onClick={() => startCheckout('full')}
+                  disabled={loadingProduct !== null}
+                  className="btn-primary w-full"
+                >
+                  {loadingProduct === 'full' ? t('pricing.redirecting') : t('pricing.full.cta')}
+                </button>
+              )}
             </div>
           )}
 
@@ -338,6 +358,22 @@ export default function PricingContent({
             </div>
           )}
         </div>
+
+        {/* A visitor can't buy without an account, and doesn't need to buy
+            to start: the paywall comes after question 10. */}
+        {signedOut && (
+          <div className="glass-card mt-6 text-center">
+            <h2 className="text-lg font-bold text-white">{t('pricing.visitor.title')}</h2>
+            <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">{t('pricing.visitor.body')}</p>
+            <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+              <a href="/signup" className="btn-primary">{t('pricing.visitor.signup')}</a>
+              <a href="/login?returnTo=/pricing" className="btn-secondary">{t('pricing.visitor.signin')}</a>
+            </div>
+            <a href="/sample-report" className="mt-4 inline-block text-sm text-indigo-300 underline hover:text-white">
+              {t('pricing.visitor.sample')}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
