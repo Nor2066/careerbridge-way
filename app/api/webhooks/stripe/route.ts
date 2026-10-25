@@ -83,6 +83,8 @@ export async function POST(request: Request) {
       // Whichever of the webhook and the verify call wins the race writes the
       // row, so both have to carry it.
       termsConsent: session.consent?.terms_of_service ?? null,
+      // Same for the language the receipt is written in.
+      locale: session.locale ?? null,
     });
 
     if (outcome === 'already_processed') {

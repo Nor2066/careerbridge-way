@@ -360,6 +360,7 @@ export async function POST(request: Request) {
           to: user.email,
           kind: 'report',
           url: `${siteOrigin(request)}/history`,
+          locale,
         });
       }
     } catch (generationError) {

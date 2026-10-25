@@ -1,10 +1,12 @@
 // lib/email.ts
 //
-// Transactional email: the receipt, and the "your report is ready" note.
+// Transactional email: the receipt, the "your report is ready" note, and the
+// withdrawal confirmation (plus a heads-up to us when one arrives). Supabase
+// sends the sign-up, login-link and password-reset emails itself, from the
+// templates in supabase/email-templates.
 //
-// Right now a customer pays and gets nothing in their inbox. That is the point
-// at which a confused buyer stops emailing you and starts talking to their
-// bank instead, so a receipt is not a nicety — it is chargeback prevention.
+// A receipt is not a nicety: a customer who paid and finds nothing in their
+// inbox is the one who calls their bank instead of us.
 //
 // NO-OPS UNTIL CONFIGURED
 //
@@ -20,17 +22,19 @@
 // mail provider had a bad minute would be a far worse bug than a missing
 // email. Failures go to the log and to Sentry, not to the user.
 //
-// PLAIN TEXT, DELIBERATELY
+// SHORT, AND IN THEIR LANGUAGE
 //
-// HTML email is a rendering minefield and a spam signal when it is done badly.
-// Short plain-text mail from a real address lands in inboxes and is readable
-// in every client. Revisit when there is a designer, not before.
+// One idea and at most one button per email, in the layout every email
+// shares (lib/email-layout.ts), always with a plain-text version alongside.
+// The words are in lib/email-copy.ts.
 
 import * as Sentry from '@sentry/nextjs';
 import { COMPANY, CONTACT } from '@/lib/legal';
-import { BRAND_FULL, SITE_URL } from '@/lib/site';
-import type { Locale } from '@/lib/i18n/config';
+import { BRAND, BRAND_FULL, SITE_URL } from '@/lib/site';
+import { INTL_LOCALE, type Locale } from '@/lib/i18n/config';
 import { acknowledgementEmail, type WithdrawalStatement } from '@/lib/withdrawal-rules';
+import { renderEmailHtml, renderEmailText, type EmailContent } from '@/lib/email-layout';
+import { EMAIL_COPY } from '@/lib/email-copy';
 
 const API = 'https://api.resend.com/emails';
 
@@ -48,6 +52,7 @@ function fromAddress(): string {
 type SendArgs = {
   to: string;
   subject: string;
+  html: string;
   text: string;
 };
 
@@ -56,7 +61,7 @@ type SendArgs = {
  * the withdrawal acknowledgement records it, because whether that email went
  * out is something the founders may have to prove.
  */
-async function send({ to, subject, text }: SendArgs): Promise<boolean> {
+async function send({ to, subject, html, text }: SendArgs): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
 
   if (!key) {
@@ -73,7 +78,8 @@ async function send({ to, subject, text }: SendArgs): Promise<boolean> {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from: fromAddress(), to: [to], subject, text }),
+      // Replies reach a person rather than the sending address.
+      body: JSON.stringify({ from: fromAddress(), to: [to], reply_to: CONTACT.support, subject, html, text }),
       // A slow mail provider must not hold a checkout webhook open.
       signal: AbortSignal.timeout(8000),
     });
@@ -92,9 +98,12 @@ async function send({ to, subject, text }: SendArgs): Promise<boolean> {
   }
 }
 
-function signOff(): string {
-  const contact = CONTACT.support.includes('TODO') ? '' : `\nQuestions? Just reply to this email, or write to ${CONTACT.support}.`;
-  return `${contact}\n\n— ${BRAND_FULL}`;
+function sendContent(to: string, content: EmailContent): Promise<boolean> {
+  return send({ to, subject: content.subject, html: renderEmailHtml(content), text: renderEmailText(content) });
+}
+
+function footer(locale: Locale): string[] {
+  return [`${BRAND.name} · ${EMAIL_COPY[locale].descriptor}`, COMPANY.legalName];
 }
 
 /**
@@ -107,65 +116,72 @@ function signOff(): string {
  * more care than a two-way symbol guess.
  *
  * Intl gets the symbol, the placement and the separators right for whatever
- * Stripe actually charged. It throws RangeError on a code it does not know,
- * hence the fallback — a receipt that reads "4.50 XYZ" is still a usable
- * record, whereas an exception here would lose the email entirely.
+ * Stripe actually charged, written the reader's way ("3,00 €" in Spanish). It
+ * throws RangeError on a code it does not know, hence the fallback — a receipt
+ * that reads "4.50 XYZ" is still a usable record, whereas an exception here
+ * would lose the email entirely.
  *
  * The default is EUR because the Stripe Prices are in EUR (lib/prices.ts). The
  * divide by 100 assumes a two-decimal currency, which holds for everything
  * Stripe is configured to take here; zero-decimal currencies (JPY, KRW) would
  * need handling before enabling them.
  */
-function money(amountCents: number | null | undefined, currency: string | null | undefined): string {
-  if (amountCents == null) return 'your purchase';
+export function money(amountCents: number | null | undefined, currency: string | null | undefined, locale: Locale): string {
+  if (amountCents == null) return '—';
   const code = (currency ?? 'eur').toUpperCase();
   try {
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: code })
+    return new Intl.NumberFormat(INTL_LOCALE[locale], { style: 'currency', currency: code })
       .format(amountCents / 100);
   } catch {
     return `${(amountCents / 100).toFixed(2)} ${code}`;
   }
 }
 
-const PRODUCT_NAMES: Record<string, string> = {
-  basic: 'Basic plan',
-  full: 'Full plan',
-  followup_unlock: 'Follow-up bundle',
-  topup: 'Top-up pack',
-};
-
 /**
  * Sent after a payment settles. Doubles as the customer's record of what they
  * bought, which is what the refund policy asks them to quote back to us.
  */
+export function receiptContent(args: {
+  productType: string;
+  amountCents?: number | null;
+  currency?: string | null;
+  attemptsGranted?: number;
+  locale: Locale;
+}): EmailContent {
+  const c = EMAIL_COPY[args.locale].receipt;
+  const product = c.products[args.productType as keyof typeof c.products] ?? args.productType;
+  const amount = money(args.amountCents, args.currency, args.locale);
+  const rows: [string, string][] = [
+    [c.item, product],
+    [c.paid, amount],
+  ];
+  if (args.attemptsGranted) rows.push([c.added, c.attempts(args.attemptsGranted)]);
+
+  return {
+    lang: args.locale,
+    subject: c.subject(product),
+    preview: c.preview(amount),
+    heading: c.heading,
+    blocks: [
+      { kind: 'details', rows },
+      { kind: 'text', text: c.body },
+      { kind: 'button', label: c.button, url: `${SITE_URL}/history` },
+      { kind: 'note', text: c.withdraw, link: { label: c.withdrawLink, url: `${SITE_URL}/withdraw` } },
+      { kind: 'note', text: c.help(CONTACT.support) },
+    ],
+    footer: footer(args.locale),
+  };
+}
+
 export async function sendPurchaseReceipt(args: {
   to: string;
   productType: string;
   amountCents?: number | null;
   currency?: string | null;
   attemptsGranted?: number;
+  locale: Locale;
 }): Promise<void> {
-  const product = PRODUCT_NAMES[args.productType] ?? args.productType;
-  const amount = money(args.amountCents, args.currency);
-
-  const granted = args.attemptsGranted
-    ? `\nThis added ${args.attemptsGranted} attempt${args.attemptsGranted === 1 ? '' : 's'} to your account.`
-    : '';
-
-  await send({
-    to: args.to,
-    subject: `Your ${COMPANY.tradingName} receipt — ${product}`,
-    text: `Thanks for your purchase.
-
-  Item:   ${product}
-  Paid:   ${amount}
-${granted}
-Everything you have bought is on your account page, and your reports stay in your history for as long as you keep the account.
-
-Changed your mind? You can withdraw within 14 days, without giving a reason, at ${SITE_URL}/withdraw
-
-If something is not there, tell us before you contact your bank — we can almost always fix it in a few minutes.${signOff()}`,
-  });
+  await sendContent(args.to, receiptContent(args));
 }
 
 /**
@@ -175,63 +191,96 @@ If something is not there, tell us before you contact your bank — we can almos
  * lose connections, and take the assessment on a phone on a train. This is the
  * link back to something they paid for.
  */
+export function reportReadyContent(args: { kind: 'report' | 'roadmap'; url: string; locale: Locale }): EmailContent {
+  const c = EMAIL_COPY[args.locale].ready;
+  const k = c[args.kind];
+  return {
+    lang: args.locale,
+    subject: k.subject,
+    preview: c.body,
+    heading: k.subject,
+    blocks: [
+      { kind: 'text', text: c.body },
+      { kind: 'button', label: k.button, url: args.url },
+    ],
+    footer: footer(args.locale),
+  };
+}
+
 export async function sendReportReady(args: {
   to: string;
   kind: 'report' | 'roadmap';
   url: string;
+  locale: Locale;
 }): Promise<void> {
-  const what = args.kind === 'roadmap' ? 'detailed career roadmap' : 'career report';
-
-  await send({
-    to: args.to,
-    subject: `Your ${what} is ready`,
-    text: `Your ${what} has been generated and is waiting in your history:
-
-${args.url}
-
-It stays there, so there is no rush — and no need to take the assessment again to see it.${signOff()}`,
-  });
+  await sendContent(args.to, reportReadyContent(args));
 }
 
 /**
  * The acknowledgement Article 11a(4) requires once someone presses "Confirm
  * withdrawal": on a durable medium, without undue delay, repeating what they
- * sent and when. In their language, unlike the other mail here, because this
- * one may have to be read as evidence.
+ * sent and when. The wording is the legal text from lib/withdrawal-rules.ts,
+ * unchanged; only the layout is shared with the other emails.
  *
  * Returns whether it went out, so the row can record it and the page can tell
  * the customer to keep a copy if it did not.
  */
+export function withdrawalAcknowledgementContent(args: {
+  locale: Locale;
+  statement: WithdrawalStatement;
+}): { content: EmailContent; text: string } {
+  const { subject, text, parts } = acknowledgementEmail(args.locale, args.statement, COMPANY.tradingName);
+  const content: EmailContent = {
+    lang: args.locale,
+    subject,
+    preview: parts.opening,
+    heading: EMAIL_COPY[args.locale].withdrawal.heading,
+    blocks: [
+      { kind: 'text', text: parts.opening },
+      { kind: 'details', rows: parts.rows },
+      { kind: 'text', text: parts.next },
+      { kind: 'note', text: parts.keep },
+    ],
+    footer: footer(args.locale),
+  };
+  return { content, text: `${text}\n\n—\n${content.footer.join('\n')}` };
+}
+
 export async function sendWithdrawalAcknowledgement(args: {
   to: string;
   locale: Locale;
   statement: WithdrawalStatement;
 }): Promise<boolean> {
-  const { subject, text } = acknowledgementEmail(args.locale, args.statement, COMPANY.tradingName);
-  return send({ to: args.to, subject, text: `${text}${signOff()}` });
+  const { content, text } = withdrawalAcknowledgementContent(args);
+  return send({ to: args.to, subject: content.subject, html: renderEmailHtml(content), text });
 }
 
 /**
  * Tells the team a withdrawal has arrived, because the refund clock (14 days)
- * starts now. Goes to the support address once it is real; until then the
- * Sentry alert raised by the route and /admin/withdrawals are the only signal.
+ * starts now. Internal, so English only.
  */
 export async function notifyWithdrawalReceived(args: {
   reference: string;
   contract: string;
   refundDueBy: string;
 }): Promise<void> {
-  if (CONTACT.support.includes('TODO')) return;
-  await send({
-    to: CONTACT.support,
+  await sendContent(CONTACT.support, {
+    lang: 'en',
     subject: `Withdrawal received (${args.reference}): refund due by ${args.refundDueBy}`,
-    text: `A customer has withdrawn using the button on the site.
-
-  Reference:   ${args.reference}
-  Purchase:    ${args.contract}
-  Refund by:   ${args.refundDueBy}
-
-Refund it in Stripe, remove the attempts, and mark it handled:
-${SITE_URL}/admin/withdrawals`,
+    preview: `Refund due by ${args.refundDueBy}.`,
+    heading: 'Withdrawal received',
+    blocks: [
+      {
+        kind: 'details',
+        rows: [
+          ['Reference', args.reference],
+          ['Purchase', args.contract],
+          ['Refund by', args.refundDueBy],
+        ],
+      },
+      { kind: 'text', text: 'Refund it in Stripe, remove the attempts, and mark it handled.' },
+      { kind: 'button', label: 'Open withdrawals', url: `${SITE_URL}/admin/withdrawals` },
+    ],
+    footer: [BRAND_FULL],
   });
 }

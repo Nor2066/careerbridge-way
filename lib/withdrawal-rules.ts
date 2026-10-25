@@ -272,23 +272,38 @@ export function acknowledgementEmail(
   locale: Locale,
   statement: WithdrawalStatement,
   brand: string
-): { subject: string; text: string } {
+): {
+  subject: string;
+  text: string;
+  /** The same content in pieces, for the HTML version (lib/email.ts). */
+  parts: { opening: string; rows: [string, string][]; next: string; keep: string };
+} {
   const t = (key: MessageKey, vars?: Record<string, string | number>) => translate(locale, key, vars);
+  const rows: [string, string][] = [
+    [t('withdraw.field.reference'), statement.reference],
+    [t('withdraw.field.submittedAt'), formatMoment(locale, statement.submittedAt)],
+    [t('withdraw.field.name'), statement.name],
+    [t('withdraw.field.contract'), statement.contract],
+    [t('withdraw.field.confirmationTo'), statement.confirmationEmail],
+  ];
+  const parts = {
+    opening: t('withdraw.email.opening'),
+    rows,
+    next: t('withdraw.email.next', { days: REFUND_DUE_DAYS }),
+    keep: t('withdraw.email.keep'),
+  };
   const lines = [
-    t('withdraw.email.opening'),
+    parts.opening,
     '',
-    `  ${t('withdraw.field.reference')}: ${statement.reference}`,
-    `  ${t('withdraw.field.submittedAt')}: ${formatMoment(locale, statement.submittedAt)}`,
-    `  ${t('withdraw.field.name')}: ${statement.name}`,
-    `  ${t('withdraw.field.contract')}: ${statement.contract}`,
-    `  ${t('withdraw.field.confirmationTo')}: ${statement.confirmationEmail}`,
+    ...rows.map(([label, value]) => `  ${label}: ${value}`),
     '',
-    t('withdraw.email.next', { days: REFUND_DUE_DAYS }),
+    parts.next,
     '',
-    t('withdraw.email.keep'),
+    parts.keep,
   ];
   return {
     subject: t('withdraw.email.subject', { brand, reference: statement.reference }),
     text: lines.join('\n'),
+    parts,
   };
 }

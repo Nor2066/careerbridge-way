@@ -92,5 +92,5 @@ El cuestionario de seguimiento es donde todo esto se concreta: puestos específi
   'meta.forgotPassword.title': { en: 'Forgotten password', es: 'Contraseña olvidada' },
   'meta.resetPassword.title': { en: 'Choose a new password', es: 'Elige una contraseña nueva' },
   'meta.resendConfirmation.title': { en: 'Resend the confirmation email', es: 'Reenviar el correo de confirmación' },
-  'meta.callback.title': { en: 'Signing you in', es: 'Iniciando sesión' },
+  'meta.callback.title': { en: 'Your email link', es: 'Tu enlace' },
 } satisfies Record<string, Entry>;

@@ -19,6 +19,7 @@ import { authLimiter, authIpLimiter, emailIdentifier, getIP } from '@/lib/rate-l
 import { assessPassword, MAX_PASSWORD_LENGTH } from '@/lib/password';
 import { recordTermsAcceptance } from '@/lib/terms-acceptance';
 import { MINIMUM_AGE } from '@/lib/legal';
+import { getLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,11 +100,15 @@ export async function POST(request: Request) {
     }
 
     // The implicit-flow client, so the confirmation link works on any device
-    // at any time. See createEmailLinkClient.
+    // at any time. See createEmailLinkClient. The language goes into the
+    // user's metadata, where the email templates read it (lib/email-locale.ts).
     const { data, error } = await createEmailLinkClient().auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${siteOrigin(request)}/auth/callback` },
+      options: {
+        emailRedirectTo: `${siteOrigin(request)}/auth/callback`,
+        data: { locale: await getLocale() },
+      },
     });
 
     if (error) {

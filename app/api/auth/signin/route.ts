@@ -6,7 +6,7 @@
 // JavaScript-readable cookie, which both defeated the httpOnly policy and
 // fought with the cookies the OAuth callback writes.
 import * as Sentry from '@sentry/nextjs';
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import {
@@ -16,6 +16,8 @@ import {
   NO_STORE_HEADERS,
 } from '@/lib/auth-cookies';
 import { authLimiter, authIpLimiter, emailIdentifier, getIP } from '@/lib/rate-limit';
+import { getLocale } from '@/lib/i18n/server';
+import { rememberEmailLocale } from '@/lib/email-locale';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +86,10 @@ export async function POST(request: Request) {
       { headers: NO_STORE_HEADERS }
     );
     applyCookies(response, pending);
+    // After the response, so signing in is not slowed by it.
+    const session = data.session;
+    const locale = await getLocale();
+    after(() => rememberEmailLocale(session, locale));
     return response;
   } catch (err) {
     Sentry.captureException(err);

@@ -289,6 +289,7 @@ export async function POST(request: Request) {
           to: user.email,
           kind: 'roadmap',
           url: `${siteOrigin(request)}/history`,
+          locale,
         });
       }
     } catch (generationError) {

@@ -152,11 +152,27 @@ export const auth = {
 
   // Callback
   'auth.callback.signingIn': { en: 'Signing you in...', es: 'Iniciando sesión...' },
-  'auth.callback.invalid': { en: 'This sign-in link is invalid or has expired. Please try again.', es: 'Este enlace de acceso no es válido o ha caducado. Inténtalo de nuevo.' },
+  'auth.callback.invalid': { en: 'This link is invalid or has expired.', es: 'Este enlace no es válido o ha caducado.' },
   'auth.callback.failed': { en: 'Something went wrong signing you in. Please try again.', es: 'Algo ha fallado al iniciar sesión. Inténtalo de nuevo.' },
   'auth.callback.confirmed': {
     en: 'Your email is confirmed. Sign in to continue.',
     es: 'Tu correo está confirmado. Inicia sesión para continuar.',
   },
   'auth.callback.signIn': { en: 'Sign in', es: 'Iniciar sesión' },
+
+  // Email links: one button before the token is used (/auth/callback)
+  'auth.link.signup.title': { en: 'Confirm your email', es: 'Confirma tu correo' },
+  'auth.link.signup.body': { en: 'One click and your account is ready.', es: 'Un clic y tu cuenta estará lista.' },
+  'auth.link.signup.button': { en: 'Confirm and sign in', es: 'Confirmar y entrar' },
+  'auth.link.magiclink.title': { en: 'Sign in to ADAQNO', es: 'Entra en ADAQNO' },
+  'auth.link.magiclink.body': { en: 'Press the button to sign in.', es: 'Pulsa el botón para entrar.' },
+  'auth.link.magiclink.button': { en: 'Sign in', es: 'Entrar' },
+  'auth.link.recovery.title': { en: 'Reset your password', es: 'Restablece tu contraseña' },
+  'auth.link.recovery.body': { en: 'Press the button, then choose a new password.', es: 'Pulsa el botón y elige una contraseña nueva.' },
+  'auth.link.recovery.button': { en: 'Choose a new password', es: 'Elegir contraseña nueva' },
+  'auth.link.why': {
+    en: 'We ask for this click so that email security scanners cannot use your link before you do.',
+    es: 'Te pedimos este clic para que los filtros de seguridad del correo no usen tu enlace antes que tú.',
+  },
+  'auth.link.newReset': { en: 'Request a new link', es: 'Pedir un enlace nuevo' },
 } satisfies Record<string, Entry>;

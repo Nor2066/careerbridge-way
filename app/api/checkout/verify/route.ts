@@ -91,6 +91,7 @@ export async function POST(request: Request) {
       // See the matching note in the Stripe webhook: this route and that one
       // race for the insert, so both must supply it.
       termsConsent: session.consent?.terms_of_service ?? null,
+      locale: session.locale ?? null,
     });
 
     const sub = await getSubscription(user.id);

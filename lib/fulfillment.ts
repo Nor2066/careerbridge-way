@@ -27,6 +27,7 @@ if (typeof window !== 'undefined') {
 
 import { createClient } from '@supabase/supabase-js';
 import { sendPurchaseReceipt } from '@/lib/email';
+import { isLocale, type Locale } from '@/lib/i18n/config';
 import { TERMS_VERSION } from '@/lib/legal';
 import {
   ATTEMPTS_GRANTED,
@@ -63,6 +64,9 @@ export async function fulfillCheckoutSession(params: {
   // eight months is whether THAT purchase captured it, not whether the
   // feature was switched on at some point.
   termsConsent?: string | null;
+  // The checkout's language (Stripe's session.locale), so the receipt is in
+  // the language the customer bought in.
+  locale?: string | null;
 }): Promise<FulfillOutcome> {
   const { userId, productType, sessionId, paymentIntentId } = params;
 
@@ -114,7 +118,7 @@ export async function fulfillCheckoutSession(params: {
   // credited is worse than no receipt. Not awaited for its result and it can
   // never throw — the customer keeps their attempts whatever the mail
   // provider is doing.
-  void sendReceiptFor(userId, productType, amountCents, currency);
+  void sendReceiptFor(userId, productType, amountCents, currency, params.locale ?? null);
 
   return 'granted';
 }
@@ -261,11 +265,17 @@ async function sendReceiptFor(
   userId: string,
   productType: ProductType,
   amountCents: number,
-  currency: string
+  currency: string,
+  checkoutLocale: string | null
 ): Promise<void> {
   try {
     const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
     if (error || !data.user?.email) return;
+
+    // The checkout's language, else the one stored on the account (an admin
+    // re-grant has no checkout), else English.
+    const stored = data.user.user_metadata?.locale;
+    const locale: Locale = isLocale(checkoutLocale) ? checkoutLocale : isLocale(stored) ? stored : 'en';
 
     await sendPurchaseReceipt({
       to: data.user.email,
@@ -273,6 +283,7 @@ async function sendReceiptFor(
       amountCents,
       currency,
       attemptsGranted: ATTEMPTS_GRANTED[productType] || undefined,
+      locale,
     });
   } catch (err) {
     console.error('FULFILLMENT: receipt email failed (purchase unaffected):', err);
