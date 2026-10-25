@@ -68,13 +68,12 @@ export default function PrivacyPolicyPage() {
           {registrationDetails() ? ` ${registrationDetails()}` : ''}
         </p>
         <p>
-          We are the <strong className="text-white">data controller</strong> for the personal
-          data described on this page. That includes students who come to us through a
-          partner university: you have your own account with us, and we decide how your data
-          is used, not the university. For anything to do with your data, write to{' '}
-          {privacyLink}. Our managing directors are responsible for data protection; we have
-          not appointed a Data Protection Officer, because the GDPR does not require one for
-          what we do.
+          {COMPANY.legalName} is the <strong className="text-white">data controller</strong>{' '}
+          for the personal data described on this page, and answerable for it. That includes
+          students who come to us through a partner university: you have your own account with
+          us, and we decide how your data is used, not the university. For anything to do with
+          your data, write to {privacyLink}. We have not appointed a Data Protection Officer,
+          because the GDPR does not require one for what we do.
         </p>
         <p>
           We offer the service to people in many countries. We are established in Hungary, in
