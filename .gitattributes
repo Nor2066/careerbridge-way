@@ -1,0 +1,3 @@
+# The Supabase email templates are compared byte for byte with what the code
+# generates (lib/auth-email-templates.test.ts), so they keep LF everywhere.
+supabase/email-templates/* text eol=lf
