@@ -84,13 +84,22 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-10-22';
+export const TERMS_VERSION = '2026-10-26';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
   support: 'support@adaqno.com',
   /** Data protection requests: access, deletion, export, objections. */
   privacy: 'privacy@adaqno.com',
+  /**
+   * A telephone number, in international form (+36 …). Govt Decree 45/2014
+   * 11. § (1) c) puts it in the information a customer must have before
+   * buying, next to the seat and the email address, so it is part of
+   * legalDetailsComplete(). Whoever answers it takes complaints too, and the
+   * terms say how (Fgytv. 17/A. §: a written note of a complaint that cannot
+   * be settled on the call, and a reference number for it).
+   */
+  phone: null as string | null,
 } as const;
 
 /**
@@ -101,9 +110,9 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '22 October 2026',
-  terms: '22 October 2026',
-  refunds: '22 October 2026',
+  privacy: '26 October 2026',
+  terms: '26 October 2026',
+  refunds: '26 October 2026',
   cookies: '22 October 2026',
   acceptableUse: '22 October 2026',
   aiNotice: '22 October 2026',
@@ -215,6 +224,11 @@ export const RETENTION = [
     why: 'So we have the history if you write to us again about the same thing.',
   },
   {
+    what: 'Complaints, and our answers to them',
+    how_long: '3 years after our answer',
+    why: 'Hungarian consumer law requires us to keep each complaint and our answer for three years, and to show them to the consumer protection authority if it asks (Act CLV of 1997, section 17/A).',
+  },
+  {
     what: 'Error and security logs',
     how_long: 'Up to 90 days',
     why: 'Long enough to investigate a fault or a security incident, and no longer.',
@@ -230,12 +244,108 @@ export const RETENTION = [
  * True once the company is registered and its details are filled in above.
  *
  * Hungarian law (Ekertv. 4. §) wants the registration number, registry court,
- * seat and tax number on the site of anyone selling online, so checkout takes
- * no real money until this is true. Test payments are unaffected.
+ * seat and tax number on the site of anyone selling online, and Govt Decree
+ * 45/2014 11. § (1) c) a telephone number, so checkout takes no real money
+ * until this is true. Test payments are unaffected.
  */
 export function legalDetailsComplete(): boolean {
+  return registrationComplete() && Boolean(CONTACT.phone);
+}
+
+/** The registration details alone: what the footer needs before it can print them. */
+export function registrationComplete(): boolean {
   return [COMPANY.companyNumber, COMPANY.registryCourt, COMPANY.address, COMPANY.taxNumber].every(Boolean);
 }
+
+/**
+ * The Hungarian conciliation boards (békéltető testület), as Fgytv. 17/A. §
+ * (1a) asks a trader to list them: seat, telephone, web and postal address.
+ * Eight regional boards since 1 January 2024 (Fgytv. 2. melléklet). A
+ * consumer in Hungary goes to the board for where they live; one who lives
+ * elsewhere, to the board for our seat (Fgytv. 20. §); and any board may hear
+ * a cross-border online dispute (5/2023. (VI. 19.) IM rendelet 19. §).
+ *
+ * Checked against each board's own site on 26 October 2026; bekeltetes.hu
+ * keeps the current list. `postal` is set only where a board gives a postal
+ * address separate from its seat.
+ */
+export type ConciliationBoard = {
+  name: string;
+  covers: string;
+  address: string;
+  postal?: string;
+  phone: string;
+  email?: string;
+  web: string;
+};
+
+export const CONCILIATION_BOARDS: ConciliationBoard[] = [
+  {
+    name: 'Budapesti Békéltető Testület',
+    covers: 'Budapest',
+    address: '1016 Budapest, Krisztina körút 99, I. em. 111',
+    postal: '1253 Budapest, Pf. 10',
+    phone: '+36 1 488 2131',
+    email: 'bekelteto.testulet@bkik.hu',
+    web: 'bekeltet.bkik.hu',
+  },
+  {
+    name: 'Pest Vármegyei Békéltető Testület',
+    covers: 'Pest county',
+    address: '1055 Budapest, Balassi Bálint utca 25, IV. em. 2',
+    phone: '+36 1 792 7881',
+    email: 'pmbekelteto@pmkik.hu',
+    web: 'pestmegyeibekelteto.hu',
+  },
+  {
+    name: 'Baranya Vármegyei Békéltető Testület',
+    covers: 'Baranya, Somogy and Tolna',
+    address: '7625 Pécs, Majorossy Imre utca 36',
+    phone: '+36 72 507 154',
+    web: 'baranyabekeltetes.hu',
+  },
+  {
+    name: 'Borsod-Abaúj-Zemplén Vármegyei Békéltető Testület',
+    covers: 'Borsod-Abaúj-Zemplén, Heves and Nógrád',
+    address: '3525 Miskolc, Szentpáli utca 1',
+    postal: '3501 Miskolc, Pf. 376',
+    phone: '+36 46 501 091',
+    email: 'bekeltetes@bokik.hu',
+    web: 'bekeltetes.borsodmegye.hu',
+  },
+  {
+    name: 'Csongrád-Csanád Vármegyei Békéltető Testület',
+    covers: 'Csongrád-Csanád, Bács-Kiskun and Békés',
+    address: '6721 Szeged, Párizsi körút 8–12',
+    phone: '+36 62 549 392',
+    email: 'bekelteto.testulet@cskik.hu',
+    web: 'bekeltetes-csongrad.hu',
+  },
+  {
+    name: 'Fejér Vármegyei Békéltető Testület',
+    covers: 'Fejér, Komárom-Esztergom and Veszprém',
+    address: '8000 Székesfehérvár, Hosszúsétatér 4–6',
+    phone: '+36 22 510 310',
+    email: 'bekeltetes@fmkik.hu',
+    web: 'bekeltetesfejer.hu',
+  },
+  {
+    name: 'Győr-Moson-Sopron Vármegyei Békéltető Testület',
+    covers: 'Győr-Moson-Sopron, Vas and Zala',
+    address: '9022 Győr, Szent István út 10/A',
+    phone: '+36 96 520 200',
+    email: 'bekelteto.testulet@gymsmkik.hu',
+    web: 'bekeltetesgyor.hu',
+  },
+  {
+    name: 'Hajdú-Bihar Vármegyei Békéltető Testület',
+    covers: 'Hajdú-Bihar, Jász-Nagykun-Szolnok and Szabolcs-Szatmár-Bereg',
+    address: '4025 Debrecen, Vörösmarty utca 13–15',
+    phone: '+36 52 500 745',
+    email: 'bekelteto@hbkik.hu',
+    web: 'hbmbekeltetes.hu',
+  },
+];
 
 /**
  * The registration details that exist, as one or more sentences:

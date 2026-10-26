@@ -26,10 +26,11 @@
 //
 // One idea and at most one button per email, in the layout every email
 // shares (lib/email-layout.ts), always with a plain-text version alongside.
-// The words are in lib/email-copy.ts.
+// The words are in lib/email-copy.ts. The receipt is the one exception, with
+// small print under the main message: see receiptContent.
 
 import * as Sentry from '@sentry/nextjs';
-import { COMPANY, CONTACT } from '@/lib/legal';
+import { COMPANY, CONTACT, TERMS_VERSION } from '@/lib/legal';
 import { BRAND, BRAND_FULL, SITE_URL } from '@/lib/site';
 import { INTL_LOCALE, type Locale } from '@/lib/i18n/config';
 import { acknowledgementEmail, type WithdrawalStatement } from '@/lib/withdrawal-rules';
@@ -140,6 +141,16 @@ export function money(amountCents: number | null | undefined, currency: string |
 /**
  * Sent after a payment settles. Doubles as the customer's record of what they
  * bought, which is what the refund policy asks them to quote back to us.
+ *
+ * It is also the confirmation Govt Decree 45/2014 18. § requires (Consumer
+ * Rights Directive Art. 8(7)): on a durable medium, by the time supply starts,
+ * repeating the pre-contract information of 11. § (1) and confirming the
+ * express request for immediate supply and the acknowledgement that the
+ * withdrawal right is lost once a report is generated. Without that
+ * confirmation the 29. § (1) m) exception does not apply, and a customer who
+ * withdraws within 14 days owes nothing for attempts already used (27. § b)).
+ * Hence the small print, and hence confirming the consent only when Stripe
+ * says the box was ticked: confirming one that was never given would be false.
  */
 export function receiptContent(args: {
   productType: string;
@@ -147,16 +158,29 @@ export function receiptContent(args: {
   currency?: string | null;
   attemptsGranted?: number;
   locale: Locale;
+  /** Stripe's consent.terms_of_service for the session: 'accepted', or null when no box was shown. */
+  termsConsent?: string | null;
+  purchasedAt?: Date;
 }): EmailContent {
   const c = EMAIL_COPY[args.locale].receipt;
-  const product = c.products[args.productType as keyof typeof c.products] ?? args.productType;
+  const key = args.productType as keyof typeof c.products;
+  const product = c.products[key] ?? args.productType;
   const amount = money(args.amountCents, args.currency, args.locale);
   const rows: [string, string][] = [
     [c.item, product],
     [c.paid, amount],
   ];
   if (args.attemptsGranted) rows.push([c.added, c.attempts(args.attemptsGranted)]);
+  if (args.purchasedAt) {
+    rows.push([
+      c.date,
+      new Intl.DateTimeFormat(INTL_LOCALE[args.locale], { dateStyle: 'long', timeZone: 'Europe/Budapest' }).format(
+        args.purchasedAt
+      ),
+    ]);
+  }
 
+  const k = c.contract;
   return {
     lang: args.locale,
     subject: c.subject(product),
@@ -166,8 +190,29 @@ export function receiptContent(args: {
       { kind: 'details', rows },
       { kind: 'text', text: c.body },
       { kind: 'button', label: c.button, url: `${SITE_URL}/history` },
+      { kind: 'note', text: args.termsConsent === 'accepted' ? c.consentGiven : c.consentMissing },
       { kind: 'note', text: c.withdraw, link: { label: c.withdrawLink, url: `${SITE_URL}/withdraw` } },
       { kind: 'note', text: c.help(CONTACT.support) },
+      { kind: 'heading', text: k.heading },
+      { kind: 'note', text: k.keep },
+      {
+        kind: 'note',
+        text: k.seller({
+          name: COMPANY.legalName,
+          address: COMPANY.address,
+          companyNumber: COMPANY.companyNumber,
+          registryCourt: COMPANY.registryCourt,
+          taxNumber: COMPANY.taxNumber,
+          email: CONTACT.support,
+          phone: CONTACT.phone,
+        }),
+      },
+      { kind: 'note', text: k.bought(c.describe[key] ?? product, amount) },
+      { kind: 'note', text: k.delivery },
+      { kind: 'note', text: k.withdrawal },
+      { kind: 'note', text: k.faulty },
+      { kind: 'note', text: k.complaints(CONTACT.support, CONTACT.phone) },
+      { kind: 'note', text: k.terms(TERMS_VERSION, SITE_URL), link: { label: k.termsLink, url: `${SITE_URL}/terms` } },
     ],
     footer: footer(args.locale),
   };
@@ -180,6 +225,8 @@ export async function sendPurchaseReceipt(args: {
   currency?: string | null;
   attemptsGranted?: number;
   locale: Locale;
+  termsConsent?: string | null;
+  purchasedAt?: Date;
 }): Promise<void> {
   await sendContent(args.to, receiptContent(args));
 }

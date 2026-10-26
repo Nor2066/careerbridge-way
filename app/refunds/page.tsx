@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
-import { COMPANY, CONTACT, LAST_UPDATED } from '@/lib/legal';
+import { COMPANY, CONCILIATION_BOARDS, CONTACT, LAST_UPDATED } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -44,7 +44,8 @@ export default function RefundsPage() {
           The one exception, and it is an important one: digital content delivered
           immediately. When you buy attempts and then use one to generate a report, you have
           received the digital content, and the law lets you give up your cancellation right
-          in exchange for getting it straight away.
+          in exchange for getting it straight away. You tick a box at checkout saying so, and
+          the receipt we email you confirms it.
         </p>
       </LegalSection>
 
@@ -135,6 +136,15 @@ export default function RefundsPage() {
           done had we taken reasonable care, you are entitled to compensation.
         </p>
         <p>
+          Under Hungarian law this is the{' '}
+          <strong className="text-white">legal guarantee of conformity (kellékszavatosság)</strong>.
+          Tell us about a fault without delay &mdash; within two months of noticing it is always
+          in time. You can rely on it for two years from when the content was supplied, and for
+          the first year the fault is presumed to have been there from the start. You may not fix
+          a fault yourself at our expense. The product warranty (termékszavatosság) covers only
+          physical goods, and we do not offer a commercial guarantee (jótállás).
+        </p>
+        <p>
           Outside the European Union, you keep whatever rights the consumer law of your own
           country gives you if something is faulty.
         </p>
@@ -178,13 +188,24 @@ export default function RefundsPage() {
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.support}`}>
             {CONTACT.support}
           </a>{' '}
-          from the address on your account, and tell us what you bought and roughly when.
-          You do not need a reference number or a reason.
+          from the address on your account{CONTACT.phone ? `, or call us on ${CONTACT.phone},` : ''}{' '}
+          and tell us what you bought and roughly when. You do not need a reference number or a
+          reason.
         </p>
         <p>
           We will reply within 3 working days. Approved refunds go back to the card you paid
           with, through Stripe, within 14 days &mdash; usually much sooner. Your bank may
           take a few days after that to show it.
+        </p>
+        <p>
+          <strong className="text-white">After you cancel.</strong> Your answers and reports are
+          personal data, and the{' '}
+          <a className="text-indigo-300 underline" href="/privacy">
+            Privacy Policy
+          </a>{' '}
+          explains how we keep them. You can download them free of charge, in a common
+          machine-readable format, from your account settings, before or after you cancel. Once
+          we refund you, the refunded attempts are removed from your account.
         </p>
       </LegalSection>
 
@@ -219,11 +240,13 @@ export default function RefundsPage() {
           Outside the European Union, your national consumer body can advise you.
         </p>
         <p>
-          If you live in Hungary, you can also take the dispute to the{' '}
-          <strong className="text-white">conciliation board (békéltető testület)</strong>{' '}
-          for where you live. It is free, it is quicker than court, and we will take part in
-          the procedure. Since 1 January 2024 there are eight regional boards; the national
-          portal,{' '}
+          Wherever you live, you can take the dispute to a Hungarian{' '}
+          <strong className="text-white">conciliation board (békéltető testület)</strong>. It is
+          free, it is quicker than court, and we will take part in the procedure. If you live in
+          Hungary, the board for where you live deals with it; if you do not, the board for
+          where our registered seat is. Either way, you can ask for a different board instead.
+          You must first have tried to settle the dispute with us. Proceedings are in Hungarian,
+          and hearings can be held online. The national portal,{' '}
           <a
             className="text-indigo-300 underline"
             href="https://bekeltetes.hu"
@@ -232,74 +255,35 @@ export default function RefundsPage() {
           >
             bekeltetes.hu
           </a>
-          , has their current contact details and a form to start a case online. The Budapest
-          board is the Budapest Conciliation Board
-          (Budapesti Békéltető Testület), 1016 Budapest, Krisztina körút 99; postal address
-          1253 Budapest, Pf. 10; phone +36 1 488 2131;{' '}
-          <a className="text-indigo-300 underline" href="mailto:bekelteto.testulet@bkik.hu">
-            bekelteto.testulet@bkik.hu
-          </a>
-          ;{' '}
-          <a
-            className="text-indigo-300 underline"
-            href="https://bekeltet.bkik.hu"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            bekeltet.bkik.hu
-          </a>
-          . We have not joined any other dispute resolution scheme. The boards, and the
-          counties each one covers:
+          , has a form to start a case online. We have not made a general declaration accepting
+          the boards&rsquo; decisions in advance (általános alávetési nyilatkozat), and we have
+          not joined any other dispute resolution scheme. The eight boards, the counties each
+          one covers, and how to reach them (where no postal address is shown, write to the
+          address given):
         </p>
-        <ul className="ml-5 flex list-disc flex-col gap-1 text-sm">
-          <li>
-            <strong className="text-white">Budapesti Békéltető Testület</strong>{' '}&mdash; Budapest.{' '}
-            <a className="text-indigo-300 underline" href="https://bekeltet.bkik.hu" target="_blank" rel="noopener noreferrer">
-              bekeltet.bkik.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Pest Vármegyei Békéltető Testület</strong>{' '}&mdash; Pest county.{' '}
-            <a className="text-indigo-300 underline" href="https://pestmegyeibekelteto.hu" target="_blank" rel="noopener noreferrer">
-              pestmegyeibekelteto.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Baranya Vármegyei Békéltető Testület (Pécs)</strong>{' '}&mdash; Baranya, Somogy and Tolna.{' '}
-            <a className="text-indigo-300 underline" href="https://baranyabekeltetes.hu" target="_blank" rel="noopener noreferrer">
-              baranyabekeltetes.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Borsod-Abaúj-Zemplén Vármegyei Békéltető Testület (Miskolc)</strong>{' '}&mdash; Borsod-Abaúj-Zemplén, Heves and Nógrád.{' '}
-            <a className="text-indigo-300 underline" href="https://bekeltetes.borsodmegye.hu" target="_blank" rel="noopener noreferrer">
-              bekeltetes.borsodmegye.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Csongrád-Csanád Vármegyei Békéltető Testület (Szeged)</strong>{' '}&mdash; Csongrád-Csanád, Bács-Kiskun and Békés.{' '}
-            <a className="text-indigo-300 underline" href="https://bekeltetes-csongrad.hu" target="_blank" rel="noopener noreferrer">
-              bekeltetes-csongrad.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Fejér Vármegyei Békéltető Testület (Székesfehérvár)</strong>{' '}&mdash; Fejér, Komárom-Esztergom and Veszprém.{' '}
-            <a className="text-indigo-300 underline" href="https://bekeltetesfejer.hu" target="_blank" rel="noopener noreferrer">
-              bekeltetesfejer.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Győr-Moson-Sopron Vármegyei Békéltető Testület (Győr)</strong>{' '}&mdash; Győr-Moson-Sopron, Vas and Zala.{' '}
-            <a className="text-indigo-300 underline" href="https://bekeltetesgyor.hu" target="_blank" rel="noopener noreferrer">
-              bekeltetesgyor.hu
-            </a>
-          </li>
-          <li>
-            <strong className="text-white">Hajdú-Bihar Vármegyei Békéltető Testület (Debrecen)</strong>{' '}&mdash; Hajdú-Bihar, Jász-Nagykun-Szolnok and Szabolcs-Szatmár-Bereg.{' '}
-            <a className="text-indigo-300 underline" href="https://hbmbekeltetes.hu" target="_blank" rel="noopener noreferrer">
-              hbmbekeltetes.hu
-            </a>
-          </li>
+        <ul className="ml-5 flex list-disc flex-col gap-2 text-sm">
+          {CONCILIATION_BOARDS.map((b) => (
+            <li key={b.name}>
+              <strong className="text-white">{b.name}</strong> &mdash; {b.covers}. {b.address}
+              {b.postal ? ` (postal address: ${b.postal})` : ''}. {b.phone}.{' '}
+              {b.email ? (
+                <>
+                  <a className="text-indigo-300 underline" href={`mailto:${b.email}`}>
+                    {b.email}
+                  </a>
+                  .{' '}
+                </>
+              ) : null}
+              <a
+                className="text-indigo-300 underline"
+                href={`https://${b.web}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {b.web}
+              </a>
+            </li>
+          ))}
         </ul>
         <p>
           You can also ask your bank or card provider about a chargeback. We would much rather

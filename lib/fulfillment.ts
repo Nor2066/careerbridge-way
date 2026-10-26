@@ -118,7 +118,7 @@ export async function fulfillCheckoutSession(params: {
   // credited is worse than no receipt. Not awaited for its result and it can
   // never throw — the customer keeps their attempts whatever the mail
   // provider is doing.
-  void sendReceiptFor(userId, productType, amountCents, currency, params.locale ?? null);
+  void sendReceiptFor(userId, productType, amountCents, currency, params.locale ?? null, params.termsConsent ?? null);
 
   return 'granted';
 }
@@ -266,7 +266,8 @@ async function sendReceiptFor(
   productType: ProductType,
   amountCents: number,
   currency: string,
-  checkoutLocale: string | null
+  checkoutLocale: string | null,
+  termsConsent: string | null
 ): Promise<void> {
   try {
     const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -284,6 +285,8 @@ async function sendReceiptFor(
       currency,
       attemptsGranted: ATTEMPTS_GRANTED[productType] || undefined,
       locale,
+      termsConsent,
+      purchasedAt: new Date(),
     });
   } catch (err) {
     console.error('FULFILLMENT: receipt email failed (purchase unaffected):', err);

@@ -521,8 +521,9 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>
             <strong className="text-white">Legal obligation</strong>{' '}&mdash; for keeping
-            records of sales for tax purposes, and for handling and keeping a record of a
-            purchase you cancel.
+            records of sales for tax purposes, for handling and keeping a record of a purchase
+            you cancel, and for answering a complaint and keeping it, with our answer, for the
+            three years Hungarian consumer law requires.
           </li>
           <li>
             <strong className="text-white">Explicit consent</strong>{' '}&mdash; only for special

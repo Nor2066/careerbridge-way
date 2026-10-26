@@ -73,7 +73,7 @@ export default function TermsPage() {
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.support}`}>
             {CONTACT.support}
           </a>
-          .
+          {CONTACT.phone ? ` or by telephone on ${CONTACT.phone}` : ''}.
         </p>
         <p>
           The website is hosted by {HOSTING.name}, {HOSTING.address}, {HOSTING.email}.
@@ -91,6 +91,11 @@ export default function TermsPage() {
           If you are under 18, you should go through your results with a parent, guardian,
           teacher, or careers adviser rather than relying on them alone. Nothing here is
           designed to replace an adult who knows you.
+        </p>
+        <p>
+          If you are under 18, ask a parent or guardian before you buy anything: the law where
+          you live may require their agreement. If a parent or guardian tells us they did not
+          agree to a purchase, we will cancel it and refund it in full.
         </p>
         <p>
           You may hold one account. You are responsible for what happens under it, so keep
@@ -112,8 +117,23 @@ export default function TermsPage() {
           page you buy from before you pay.
         </p>
         <p>
-          We may change, improve, or retire parts of the service. If we retire something you
-          have already paid for and cannot deliver it, we will refund you for that part.
+          We may change the service beyond what is needed to keep it working as described, but
+          only for a good reason: to improve it, to keep it secure, to follow a change in the
+          law, or because a provider we rely on changes what it offers. A change costs you
+          nothing extra. If it makes something you have paid for worse in more than a minor way,
+          we will email you in good time beforehand, and you may then end the contract free of
+          charge within 30 days and get back what you paid for and have not used. If we retire
+          something you have already paid for and cannot give you an equivalent, we will refund
+          you for that part.
+        </p>
+        <p>
+          <strong className="text-white">What you need.</strong>{' '}
+          An internet connection and an up-to-date web browser, such as Chrome, Edge, Firefox or Safari, on a computer, tablet
+          or phone. There is nothing to install. Reports can be printed or saved as a PDF from
+          your browser, and carry no copy protection. If something does not work, we may ask
+          about your browser and device to find out whether the cause is on our side &mdash;
+          only for what we need, such as a screenshot. If you do not help with that, it may be
+          up to you to show that the fault was ours.
         </p>
       </LegalSection>
 
@@ -247,7 +267,9 @@ export default function TermsPage() {
           <strong className="text-white">acknowledge that you lose your 14-day right to
           cancel</strong>{' '}
           in respect of any part of it that is then supplied. You tick a box saying so at
-          checkout, before paying &mdash; it is not buried on this page.
+          checkout, before paying &mdash; it is not buried on this page. The receipt we email
+          you straight away confirms it, and repeats the key information about the contract so
+          you have it in a form you can keep.
         </p>
         <p>
           Anything you have not used stays refundable for 14 days. Your full rights, and the
@@ -339,10 +361,10 @@ export default function TermsPage() {
 
       <LegalSection id="liability" title="9. Our liability to you">
         <p>
-          Nothing in these terms limits our liability for death or personal injury caused by
-          our negligence, for fraud, or for anything else that the law where you live does not
-          allow us to limit. Nothing in them takes away a right your local consumer law gives
-          you.
+          Nothing in these terms limits our liability for a breach we commit intentionally, for
+          harm to anyone&rsquo;s life, body or health, for fraud, or for anything else that the
+          law where you live does not allow us to limit. Nothing in them takes away a right your
+          local consumer law gives you.
         </p>
         <p className="font-medium text-white">Your rights if something is faulty</p>
         <p>
@@ -378,6 +400,16 @@ export default function TermsPage() {
             rights the consumer law of your country gives you, on top of these terms.
           </li>
         </ul>
+        <p>
+          Under Hungarian law, which governs these terms, this is the{' '}
+          <strong className="text-white">legal guarantee of conformity (kellékszavatosság)</strong>.
+          Tell us about a fault without delay &mdash; within two months of noticing it is always
+          in time. You can rely on it for two years from when the content was supplied. For the
+          first year you only need to tell us: the fault is presumed to have been there from the
+          start, unless we show otherwise. You may not fix a fault yourself, or have someone else
+          fix it, at our expense. The Hungarian product warranty (termékszavatosság) covers only
+          physical goods, and we do not offer a commercial guarantee (jótállás).
+        </p>
         <p>Subject to all of that:</p>
         <ul className="ml-5 flex list-disc flex-col gap-2">
           <li>
@@ -393,17 +425,20 @@ export default function TermsPage() {
           </li>
           <li>
             <strong className="text-white">
-              Our total liability to you is capped at the greater of the amount you have paid
-              us in the 12 months before the claim and €100.
+              We do not cap our liability to you at a fixed amount.
             </strong>{' '}
-            The fixed €100 floor is deliberate: purchases here are small, and university
-            access is free to you, so a cap of &ldquo;what you paid&rdquo; alone would leave a
-            remedy worth a few euros or nothing, which would not be fair.
+            We compensate loss that, when the contract was made, could be foreseen as a possible
+            result of our breach, and all of it if the breach was intentional.
           </li>
           <li>
-            We do not promise the service will be uninterrupted or error-free. It depends on
-            third parties &mdash; hosting, payments, and an AI provider &mdash; and any of
-            them can have a bad day.
+            We are not liable for a failure caused by an event outside our control that we could
+            not have foreseen and could not reasonably have avoided, such as a natural disaster
+            or a widespread failure of the internet. The providers we use for hosting, payments,
+            email and AI are not such an event: we answer for them as we do for ourselves.
+          </li>
+          <li>
+            We cannot promise the service will never be interrupted or never contain an error,
+            but that does not reduce your rights if something you bought is faulty.
           </li>
         </ul>
       </LegalSection>
@@ -440,14 +475,30 @@ export default function TermsPage() {
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.support}`}>
             {CONTACT.support}
           </a>
-          . We will reply within 3 working days and aim to give you a final answer within 14
-          days. If you are not happy with it, say so, and a different person will look again.
-          Nothing here stops you going to court or to a consumer body.
+          {CONTACT.phone ? ` or call us on ${CONTACT.phone}` : ''}. We reply to an email within
+          3 working days and aim to give you a final answer within 14 days. A written answer is
+          due within 30 days at the latest, and if we disagree with you, we will say why and tell
+          you where you can take it. If you are not happy with our answer, say so, and a
+          different person will look again.
         </p>
         <p>
-          If you live in Hungary, you can also take a dispute to the conciliation body
-          (békéltető testület) for where you live, free of charge, and we
-          will take part in the procedure. Anywhere in the European Union, the{' '}
+          We follow the Hungarian rules on consumer complaints (Act CLV of 1997, section 17/A).
+          If you complain by telephone and we cannot settle it during the call, we write down
+          your complaint and our position and send you a copy with our answer, under a reference
+          number. We keep complaints and our answers for three years, as that law requires.
+        </p>
+        <p>
+          Wherever you live, you can take a dispute with us to a Hungarian{' '}
+          <strong className="text-white">conciliation board (békéltető testület)</strong>, free
+          of charge, and we will take part in the procedure. If you live in Hungary, it is the
+          board for where you live; if not, the board for where our registered seat is. Either
+          way, you can ask for a different board instead. You must first have tried to settle
+          the dispute with us. Proceedings are in Hungarian, and hearings can be held online.
+          The eight boards and how to reach them are listed in our{' '}
+          <a className="text-indigo-300 underline" href="/refunds#problems">
+            Refund and Cancellation Policy
+          </a>
+          . Anywhere in the European Union, the{' '}
           <a
             className="text-indigo-300 underline"
             href="https://www.eccnet.eu"
@@ -456,12 +507,8 @@ export default function TermsPage() {
           >
             European Consumer Centre
           </a>{' '}
-          in your country helps for free. The eight Hungarian conciliation boards, and the
-          counties each one covers, are listed in our{' '}
-          <a className="text-indigo-300 underline" href="/refunds#problems">
-            Refund and Cancellation Policy
-          </a>
-          .{' '}We have not joined any other dispute resolution scheme.
+          in your country helps for free. We have not joined any other dispute resolution
+          scheme, and nothing here stops you going to court or to a consumer body.
         </p>
       </LegalSection>
 
@@ -492,8 +539,13 @@ export default function TermsPage() {
           university, can enforce them.
         </p>
         <p>
-          We may update these terms. If a change materially affects your rights, we will
-          email you before it takes effect and the date at the top of this page will change.
+          We may update these terms only for a good reason: a change in the law, a change to
+          the service, a change in the providers we depend on, to correct a mistake or make them
+          clearer, or to add something that benefits you. If a change materially affects your
+          rights, we will email you at least 30 days before it takes effect, and the date at the
+          top of this page will change. If you do not accept it, you can close your account
+          first and we will refund anything you have paid for and not received. A change never
+          alters a purchase you have already made.
         </p>
       </LegalSection>
     </LegalPage>

@@ -72,8 +72,9 @@ export async function POST(request: Request) {
     // No real money before the company can be named in full. Hungarian law
     // (Ekertv. 4. §) wants the registration number, registry court, seat and
     // tax number on the site of anyone selling online, and they exist only once
-    // ADAQNO Kft. is registered. Test keys are unaffected, so the sandbox keeps
-    // working. Set the details in lib/legal.ts before switching to live keys.
+    // ADAQNO Kft. is registered; Govt Decree 45/2014 adds a telephone number.
+    // Test keys are unaffected, so the sandbox keeps working. Set the details
+    // in lib/legal.ts before switching to live keys.
     if (process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') && !legalDetailsComplete()) {
       console.error('CHECKOUT: live Stripe key in use but the company details in lib/legal.ts are not set — refusing.');
       return NextResponse.json(

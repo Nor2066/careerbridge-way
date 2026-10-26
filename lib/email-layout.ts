@@ -12,6 +12,8 @@
 
 export type EmailBlock =
   | { kind: 'text'; text: string }
+  /** A small heading over the small print that follows it. */
+  | { kind: 'heading'; text: string }
   | { kind: 'details'; rows: [label: string, value: string][] }
   | { kind: 'button'; label: string; url: string; /** Shown under the button with the bare link, for clients that drop buttons. */ fallback?: string }
   | { kind: 'note'; text: string; link?: { label: string; url: string } };
@@ -45,6 +47,8 @@ function renderBlock(block: EmailBlock): string {
   switch (block.kind) {
     case 'text':
       return `<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#374151;">${escapeHtml(block.text)}</p>`;
+    case 'heading':
+      return `<h2 style="margin:24px 0 10px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:14px;line-height:1.4;color:#111827;">${escapeHtml(block.text)}</h2>`;
     case 'details':
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-top:1px solid #e5e7eb;">${block.rows
         .map(
@@ -102,6 +106,9 @@ export function renderEmailText(c: EmailContent): string {
     switch (block.kind) {
       case 'text':
         parts.push(block.text, '');
+        break;
+      case 'heading':
+        parts.push('—', block.text.toUpperCase(), '');
         break;
       case 'details': {
         const width = Math.max(...block.rows.map(([label]) => label.length));

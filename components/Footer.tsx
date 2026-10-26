@@ -9,7 +9,7 @@
 // ship it to the browser.
 
 import Link from 'next/link';
-import { COMPANY, CONTACT, legalDetailsComplete } from '@/lib/legal';
+import { COMPANY, CONTACT, registrationComplete } from '@/lib/legal';
 import { BRAND_DESCRIPTOR } from '@/lib/site';
 import { getTranslator } from '@/lib/i18n/server';
 import type { MessageKey } from '@/lib/i18n/messages';
@@ -43,7 +43,7 @@ const PRODUCT_LINKS: { href: string; label: MessageKey }[] = [
 
 export default async function Footer() {
   const year = new Date().getFullYear();
-  const detailsReady = legalDetailsComplete();
+  const detailsReady = registrationComplete();
   const { t, locale } = await getTranslator();
 
   return (
@@ -119,6 +119,7 @@ export default async function Footer() {
                 })}`
               : ''}
             {COMPANY.euVatNumber ? ` ${t('footer.vat', { vat: COMPANY.euVatNumber })}` : ''}
+            {CONTACT.phone ? ` ${t('footer.phone', { phone: CONTACT.phone })}` : ''}
           </p>
           <p className="mt-2">{t('footer.rights', { year, trading: COMPANY.tradingName })}</p>
         </div>

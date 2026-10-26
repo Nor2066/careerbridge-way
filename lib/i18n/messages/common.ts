@@ -86,5 +86,6 @@ export const common = {
     es: 'N.º de registro mercantil (cégjegyzékszám): {number}. Tribunal registral: {court}. Domicilio social: {address}. N.º fiscal: {tax}.',
   },
   'footer.vat': { en: 'EU VAT no.: {vat}.', es: 'N.º de IVA intracomunitario: {vat}.' },
+  'footer.phone': { en: 'Telephone: {phone}.', es: 'Teléfono: {phone}.' },
   'footer.rights': { en: '© {year} {trading}. All rights reserved.', es: '© {year} {trading}. Todos los derechos reservados.' },
 } satisfies Record<string, Entry>;

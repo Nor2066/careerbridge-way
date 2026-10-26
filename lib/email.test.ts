@@ -21,6 +21,35 @@ describe('the receipt', () => {
     expect(html).toMatch(/href="https:\/\/[^"]+\/withdraw"/);
   });
 
+  // Govt Decree 45/2014 18. §: the confirmation must confirm the express
+  // request and acknowledgement — but only one the customer actually gave.
+  it('confirms the immediate-supply consent only when the box was ticked', () => {
+    const ticked = renderEmailText(receiptContent({ productType: 'basic', amountCents: 300, locale: 'en', termsConsent: 'accepted' }));
+    expect(ticked).toContain('you acknowledged that once you generate a report with an attempt, you lose your 14-day right');
+
+    const unticked = renderEmailText(receiptContent({ productType: 'basic', amountCents: 300, locale: 'en', termsConsent: null }));
+    expect(unticked).not.toContain('you acknowledged');
+    expect(unticked).toContain('You can withdraw from this purchase within 14 days of today');
+  });
+
+  it('repeats the pre-contract information, in the customer’s language', () => {
+    const en = renderEmailText(
+      receiptContent({ productType: 'full', amountCents: 450, currency: 'eur', locale: 'en', purchasedAt: new Date('2026-10-26T10:00:00Z') })
+    );
+    expect(en).toContain('ABOUT THIS CONTRACT');
+    expect(en).toMatch(/Seller: ADAQNO Kft\. support@/);
+    expect(en).not.toContain('..');
+    expect(en).toContain('3 complete attempts: the assessment and the follow-up roadmap for each. €4.50, tax included.');
+    expect(en).toContain('legal guarantee of conformity (kellékszavatosság)');
+    expect(en).toContain('Hungarian conciliation board');
+    expect(en).toMatch(/Terms of Service \(version \d{4}-\d{2}-\d{2}\)/);
+    expect(en).toMatch(/Date:\s+26 October 2026/);
+
+    const es = renderEmailText(receiptContent({ productType: 'basic', amountCents: 300, currency: 'eur', locale: 'es' }));
+    expect(es).toContain('SOBRE ESTE CONTRATO');
+    expect(es).toContain('garantía legal de conformidad');
+  });
+
   it('formats a currency it was not told about, and survives a made-up one', () => {
     expect(money(300, 'gbp', 'en')).toBe('£3.00');
     expect(money(300, 'xyz', 'en')).toMatch(/3\.00/);
