@@ -58,7 +58,7 @@ export const SOCIAL: Record<'instagram' | 'tiktok' | 'linkedin', string | null> 
 
 /** Used only when NEXT_PUBLIC_URL is unset or invalid. next.config.js has the
  *  same fallback; it is CommonJS and cannot import this file. */
-const FALLBACK_URL = 'https://careerbridge-way.vercel.app';
+const FALLBACK_URL = 'https://adaqno.com';
 
 export function resolveSiteUrl(configured: string | undefined): string {
   if (configured) {

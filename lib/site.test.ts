@@ -19,13 +19,13 @@ describe('resolveSiteUrl', () => {
   });
 
   it('falls back when unset', () => {
-    expect(resolveSiteUrl(undefined)).toBe('https://careerbridge-way.vercel.app');
-    expect(resolveSiteUrl('')).toBe('https://careerbridge-way.vercel.app');
+    expect(resolveSiteUrl(undefined)).toBe('https://adaqno.com');
+    expect(resolveSiteUrl('')).toBe('https://adaqno.com');
   });
 
   it('falls back, loudly, when the value is not a URL', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(resolveSiteUrl('adaqno.example')).toBe('https://careerbridge-way.vercel.app');
+    expect(resolveSiteUrl('adaqno.example')).toBe('https://adaqno.com');
     expect(error).toHaveBeenCalledOnce();
     error.mockRestore();
   });

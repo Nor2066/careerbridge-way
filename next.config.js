@@ -11,7 +11,7 @@ function siteOrigin() {
   try {
     return new URL(process.env.NEXT_PUBLIC_URL).origin;
   } catch {
-    return 'https://careerbridge-way.vercel.app';
+    return 'https://adaqno.com';
   }
 }
 
