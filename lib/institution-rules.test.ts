@@ -39,6 +39,16 @@ describe('email domains', () => {
     expect(emailDomain('trailing@')).toBeNull();
     expect(emailDomain(null)).toBeNull();
   });
+
+  // The lookup is an exact match on what comes after the last @, so a
+  // university's domain anywhere else in the address earns nothing.
+  it('does not mistake lookalike addresses for the university', () => {
+    expect(emailDomain('esic.edu@gmail.com')).toBe('gmail.com');
+    expect(emailDomain('alumnos.esic.edu@hotmail.com')).toBe('hotmail.com');
+    expect(emailDomain('x@esic.edu.attacker.com')).toBe('esic.edu.attacker.com');
+    expect(emailDomain('x@notesic.edu')).toBe('notesic.edu');
+    expect(emailDomain('"x@esic.edu"@gmail.com')).toBe('gmail.com');
+  });
 });
 
 describe('licence dates', () => {
