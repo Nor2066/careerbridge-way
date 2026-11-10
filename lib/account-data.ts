@@ -19,13 +19,18 @@ export type UserTable = {
   table: string;
   userColumn: string;
   label: string;
+  /**
+   * True where the rows are text a model wrote. The export marks those rows
+   * as AI-generated in a machine-readable way — see lib/ai-provenance.ts.
+   */
+  aiGenerated?: boolean;
 };
 
 export const USER_DATA_TABLES: UserTable[] = [
   { table: 'user_results', userColumn: 'user_id', label: 'assessment_results' },
   { table: 'user_progress', userColumn: 'user_id', label: 'saved_progress' },
-  { table: 'ai_main_reports', userColumn: 'user_id', label: 'career_reports' },
-  { table: 'ai_followup_reports', userColumn: 'user_id', label: 'followup_roadmaps' },
+  { table: 'ai_main_reports', userColumn: 'user_id', label: 'career_reports', aiGenerated: true },
+  { table: 'ai_followup_reports', userColumn: 'user_id', label: 'followup_roadmaps', aiGenerated: true },
   { table: 'followup_answers', userColumn: 'user_id', label: 'followup_answers' },
   { table: 'followup_unlocks', userColumn: 'user_id', label: 'followup_unlocks' },
   { table: 'assessments', userColumn: 'user_id', label: 'feedback_submissions' },

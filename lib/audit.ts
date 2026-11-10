@@ -27,7 +27,10 @@ type AuditAction =
   | 'admin_login'
   | 'admin_institution_change'
   | 'withdrawal_submitted'
-  | 'admin_withdrawal_change';
+  | 'admin_withdrawal_change'
+  // The nightly job for unused accounts — lib/inactive-accounts.ts.
+  | 'inactive_account_notice'
+  | 'inactive_account_deleted';
 
 interface AuditOptions {
   userId: string | null;

@@ -44,6 +44,13 @@ export const common = {
   },
   'common.or': { en: 'or', es: 'o' },
 
+  // Shown under every AI-written report, wherever it appears.
+  'report.aiNote': {
+    en: 'Written by AI from your answers. No person checked it, and it can be wrong.',
+    es: 'Escrito por una IA a partir de tus respuestas. Ninguna persona lo ha revisado y puede contener errores.',
+  },
+  'report.aiNoteLink': { en: 'What that means', es: 'Qué significa' },
+
   'nav.language': { en: 'Language', es: 'Idioma' },
   'nav.continueAssessment': { en: 'Continue Assessment', es: 'Continuar evaluación' },
   'nav.fullAssessment': { en: 'Full Assessment', es: 'Evaluación completa' },

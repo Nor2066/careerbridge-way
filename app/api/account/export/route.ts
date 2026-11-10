@@ -13,6 +13,7 @@ import { requireAuth } from '@/lib/auth';
 import { isUnauthorized, unauthorizedResponse } from '@/lib/api-errors';
 import { supabaseServer } from '@/lib/supabase-server';
 import { USER_DATA_TABLES, PAYMENTS_TABLE } from '@/lib/account-data';
+import { withAiProvenance } from '@/lib/ai-provenance';
 import { NO_STORE_HEADERS } from '@/lib/auth-cookies';
 import { readLimiter, getUserIdentifier } from '@/lib/rate-limit';
 import { BRAND } from '@/lib/site';
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     // Sequential rather than Promise.all: an export is rare, not latency
     // sensitive, and running eight queries at once against the pooler for a
     // background-ish request is not worth the connection pressure.
-    for (const { table, userColumn, label } of USER_DATA_TABLES) {
+    for (const { table, userColumn, label, aiGenerated } of USER_DATA_TABLES) {
       const { data, error } = await supabaseServer
         .from(table)
         .select('*')
@@ -54,7 +55,8 @@ export async function GET(request: Request) {
         continue;
       }
 
-      account[label] = data ?? [];
+      // A report copied out of this file should still say a model wrote it.
+      account[label] = aiGenerated ? withAiProvenance(data ?? []) : data ?? [];
     }
 
     // Payments are listed with only the fields a customer would want on a

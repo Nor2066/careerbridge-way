@@ -387,7 +387,9 @@ export default function AiNoticePage() {
           contracts with universities forbid them from using it for any of those. What
           applies to us are the Act&rsquo;s transparency duties for AI-generated content. Your
           report is labelled as an AI report wherever it appears, and this notice explains
-          what that means.
+          what that means. Each report also carries a marker that software can read &mdash;
+          the standard code for AI-generated content &mdash; on the page and in your data
+          download.
         </p>
         <p>
           <strong className="text-white">Elsewhere.</strong> Many countries, the United

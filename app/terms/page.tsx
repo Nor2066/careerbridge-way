@@ -463,6 +463,12 @@ export default function TermsPage() {
           attempts are lost when you do &mdash; so use or claim a refund on them first.
         </p>
         <p>
+          If you do not use your account for two years, we will email the address on it. If
+          you have not signed in within three months of that email, we will delete the
+          account exactly as if you had closed it yourself, and unused attempts are lost
+          then too. Signing in at any time before that keeps everything.
+        </p>
+        <p>
           We may end this agreement if you seriously or repeatedly break these terms, or if
           we stop operating the service. If we close your account for our own reasons rather
           than yours, we will refund anything you have paid for and not received.

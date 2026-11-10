@@ -84,7 +84,7 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-10-26';
+export const TERMS_VERSION = '2026-11-10';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
@@ -110,12 +110,12 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '26 October 2026',
-  terms: '26 October 2026',
+  privacy: '10 November 2026',
+  terms: '10 November 2026',
   refunds: '26 October 2026',
   cookies: '22 October 2026',
   acceptableUse: '22 October 2026',
-  aiNotice: '22 October 2026',
+  aiNotice: '10 November 2026',
 } as const;
 
 /**
@@ -184,23 +184,42 @@ export const SUBPROCESSORS: Subprocessor[] = [
     data: 'The sign-in request. Google tells us your email address; we tell Google nothing about your answers.',
     region: 'United States',
   },
+  // The two rows below are the route an email to support@ or privacy@ takes:
+  // ImprovMX receives it and passes it on, and it is read in a Gmail mailbox.
+  // Change the mailbox or the forwarder and these rows change with it. The
+  // mailbox is a personal Gmail account with no data processing agreement,
+  // which the privacy page says in so many words above its table; once it
+  // moves to a company mailbox, replace both rows and delete that sentence.
+  {
+    name: 'ImprovMX',
+    purpose: 'Passing the emails you send to our support and privacy addresses on to our mailbox',
+    data: 'Your email address and the contents of the email, held only until it is delivered',
+    region: 'France and the United States',
+  },
+  {
+    name: 'Google (Gmail)',
+    purpose: 'The mailbox where the emails you send us arrive and are answered',
+    data: 'Your email address and the contents of the emails you send us. No assessment answers unless you put them in an email.',
+    region: 'United States and Europe',
+  },
 ];
 
 /** How long we keep things, and why that long. */
 export const RETENTION = [
   {
     what: 'Your account and assessment results',
-    how_long: 'Until you delete your account',
-    why: 'So you can return to your reports and history at any time.',
+    how_long:
+      'Until you delete your account, or until it has gone unused for two years. We email you first, and delete it three months later unless you sign in.',
+    why: 'So you can return to your reports and history at any time, without our keeping an account nobody uses for ever.',
   },
   {
     what: 'Ratings and comments you leave on a report',
-    how_long: 'Until you delete your account',
+    how_long: 'For as long as your account exists',
     why: 'To improve the questionnaire and the reports. A partner university sees only the average rating of its students, and only once at least five have rated.',
   },
   {
     what: 'Your link to a partner university',
-    how_long: 'Until you delete your account',
+    how_long: 'For as long as your account exists',
     why: 'So the free access your university pays for keeps working while its licence runs. When a licence ends, your account and reports stay yours.',
   },
   {
@@ -232,6 +251,11 @@ export const RETENTION = [
     what: 'Error and security logs',
     how_long: 'Up to 90 days',
     why: 'Long enough to investigate a fault or a security incident, and no longer.',
+  },
+  {
+    what: 'Records of what our administrators do',
+    how_long: '2 years',
+    why: 'So that misuse of administrator access can be found. They record that an action happened and on which account, not the content of your answers. Enforced by a nightly job — see supabase/retention-rules.sql.',
   },
   {
     what: 'Product analytics events',

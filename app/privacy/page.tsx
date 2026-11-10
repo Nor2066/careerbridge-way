@@ -458,7 +458,9 @@ export default function PrivacyPolicyPage() {
         <p>
           These are every third party we send personal data to, and what each of them gets.
           We do not sell your data, and none of these companies may use it for their own
-          purposes.
+          purposes. The one exception is the mailbox at the end of the table: until we move
+          to a company mailbox, it is a standard Gmail account that Google runs under its own
+          terms.
         </p>
         <div className="overflow-x-auto">
           <table className="mt-2 w-full min-w-[34rem] border-collapse text-sm">
@@ -605,6 +607,12 @@ export default function PrivacyPolicyPage() {
           every report we generated for you, and your link to any partner university. It is
           immediate and it cannot be undone. Your university&rsquo;s totals simply stop
           counting you.
+        </p>
+        <p>
+          We also do not keep an account nobody uses. If you have not used yours for two
+          years, we email the address on it. If you have not signed in three months after
+          that email, we delete the account in the same way. Signing in before then keeps
+          it.
         </p>
         <p>
           Payment records are the one exception: Hungarian accounting law requires us to keep

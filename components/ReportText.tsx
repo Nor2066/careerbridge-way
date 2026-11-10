@@ -1,11 +1,20 @@
+'use client';
+
 // components/ReportText.tsx
 //
 // Renders an AI report's markdown as headings, lists and bold text. Every
 // piece of the report becomes a React text node (see lib/report-format.ts),
 // so nothing a report contains is ever treated as HTML.
+//
+// It also says the text is AI-written, twice: in words under the report, for
+// the person reading, and as a marker in the markup, for software (EU AI Act
+// Article 50(2); see lib/ai-provenance.ts). Both live here rather than at the
+// call sites so a report cannot be shown anywhere without them.
 
 import { Fragment } from 'react';
 import { parseReport, type Inline, type ListBlock } from '@/lib/report-format';
+import { AI_MARKER_ATTRIBUTES, SCHEMA_AI_SOURCE } from '@/lib/ai-provenance';
+import { useI18n } from '@/components/I18nProvider';
 
 function InlineText({ parts }: { parts: Inline[] }) {
   return (
@@ -45,9 +54,13 @@ function List({ list, depth }: { list: ListBlock; depth: number }) {
 }
 
 export default function ReportText({ text, className = '' }: { text: string; className?: string }) {
+  const { t } = useI18n();
   const blocks = parseReport(text);
   return (
-    <div className={`flex flex-col gap-3 leading-relaxed text-gray-200 ${className}`}>
+    <div
+      {...AI_MARKER_ATTRIBUTES}
+      className={`flex flex-col gap-3 leading-relaxed text-gray-200 ${className}`}
+    >
       {blocks.map((block, i) => {
         if (block.type === 'heading') {
           const size = block.level === 2 ? 'text-xl' : block.level === 3 ? 'text-lg' : 'text-base';
@@ -69,6 +82,23 @@ export default function ReportText({ text, className = '' }: { text: string; cla
           </p>
         );
       })}
+      {/* After the blocks, not before: the first heading relies on being the
+          first child for its spacing. The new tab keeps a freshly generated
+          report on screen while the notice is read. */}
+      <p className="mt-1 border-t border-white/10 pt-3 text-xs text-gray-400">
+        {t('report.aiNote')}{' '}
+        <a
+          className="text-indigo-300 underline"
+          href="/ai-notice"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t('report.aiNoteLink')}
+        </a>
+      </p>
+      {/* itemProp keeps React from hoisting this into <head>: it describes
+          this block, not the page. */}
+      <link itemProp="digitalSourceType" href={SCHEMA_AI_SOURCE} />
     </div>
   );
 }

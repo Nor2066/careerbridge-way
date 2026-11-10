@@ -83,6 +83,16 @@ type Copy = {
     body: string;
   };
   withdrawal: { heading: string };
+  /** The warning before an unused account is deleted — lib/retention-rules.ts. */
+  inactive: {
+    subject: string;
+    heading: string;
+    body: (deleteOn: string) => string;
+    /** What goes when the account goes. */
+    lose: string;
+    button: string;
+    ignore: string;
+  };
 };
 
 export const EMAIL_COPY: Record<Locale, Copy> = {
@@ -185,6 +195,15 @@ export const EMAIL_COPY: Record<Locale, Copy> = {
       body: 'It is saved in your history, so you can come back to it any time.',
     },
     withdrawal: { heading: 'Withdrawal received' },
+    inactive: {
+      subject: 'Sign in to keep your ADAQNO account',
+      heading: 'Do you still want your account?',
+      body: (deleteOn) =>
+        `You have not used your ADAQNO account for two years. If you do not sign in by ${deleteOn}, we will delete it.`,
+      lose: 'Deleting it removes your answers, your reports and any attempts you have not used. It cannot be undone.',
+      button: 'Sign in',
+      ignore: 'If you no longer want the account, you do not need to do anything.',
+    },
   },
   es: {
     descriptor: 'Orientación profesional',
@@ -286,5 +305,14 @@ export const EMAIL_COPY: Record<Locale, Copy> = {
       body: 'Está guardado en tu historial para que vuelvas a él cuando quieras.',
     },
     withdrawal: { heading: 'Desistimiento recibido' },
+    inactive: {
+      subject: 'Inicia sesión para conservar tu cuenta de ADAQNO',
+      heading: '¿Quieres conservar tu cuenta?',
+      body: (deleteOn) =>
+        `Llevas dos años sin usar tu cuenta de ADAQNO. Si no inicias sesión antes del ${deleteOn}, la eliminaremos.`,
+      lose: 'Al eliminarla se borran tus respuestas, tus informes y los intentos que no hayas usado. No se puede deshacer.',
+      button: 'Iniciar sesión',
+      ignore: 'Si ya no quieres la cuenta, no tienes que hacer nada.',
+    },
   },
 };
