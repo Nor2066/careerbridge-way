@@ -454,6 +454,34 @@ export default function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
+      <LegalSection id="our-access" title={`Who at ${BRAND.name} can see your data`}>
+        <p>
+          Only the founders of {BRAND.name} can reach the database where your answers and
+          reports are kept, and they sign in to it with two-step login.{' '}
+          <strong className="text-white">
+            Being able to reach it is not permission to read it.
+          </strong>{' '}
+          Under our written rules, a founder opens a named person&rsquo;s answers, scores or
+          reports only:
+        </p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            when you ask us to: for help, for a person to look at a result, or to see,
+            correct, export or delete your data;
+          </li>
+          <li>to fix a fault that cannot be fixed another way, looking at no more than it needs;</li>
+          <li>to look into misuse of the service or a security incident; or</li>
+          <li>when the law requires it.</li>
+        </ul>
+        <p>
+          Each time, we write down who looked, when and why. Our admin screens do not show
+          anyone&rsquo;s answers or reports. We never read accounts out of curiosity, never
+          tell anyone what a person wrote, and never quote anyone&rsquo;s answers or report in
+          our marketing. The improvement work described above uses copies with your
+          identifying details removed.
+        </p>
+      </LegalSection>
+
       <LegalSection id="third-parties" title="Who else touches your data">
         <p>
           These are every third party we send personal data to, and what each of them gets.
@@ -568,6 +596,10 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>you may tell us you think a result is wrong, and we will look at it.</li>
         </ul>
+        <p>
+          That review is a check by our own team. It is not counselling, and not advice from a
+          psychologist or a careers professional.
+        </p>
         <p>
           Ask at {privacyLink}. The{' '}
           <a className="text-indigo-300 underline" href="/ai-notice">

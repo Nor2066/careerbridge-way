@@ -36,9 +36,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid sortBy field' }, { status: 400 });
     }
 
+    // Only what the feedback page shows. This used to select '*', which sent
+    // every student's answers and scores to the admin's browser although the
+    // page never displayed them. Answers and reports are personal data that no
+    // admin screen needs; see the founders' data access rules.
     let query = supabaseAdmin
       .from('assessments')
-      .select('*')
+      .select('id, created_at, email, feedback_rating, feedback_comment')
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
     if (filterRating && filterRating !== 'all') {

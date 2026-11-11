@@ -256,7 +256,12 @@ export default function AiNoticePage() {
           <strong className="text-white">
             not shared with any university, employer, school or careers service.
           </strong>{' '}
-          Nobody sees them unless you choose to show them. If a university gives you access,
+          Nobody outside {BRAND.name} sees them unless you choose to show them, and inside{' '}
+          {BRAND.name} a founder opens them only for the reasons our{' '}
+          <a className="text-indigo-300 underline" href="/privacy#our-access">
+            Privacy Policy
+          </a>{' '}
+          lists, such as when you ask us to. If a university gives you access,
           it sees only anonymous totals for all its students together, never your results.
           Our contract with it forbids using {BRAND.name} to decide anything about a student
           &mdash; admission, grading, discipline or anything else.
@@ -286,6 +291,10 @@ export default function AiNoticePage() {
           <li>Tell us you think a result is wrong or unfair, and have us review it.</li>
           <li>Ask us to delete a report you would rather did not exist.</li>
         </ul>
+        <p>
+          A review is a check by our own team. It is not counselling, and not advice from a
+          psychologist or a careers professional.
+        </p>
         <p>
           Email{' '}
           <a className="text-indigo-300 underline" href={`mailto:${CONTACT.privacy}`}>
