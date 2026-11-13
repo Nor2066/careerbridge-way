@@ -76,8 +76,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // The deletion itself lives in lib/account-deletion.ts, shared with the
-    // nightly job for unused accounts so both remove exactly the same things.
+    // The deletion itself lives in lib/account-deletion.ts. This button is the
+    // only thing that ever calls it: we never delete an account for not being used.
     const result = await deleteAccountData(user.id);
     if (!result.ok) {
       const message =

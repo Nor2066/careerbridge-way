@@ -264,45 +264,6 @@ export async function sendReportReady(args: {
 }
 
 /**
- * The warning sent before an unused account is deleted (lib/retention-rules.ts).
- *
- * In both languages at once, English first: we store no language for an
- * account, and this is the one email where being misunderstood costs the
- * reader their reports. One button, which works for either reader.
- */
-export function inactiveAccountNoticeContent(args: { deleteOn: Date }): EmailContent {
-  const date = (locale: Locale) =>
-    new Intl.DateTimeFormat(INTL_LOCALE[locale], { dateStyle: 'long', timeZone: 'UTC' }).format(args.deleteOn);
-  const en = EMAIL_COPY.en.inactive;
-  const es = EMAIL_COPY.es.inactive;
-  return {
-    lang: 'en',
-    subject: `${en.subject} / ${es.subject}`,
-    preview: en.body(date('en')),
-    heading: en.heading,
-    blocks: [
-      { kind: 'text', text: en.body(date('en')) },
-      { kind: 'text', text: en.lose },
-      { kind: 'heading', text: es.heading },
-      { kind: 'text', text: es.body(date('es')) },
-      { kind: 'text', text: es.lose },
-      { kind: 'button', label: `${en.button} · ${es.button}`, url: `${SITE_URL}/login` },
-      { kind: 'note', text: `${en.ignore} ${es.ignore}` },
-    ],
-    footer: footer('en'),
-  };
-}
-
-/**
- * Returns whether the provider accepted it. The nightly job records the
- * notice only on true: an account must not be deleted on the strength of a
- * warning that never left.
- */
-export async function sendInactiveAccountNotice(args: { to: string; deleteOn: Date }): Promise<boolean> {
-  return sendContent(args.to, inactiveAccountNoticeContent(args));
-}
-
-/**
  * The acknowledgement Article 11a(4) requires once someone presses "Confirm
  * withdrawal": on a durable medium, without undue delay, repeating what they
  * sent and when. The wording is the legal text from lib/withdrawal-rules.ts,

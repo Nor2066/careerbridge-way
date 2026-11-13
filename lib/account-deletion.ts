@@ -1,9 +1,9 @@
 // lib/account-deletion.ts
 //
-// Removing one account's data. Shared by the delete button
-// (app/api/account/delete) and the nightly job that removes accounts nobody
-// has used for four years (app/api/cron/retention), so the two cannot drift
-// into deleting different things.
+// Removing one account's data, when its owner presses the delete button
+// (app/api/account/delete). That is the only way an account is ever deleted:
+// ADAQNO never deletes an account because it has not been used (founders'
+// decision, 13 November 2026).
 //
 // Order matters and is deliberate:
 //

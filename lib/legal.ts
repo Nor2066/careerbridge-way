@@ -209,8 +209,8 @@ export const RETENTION = [
   {
     what: 'Your account and assessment results',
     how_long:
-      'Until you delete your account. If it goes unused for four years we email you first, and delete it three months later unless you sign in. We never delete an account that still holds an attempt you paid for and have not used, or one you started and did not finish: only you can delete that.',
-    why: 'So you can return to your reports and history at any time, without our keeping an account nobody uses for ever.',
+      'Until you delete your account. We never delete an account because it has not been used, however long that has been.',
+    why: 'So you can return to your reports, your history and anything you bought at any time, even years later.',
   },
   {
     what: 'Ratings and comments you leave on a report',

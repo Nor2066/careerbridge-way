@@ -76,8 +76,8 @@ export const RETENTION_ES: Record<string, RetentionRow> = {
   'Your account and assessment results': {
     what: 'Tu cuenta y los resultados de tu evaluación',
     how_long:
-      'Hasta que elimines tu cuenta. Si pasa cuatro años sin usarse, antes te enviamos un correo, y la eliminamos tres meses después salvo que inicies sesión. Nunca eliminamos una cuenta que aún tenga un intento que pagaste y no has usado, o uno que empezaste y no terminaste: eso solo puedes hacerlo tú.',
-    why: 'Para que puedas volver a tus informes y a tu historial cuando quieras, sin que guardemos para siempre una cuenta que nadie usa.',
+      'Hasta que elimines tu cuenta. Nunca eliminamos una cuenta porque no se haya usado, por mucho tiempo que haya pasado.',
+    why: 'Para que puedas volver a tus informes, a tu historial y a lo que hayas comprado cuando quieras, incluso años después.',
   },
   'Ratings and comments you leave on a report': {
     what: 'Las valoraciones y comentarios que dejas sobre un informe',

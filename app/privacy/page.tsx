@@ -694,12 +694,11 @@ function PrivacyPolicyEn() {
           counting you.
         </p>
         <p>
-          We also do not keep an account nobody uses. If you have not used yours for four
-          years, we email the address on it. If you have not signed in three months after
-          that email, we delete the account in the same way. Signing in before then keeps
-          it. <strong className="text-white">We never do this to an account that still holds
-          an attempt you paid for and have not used, or one you started and did not
-          finish</strong>: that account stays until you delete it yourself.
+          <strong className="text-white">
+            We never delete your account because you have stopped using it.
+          </strong>{' '}
+          It stays, with your reports and anything you bought, until you delete it yourself,
+          however long that takes.
         </p>
         <p>
           Payment records are the one exception: Hungarian accounting law requires us to keep

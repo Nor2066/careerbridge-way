@@ -86,19 +86,3 @@ describe('the withdrawal confirmation', () => {
     expect(html).not.toContain('<García>');
   });
 });
-
-describe('the warning before an unused account is deleted', () => {
-  it('says the date, in English and in Spanish, with one way back in', async () => {
-    const { inactiveAccountNoticeContent } = await import('@/lib/email');
-    const content = inactiveAccountNoticeContent({ deleteOn: new Date('2029-02-08T03:40:00Z') });
-    const text = renderEmailText(content);
-
-    expect(text).toContain('8 February 2029');
-    expect(text).toContain('8 de febrero de 2029');
-    // What is at stake, said plainly in both.
-    expect(text).toContain('any attempts you have not used');
-    expect(text).toContain('los intentos que no hayas usado');
-    expect(renderEmailHtml(content)).toMatch(/href="https:\/\/[^"]+\/login"/);
-    expect(content.blocks.filter((b) => b.kind === 'button')).toHaveLength(1);
-  });
-});

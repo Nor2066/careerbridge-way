@@ -468,12 +468,9 @@ export default function TermsEs() {
           no usados se pierden al hacerlo, así que úsalos o pide antes su reembolso.
         </p>
         <p>
-          Si no usas tu cuenta durante cuatro años, te escribiremos a la dirección que tiene. Si
-          no has iniciado sesión en los tres meses siguientes a ese correo, eliminaremos la cuenta
-          exactamente igual que si la hubieras cerrado tú. Iniciar sesión en cualquier momento
-          antes de eso lo conserva todo. Nunca lo hacemos con una cuenta que aún tenga un intento
-          que pagaste y no has usado, o uno que empezaste y no has terminado: esa cuenta se queda
-          hasta que la elimines tú.
+          Nunca cerramos ni eliminamos tu cuenta porque no la hayas usado, por mucho tiempo que
+          haya pasado. Se queda, con tus informes y lo que hayas comprado, hasta que la cierres
+          tú.
         </p>
         <p>
           Podemos poner fin a este acuerdo si incumples estas condiciones de forma grave o

@@ -3,13 +3,12 @@
 // Tells the browser who it is. Now that the session cookies are httpOnly,
 // client-side code can't read the token to work this out for itself — which
 // is the whole point: the token stays out of reach of any injected script.
-import { NextResponse, after } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { AUTH_COOKIE_FLAGS, NO_STORE_HEADERS } from '@/lib/auth-cookies';
 import { isEmailVerified } from '@/lib/auth';
 import { sessionReadLimiter, getIP } from '@/lib/rate-limit';
-import { touchLastActive } from '@/lib/activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,13 +52,6 @@ export async function GET(request: Request) {
   // getUser() validates the token against Supabase rather than trusting the
   // cookie's contents, so a forged cookie can't fake a login here.
   const { data: { user }, error } = await supabase.auth.getUser();
-
-  // Counts as using the account, for the four-year rule on unused accounts.
-  // After the response, so it never slows the page; at most one write a day.
-  if (user) {
-    const userId = user.id;
-    after(() => touchLastActive(userId));
-  }
 
   const response = NextResponse.json(
     {

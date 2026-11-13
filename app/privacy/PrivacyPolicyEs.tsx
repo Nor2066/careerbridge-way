@@ -674,12 +674,11 @@ export default function PrivacyPolicyEs() {
           simplemente dejan de contarte.
         </p>
         <p>
-          Tampoco guardamos una cuenta que nadie usa. Si no has usado la tuya en cuatro años, te
-          escribimos a la dirección que tiene. Si tres meses después de ese correo no has iniciado
-          sesión, eliminamos la cuenta del mismo modo. Iniciar sesión antes de ese plazo la
-          conserva. <strong className="text-white">Nunca lo hacemos con una cuenta que aún tenga
-          un intento que pagaste y no has usado, o uno que empezaste y no terminaste</strong>: esa
-          cuenta se queda hasta que la elimines tú.
+          <strong className="text-white">
+            Nunca eliminamos tu cuenta porque hayas dejado de usarla.
+          </strong>{' '}
+          Se queda, con tus informes y lo que hayas comprado, hasta que la elimines tú, por mucho
+          tiempo que pase.
         </p>
         <p>
           Los registros de pagos son la única excepción: la ley de contabilidad húngara nos
