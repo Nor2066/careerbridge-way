@@ -83,6 +83,22 @@ export const assess = {
     es: 'Hemos tenido un problema al calcular tus resultados. Suele ser temporal: inténtalo de nuevo.',
   },
 
+  // Sensitive details in the written answers (GDPR Article 9; see lib/sensitive-consent.ts).
+  // The note sits under each free-text box; the consent box on the last step.
+  'assess.freeText.note': {
+    en: "Please leave out details about your health, a disability, your religion or anything similarly sensitive. You don't need them for a useful report. If you do want them in, you will be asked to agree on the last step.",
+    es: 'Por favor, no incluyas datos sobre tu salud, una discapacidad, tu religión u otros asuntos igual de sensibles: no los necesitas para obtener un informe útil. Si quieres incluirlos, en el último paso te pediremos tu consentimiento.',
+  },
+  'assess.final.sensitive.label': {
+    en: 'I consent to ADAQNO using any details about my health, a disability, my religion or other sensitive matters that I wrote in my answers, to write my report and to check them for signs of distress so it can show me where to find help.',
+    es: 'Consiento que ADAQNO use los datos sobre mi salud, una discapacidad, mi religión u otros asuntos sensibles que haya escrito en mis respuestas, para redactar mi informe y para revisarlos en busca de señales de angustia y mostrarme dónde encontrar ayuda.',
+  },
+  'assess.final.sensitive.help': {
+    en: "Tick this only if you wrote such details. If you didn't, or would rather not, leave it unticked: you can go back and take them out, and you will still get your results. You can withdraw at any time by asking us to delete the report, or by deleting your account.",
+    es: 'Márcala solo si escribiste datos de ese tipo. Si no lo hiciste, o prefieres no hacerlo, déjala sin marcar: puedes volver atrás y quitarlos, y recibirás tus resultados igualmente. Puedes retirar tu consentimiento en cualquier momento pidiéndonos que borremos el informe o eliminando tu cuenta.',
+  },
+  'assess.final.sensitive.more': { en: 'How we handle this', es: 'Cómo lo tratamos' },
+
   // Results
   'assess.results.subtitle': { en: 'Your personalized career assessment results', es: 'Los resultados de tu evaluación de carrera' },
   'assess.results.top3': { en: 'Your Top 3 Career Clusters', es: 'Tus 3 áreas profesionales principales' },

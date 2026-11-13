@@ -8,6 +8,7 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { saveResultLimiter, getUserIdentifier } from '@/lib/rate-limit';
 import { getSubscription, canStartAssessment, markAssessmentInProgress } from '@/lib/subscription';
 import { getLicence } from '@/lib/institutions';
+import { stampSensitiveConsent } from '@/lib/sensitive-consent';
 
 const SaveResultSchema = z.object({
   topClusters: z.array(
@@ -43,7 +44,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
-    const { topClusters, rawScores, answers } = parsed.data;
+    // The yes/no from the consent box becomes a record stamped with our own
+    // clock and the wording's version (lib/sensitive-consent.ts).
+    const { topClusters, rawScores } = parsed.data;
+    const answers = stampSensitiveConsent(parsed.data.answers, new Date());
 
     // If the user is restarting (current_attempt_status was 'in_progress' with
     // a previous result_id), we still insert a NEW user_results row — the old

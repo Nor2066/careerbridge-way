@@ -11,7 +11,7 @@
 // Deliberately not Supabase's own last_sign_in_at. That moves only when
 // someone signs in, and a session here lasts until it is ended — a student
 // who signed in once and has used the site every week since would look
-// two years idle.
+// four years idle.
 
 if (typeof window !== 'undefined') {
   throw new Error('This module is server-only and must not be imported by client code');
@@ -27,7 +27,7 @@ function isMissingColumn(error: { code?: string } | null): boolean {
 
 /**
  * Never throws and never matters to the request that triggered it: a failure
- * here costs one day of precision on a two-year clock.
+ * here costs one day of precision on a four-year clock.
  */
 export async function touchLastActive(userId: string, now: Date = new Date()): Promise<void> {
   try {

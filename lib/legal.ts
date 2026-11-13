@@ -84,7 +84,7 @@ export const MINIMUM_AGE = 16;
  * Bump this whenever the terms change materially — the same day you move
  * LAST_UPDATED.terms.
  */
-export const TERMS_VERSION = '2026-11-10';
+export const TERMS_VERSION = '2026-11-13';
 
 export const CONTACT = {
   /** Answered by a human. Also the support address the launch checklist wants. */
@@ -110,8 +110,8 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '12 November 2026',
-  terms: '10 November 2026',
+  privacy: '13 November 2026',
+  terms: '13 November 2026',
   refunds: '26 October 2026',
   cookies: '22 October 2026',
   acceptableUse: '22 October 2026',
@@ -209,7 +209,7 @@ export const RETENTION = [
   {
     what: 'Your account and assessment results',
     how_long:
-      'Until you delete your account, or until it has gone unused for two years. We email you first, and delete it three months later unless you sign in.',
+      'Until you delete your account. If it goes unused for four years we email you first, and delete it three months later unless you sign in. We never delete an account that still holds an attempt you paid for and have not used, or one you started and did not finish: only you can delete that.',
     why: 'So you can return to your reports and history at any time, without our keeping an account nobody uses for ever.',
   },
   {

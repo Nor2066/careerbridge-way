@@ -478,10 +478,12 @@ function TermsEn() {
           attempts are lost when you do &mdash; so use or claim a refund on them first.
         </p>
         <p>
-          If you do not use your account for two years, we will email the address on it. If
+          If you do not use your account for four years, we will email the address on it. If
           you have not signed in within three months of that email, we will delete the
-          account exactly as if you had closed it yourself, and unused attempts are lost
-          then too. Signing in at any time before that keeps everything.
+          account exactly as if you had closed it yourself. Signing in at any time before that
+          keeps everything. We never do this to an account that still holds an attempt you
+          paid for and have not used, or one you started and have not finished: that account
+          stays until you delete it yourself.
         </p>
         <p>
           We may end this agreement if you seriously or repeatedly break these terms, or if

@@ -274,6 +274,11 @@ function RadioGroup({ options, label, selected, onChange }: OptionListProps & {
   );
 }
 
+/** Under each free-text box: what to leave out, and where consent is asked. */
+function FreeTextNote({ text }: { text: string }) {
+  return <p className="mt-3 text-sm leading-relaxed text-amber-100/90">{text}</p>;
+}
+
 function RatingButtons({ ratings, selected, onChange }: { ratings: number[]; selected: number; onChange: (val: number) => void }) {
   return (
     <div role="group" aria-labelledby={STEP_TITLE_ID} className="flex gap-4 justify-center flex-wrap">
@@ -654,6 +659,11 @@ export default function Home() {
     autoSaveResults();
   }, [user, result, submittedAnswers]);
 
+  // Explicit consent for sensitive details written into the free-text answers
+  // (lib/sensitive-consent.ts). Unticked until the student ticks it; never
+  // required to continue.
+  const [sensitiveConsent, setSensitiveConsent] = useState(false);
+
   const update = (field: keyof Answers, value: any) => setAnswers(prev => ({ ...prev, [field]: value }));
   const updateSkill = (skillId: keyof Answers['skills'], value: number) => setAnswers(prev => ({ ...prev, skills: { ...prev.skills, [skillId]: value } }));
 
@@ -665,6 +675,9 @@ export default function Home() {
       ...answers,
       studyHours: answers.studyHours === 'YES',
       academicLevel: Number(answers.academicLevel),
+      // Saved with the answers it covers; /api/save-result turns it into a
+      // dated record. Scoring ignores it.
+      sensitiveConsent,
     };
     delete (payload as any).careerContext;
     setSubmittedAnswers(payload);
@@ -1349,6 +1362,7 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.dreamJob.placeholder')}
         />
+        <FreeTextNote text={t('assess.freeText.note')} />
       </StepShell>
     );
   }
@@ -1363,6 +1377,7 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.topValues.placeholder')}
         />
+        <FreeTextNote text={t('assess.freeText.note')} />
       </StepShell>
     );
   }
@@ -1377,6 +1392,7 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.fulfilling.placeholder')}
         />
+        <FreeTextNote text={t('assess.freeText.note')} />
       </StepShell>
     );
   }
@@ -1391,6 +1407,7 @@ export default function Home() {
           className="w-full p-3 border border-gray-300 rounded-lg bg-black/30 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           placeholder={t('assess.q.past.placeholder')}
         />
+        <FreeTextNote text={t('assess.freeText.note')} />
       </StepShell>
     );
   }
@@ -1410,6 +1427,27 @@ export default function Home() {
           </div>
           <div className="glass-card">
             <p className="text-center text-gray-200 mb-6">{t('assess.final.allAnswered')}</p>
+            {/* Explicit consent (GDPR Article 9(2)(a)) for sensitive details in
+                the written answers: an express statement, unticked by default,
+                and optional. See lib/sensitive-consent.ts. */}
+            <div className="mb-6">
+              <label className={optionClasses(sensitiveConsent)}>
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={sensitiveConsent}
+                  onChange={(e) => setSensitiveConsent(e.target.checked)}
+                />
+                <ChoiceMark checked={sensitiveConsent} kind="checkbox" />
+                <span className="text-sm text-white">{t('assess.final.sensitive.label')}</span>
+              </label>
+              <p className="mt-2 text-xs leading-relaxed text-gray-300">
+                {t('assess.final.sensitive.help')}{' '}
+                <a className="text-indigo-300 underline" href="/privacy#sensitive" target="_blank" rel="noopener noreferrer">
+                  {t('assess.final.sensitive.more')}
+                </a>
+              </p>
+            </div>
             {submitError && (
               <div className="mb-6 p-4 bg-amber-800/50 border border-amber-600 rounded-lg text-amber-100 text-center text-sm">
                 {submitError}

@@ -176,9 +176,14 @@ export default function PrivacyPolicyEs() {
         <p>
           Cuando eso ocurre, nos basamos en{' '}
           <strong className="text-white">tu consentimiento explícito</strong> según el artículo
-          9.2.a), que das al decidir incluir esa información después de que aquí te pidamos que
-          no lo hagas. Puedes retirarlo en cualquier momento borrando la respuesta o tu cuenta.
-          Nada de ello llega nunca a tu universidad.
+          9.2.a). Cada pregunta escrita te recuerda que no incluyas esos datos. Antes de ver tus
+          resultados hay una casilla, sin marcar, con la que puedes consentir que usemos los
+          datos sensibles que hayas escrito para redactar tu informe y para revisarlos en busca de
+          señales de angustia. Guardamos con tus respuestas si la marcaste y cuándo. Marcarla es
+          opcional: si prefieres no hacerlo, vuelve atrás y quita esos datos, y recibirás tus
+          resultados igualmente. Puedes retirar tu consentimiento en cualquier momento pidiéndonos
+          que borremos el informe o eliminando tu cuenta. Nada de ello llega nunca a tu
+          universidad.
         </p>
       </LegalSection>
 
@@ -645,10 +650,12 @@ export default function PrivacyPolicyEs() {
           simplemente dejan de contarte.
         </p>
         <p>
-          Tampoco guardamos una cuenta que nadie usa. Si no has usado la tuya en dos años, te
+          Tampoco guardamos una cuenta que nadie usa. Si no has usado la tuya en cuatro años, te
           escribimos a la dirección que tiene. Si tres meses después de ese correo no has iniciado
           sesión, eliminamos la cuenta del mismo modo. Iniciar sesión antes de ese plazo la
-          conserva.
+          conserva. <strong className="text-white">Nunca lo hacemos con una cuenta que aún tenga
+          un intento que pagaste y no has usado, o uno que empezaste y no terminaste</strong>: esa
+          cuenta se queda hasta que la elimines tú.
         </p>
         <p>
           Los registros de pagos son la única excepción: la ley de contabilidad húngara nos

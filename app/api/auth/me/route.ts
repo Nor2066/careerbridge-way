@@ -54,7 +54,7 @@ export async function GET(request: Request) {
   // cookie's contents, so a forged cookie can't fake a login here.
   const { data: { user }, error } = await supabase.auth.getUser();
 
-  // Counts as using the account, for the two-year rule on unused accounts.
+  // Counts as using the account, for the four-year rule on unused accounts.
   // After the response, so it never slows the page; at most one write a day.
   if (user) {
     const userId = user.id;

@@ -192,10 +192,14 @@ function PrivacyPolicyEn() {
         </p>
         <p>
           Where that happens we rely on{' '}
-          <strong className="text-white">your explicit consent</strong> under Article 9(2)(a),
-          given by choosing to include that information after being asked here not to. You can
-          withdraw it at any time by deleting the answer or your account. None of it ever
-          reaches your university.
+          <strong className="text-white">your explicit consent</strong> under Article 9(2)(a).
+          Each written question reminds you to leave such details out. Before you see your
+          results there is a box, unticked, in which you can consent to our using any sensitive
+          details you wrote to write your report and to check them for signs of distress. We
+          keep whether you ticked it, and when, with your answers. Ticking it is optional: if
+          you would rather not, go back and take the details out, and you still get your
+          results. You can withdraw your consent at any time by asking us to delete the report,
+          or by deleting your account. None of it ever reaches your university.
         </p>
       </LegalSection>
 
@@ -665,10 +669,12 @@ function PrivacyPolicyEn() {
           counting you.
         </p>
         <p>
-          We also do not keep an account nobody uses. If you have not used yours for two
+          We also do not keep an account nobody uses. If you have not used yours for four
           years, we email the address on it. If you have not signed in three months after
           that email, we delete the account in the same way. Signing in before then keeps
-          it.
+          it. <strong className="text-white">We never do this to an account that still holds
+          an attempt you paid for and have not used, or one you started and did not
+          finish</strong>: that account stays until you delete it yourself.
         </p>
         <p>
           Payment records are the one exception: Hungarian accounting law requires us to keep

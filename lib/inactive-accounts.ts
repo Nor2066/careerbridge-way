@@ -1,8 +1,10 @@
 // lib/inactive-accounts.ts
 //
-// The nightly job for accounts nobody has used for two years: one email, then
-// deletion three months later if nobody has signed in. The rule itself is in
-// lib/retention-rules.ts; this file is the order of operations around it.
+// The nightly job for accounts nobody has used for four years: one email, then
+// deletion three months later if nobody has signed in. An account that still
+// holds an attempt (paid for and unused, or started and unfinished) is never
+// warned or deleted. The rule itself is in lib/retention-rules.ts; this file
+// is the order of operations around it.
 //
 // Everything that touches the outside world (the database, the mail provider)
 // comes in through `deps`, so the test can run the whole job against a fake
@@ -18,6 +20,9 @@
 //      before it is deleted, and only goes if the rule still says 'delete'.
 //   3. Run away. Each run handles a capped number of accounts; a bug that made
 //      every account look unused would warn or remove a handful, not all.
+//   4. Touch an account that holds an attempt. Its holdings are read before a
+//      notice and read again right before a deletion; if they cannot be read,
+//      the account is kept.
 //
 // The scheduler may call this twice for one night, or skip a night. Both are
 // harmless: claiming the notice is a conditional update that only one caller
@@ -27,6 +32,8 @@ import {
   inactivityAction,
   inactivityCutoff,
   deletionDate,
+  holdsAttempts,
+  type AttemptHoldings,
 } from '@/lib/retention-rules';
 
 export type InactiveAccountRow = {
@@ -48,6 +55,8 @@ export type InactiveAccountDeps = {
   reload(id: string): Promise<InactiveAccountRow | null>;
   /** The address on the sign-in record, for a profile that has none. */
   emailFor(id: string): Promise<string | null>;
+  /** What attempts the account still holds. Null if that cannot be read; the account is then kept. */
+  holdings(id: string): Promise<AttemptHoldings | null>;
   /**
    * Records `nowIso` as the notice time, but only if the stored value is
    * still `previous`. False means another run got there first.
@@ -70,6 +79,8 @@ export type InactiveAccountSummary = {
   deleted: number;
   waiting: number;
   exempt: number;
+  /** Due by age, but kept because the account holds an attempt. */
+  kept: number;
   /** Accounts skipped because something went wrong; details are in the log. */
   failed: number;
   /** Due today but left for the next run because the cap was reached. */
@@ -101,6 +112,7 @@ export async function runInactiveAccountJob(args: {
     deleted: 0,
     waiting: 0,
     exempt: 0,
+    kept: 0,
     failed: 0,
     deferred: 0,
   };
@@ -122,6 +134,10 @@ export async function runInactiveAccountJob(args: {
     if (action === 'wait') { summary.waiting += 1; continue; }
 
     try {
+      // Only now, for the accounts actually due: an account holding an
+      // attempt is neither warned nor deleted.
+      if (holdsAttempts(await deps.holdings(row.id))) { summary.kept += 1; continue; }
+
       if (action === 'notify') {
         if (summary.notified >= maxNotices) { summary.deferred += 1; continue; }
         if (dryRun) { summary.notified += 1; continue; }
@@ -166,8 +182,10 @@ export async function runInactiveAccountJob(args: {
         lastActiveAt: fresh.last_active_at,
         noticeSentAt: fresh.inactivity_notice_sent_at,
         role: fresh.role,
+        holdsAttempts: holdsAttempts(await deps.holdings(row.id)),
         now,
       });
+      if (stillDue === 'keep') { summary.kept += 1; continue; }
       if (stillDue !== 'delete') continue;
 
       const result = await deps.deleteAccount(row.id);

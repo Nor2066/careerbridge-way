@@ -1,7 +1,7 @@
 // app/api/cron/retention/route.ts
 //
 // Runs once a night (see "crons" in vercel.json) and applies the rule for
-// accounts nobody has used for two years: one email, then deletion three
+// accounts nobody has used for four years: one email, then deletion three
 // months later. The rule is in lib/retention-rules.ts and the order of
 // operations in lib/inactive-accounts.ts; this file only checks who is
 // calling and connects the job to the real database and mail provider.
@@ -76,6 +76,39 @@ const deps: InactiveAccountDeps = {
     const { data, error } = await supabaseServer.auth.admin.getUserById(id);
     if (error) return null;
     return data.user?.email ?? null;
+  },
+
+  // Anything that goes wrong here answers null, and null keeps the account.
+  async holdings(id) {
+    try {
+      const { data: sub, error: subError } = await supabaseServer
+        .from('subscriptions')
+        .select('main_attempts_remaining, topup_followup_credits, followup_bundle_purchased, current_attempt_status')
+        .eq('user_id', id)
+        .maybeSingle();
+      if (subError) return null;
+
+      const [{ data: unlocks, error: unlockError }, { data: followups, error: followupError }] = await Promise.all([
+        supabaseServer.from('followup_unlocks').select('result_id').eq('user_id', id),
+        supabaseServer.from('ai_followup_reports').select('assessment_id').eq('user_id', id),
+      ]);
+      if (unlockError || followupError) return null;
+
+      // A follow-up unlock is used once a follow-up report exists for its
+      // result; the bundle, once any follow-up report exists at all.
+      const reported = new Set((followups ?? []).map((f) => f.assessment_id));
+      const unusedUnlocks = (unlocks ?? []).filter((u) => !reported.has(u.result_id)).length;
+      const unusedBundle = sub?.followup_bundle_purchased && reported.size === 0 ? 1 : 0;
+
+      return {
+        mainAttemptsRemaining: sub?.main_attempts_remaining ?? 0,
+        followupCredits: sub?.topup_followup_credits ?? 0,
+        unusedFollowupUnlocks: unusedUnlocks + unusedBundle,
+        attemptStatus: sub?.current_attempt_status ?? 'none',
+      };
+    } catch {
+      return null;
+    }
   },
 
   async claimNotice(id, previous, nowIso) {

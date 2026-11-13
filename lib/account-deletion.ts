@@ -2,7 +2,7 @@
 //
 // Removing one account's data. Shared by the delete button
 // (app/api/account/delete) and the nightly job that removes accounts nobody
-// has used for two years (app/api/cron/retention), so the two cannot drift
+// has used for four years (app/api/cron/retention), so the two cannot drift
 // into deleting different things.
 //
 // Order matters and is deliberate:

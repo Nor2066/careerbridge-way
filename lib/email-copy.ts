@@ -199,7 +199,7 @@ export const EMAIL_COPY: Record<Locale, Copy> = {
       subject: 'Sign in to keep your ADAQNO account',
       heading: 'Do you still want your account?',
       body: (deleteOn) =>
-        `You have not used your ADAQNO account for two years. If you do not sign in by ${deleteOn}, we will delete it.`,
+        `You have not used your ADAQNO account for four years. If you do not sign in by ${deleteOn}, we will delete it.`,
       lose: 'Deleting it removes your answers, your reports and any attempts you have not used. It cannot be undone.',
       button: 'Sign in',
       ignore: 'If you no longer want the account, you do not need to do anything.',
@@ -310,7 +310,7 @@ export const EMAIL_COPY: Record<Locale, Copy> = {
       subject: 'Inicia sesión para conservar tu cuenta de ADAQNO',
       heading: '¿Quieres conservar tu cuenta?',
       body: (deleteOn) =>
-        `Llevas dos años sin usar tu cuenta de ADAQNO. Si no inicias sesión antes del ${deleteOn}, la eliminaremos.`,
+        `Llevas cuatro años sin usar tu cuenta de ADAQNO. Si no inicias sesión antes del ${deleteOn}, la eliminaremos.`,
       lose: 'Al eliminarla se borran tus respuestas, tus informes y los intentos que no hayas usado. No se puede deshacer.',
       button: 'Iniciar sesión',
       ignore: 'Si ya no quieres la cuenta, no tienes que hacer nada.',

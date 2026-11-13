@@ -4,18 +4,20 @@ import {
   type InactiveAccountDeps,
   type InactiveAccountRow,
 } from '@/lib/inactive-accounts';
+import type { AttemptHoldings } from '@/lib/retention-rules';
 
 // The whole job against a fake database and a fake mail provider. What it
 // must never do is delete an account that was not warned, or was used again.
 
 const NOW = new Date('2030-06-01T00:00:00Z');
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000).toISOString();
+const NOTHING: AttemptHoldings = { mainAttemptsRemaining: 0, followupCredits: 0, unusedFollowupUnlocks: 0, attemptStatus: 'none' };
 
 function row(id: string, over: Partial<InactiveAccountRow> = {}): InactiveAccountRow {
-  return { id, email: `${id}@example.com`, role: null, last_active_at: daysAgo(800), inactivity_notice_sent_at: null, ...over };
+  return { id, email: `${id}@example.com`, role: null, last_active_at: daysAgo(1600), inactivity_notice_sent_at: null, ...over };
 }
 
-function fake(rows: InactiveAccountRow[], options: { ready?: boolean; sendOk?: boolean; deleteOk?: boolean; authEmail?: string | null } = {}) {
+function fake(rows: InactiveAccountRow[], options: { ready?: boolean; sendOk?: boolean; deleteOk?: boolean; authEmail?: string | null; holdings?: Record<string, AttemptHoldings | null> } = {}) {
   const store = new Map(rows.map((r) => [r.id, { ...r }]));
   const log = { sent: [] as { to: string; deleteOn: string }[], deleted: [] as string[], audited: [] as { event: string; details: Record<string, unknown> }[] };
 
@@ -31,6 +33,10 @@ function fake(rows: InactiveAccountRow[], options: { ready?: boolean; sendOk?: b
     },
     async emailFor() {
       return options.authEmail ?? null;
+    },
+    async holdings(id) {
+      const h = options.holdings ?? {};
+      return id in h ? h[id] : NOTHING;
     },
     async claimNotice(id, previous, nowIso) {
       const r = store.get(id);
@@ -70,7 +76,7 @@ describe('the nightly job for unused accounts', () => {
     expect(f.log.deleted).toEqual([]);
   });
 
-  it('warns an account unused for two years, and records that it did', async () => {
+  it('warns an account unused for four years, and records that it did', async () => {
     const f = fake([row('a'), row('recent', { last_active_at: daysAgo(10) })]);
     const s = await runInactiveAccountJob({ now: NOW, deps: f.deps });
 
@@ -177,5 +183,36 @@ describe('the nightly job for unused accounts', () => {
     const s = await runInactiveAccountJob({ now: NOW, deps: f.deps });
     expect(s).toMatchObject({ failed: 1, notified: 1 });
     expect(f.store.has('bad')).toBe(true);
+  });
+
+  it('never warns or deletes an account that holds an attempt', async () => {
+    const f = fake(
+      [
+        row('paid', { last_active_at: daysAgo(4000) }),
+        row('started', { last_active_at: daysAgo(4000), inactivity_notice_sent_at: daysAgo(300) }),
+        row('unknown', { last_active_at: daysAgo(4000), inactivity_notice_sent_at: daysAgo(300) }),
+      ],
+      {
+        holdings: {
+          paid: { ...NOTHING, mainAttemptsRemaining: 2 },
+          started: { ...NOTHING, attemptStatus: 'in_progress' },
+          unknown: null,
+        },
+      }
+    );
+    const s = await runInactiveAccountJob({ now: NOW, deps: f.deps });
+    expect(s).toMatchObject({ kept: 3, notified: 0, deleted: 0 });
+    expect(f.log.sent).toEqual([]);
+    expect(f.log.deleted).toEqual([]);
+  });
+
+  it('keeps an account that bought something after it was warned', async () => {
+    const f = fake([row('a', { inactivity_notice_sent_at: daysAgo(100) })]);
+    // Nothing held when the list is read; a purchase lands before the delete.
+    let calls = 0;
+    f.deps.holdings = async () => (++calls === 1 ? NOTHING : { ...NOTHING, followupCredits: 1 });
+    const s = await runInactiveAccountJob({ now: NOW, deps: f.deps });
+    expect(f.log.deleted).toEqual([]);
+    expect(s).toMatchObject({ kept: 1, deleted: 0 });
   });
 });
