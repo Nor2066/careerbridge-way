@@ -513,11 +513,36 @@ function PrivacyPolicyEn() {
       <LegalSection id="third-parties" title="Who else touches your data">
         <p>
           These are every third party we send personal data to, and what each of them gets.
-          We do not sell your data, and none of these companies may use it for their own
-          purposes. The one exception is the mailbox at the end of the table: until we move
-          to a company mailbox, it is a standard Gmail account that Google runs under its own
-          terms.
+          We do not sell your data. Most of these companies work only on our instructions and
+          may not use it for their own purposes. Three do decide some things for themselves,
+          under their own privacy policies:
         </p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            <strong className="text-white">Stripe</strong> also uses payment details for its own
+            purposes as a payment provider, such as preventing fraud and meeting its legal
+            duties. Its{' '}
+            <a
+              className="text-indigo-300 underline"
+              href="https://stripe.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              privacy policy
+            </a>{' '}
+            explains how.
+          </li>
+          <li>
+            <strong className="text-white">Google</strong>, if you choose to sign in with
+            Google: the sign-in itself happens in your Google account, under Google&rsquo;s
+            terms.
+          </li>
+          <li>
+            <strong className="text-white">The mailbox at the end of the table</strong>: until
+            we move to a company mailbox, it is a standard Gmail account that Google runs under
+            its own terms.
+          </li>
+        </ul>
         <div className="overflow-x-auto">
           <table className="mt-2 w-full min-w-[34rem] border-collapse text-sm">
             <thead>

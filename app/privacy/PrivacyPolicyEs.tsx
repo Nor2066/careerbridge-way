@@ -492,11 +492,35 @@ export default function PrivacyPolicyEs() {
       <LegalSection id="third-parties" title="Quién más trata tus datos">
         <p>
           Estos son todos los terceros a los que enviamos datos personales, y lo que recibe cada
-          uno. No vendemos tus datos, y ninguna de estas empresas puede usarlos para sus propios
-          fines. La única excepción es el buzón del final de la tabla: hasta que pasemos a un
-          buzón de empresa, es una cuenta normal de Gmail que Google gestiona con sus propias
-          condiciones.
+          uno. No vendemos tus datos. La mayoría de estas empresas trabaja solo siguiendo
+          nuestras instrucciones y no puede usarlos para sus propios fines. Tres deciden algunas
+          cosas por sí mismas, según sus propias políticas de privacidad:
         </p>
+        <ul className="ml-5 flex list-disc flex-col gap-2">
+          <li>
+            <strong className="text-white">Stripe</strong> también usa los datos de pago para
+            sus propios fines como proveedor de pagos, como prevenir el fraude y cumplir sus
+            obligaciones legales. Su{' '}
+            <a
+              className="text-indigo-300 underline"
+              href="https://stripe.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              política de privacidad
+            </a>{' '}
+            explica cómo.
+          </li>
+          <li>
+            <strong className="text-white">Google</strong>, si eliges iniciar sesión con Google:
+            el inicio de sesión se hace en tu cuenta de Google, según las condiciones de Google.
+          </li>
+          <li>
+            <strong className="text-white">El buzón del final de la tabla</strong>: hasta que
+            pasemos a un buzón de empresa, es una cuenta normal de Gmail que Google gestiona con
+            sus propias condiciones.
+          </li>
+        </ul>
         <div className="overflow-x-auto">
           <table className="mt-2 w-full min-w-[34rem] border-collapse text-sm">
             <thead>
