@@ -80,9 +80,9 @@ export const common = {
   'footer.link.acceptableUse': { en: 'Acceptable use', es: 'Uso aceptable' },
   'footer.link.aiNotice': { en: 'AI notice', es: 'Aviso sobre IA' },
   'footer.link.contact': { en: 'Contact us', es: 'Contacto' },
-  'footer.legalEnglishOnly': {
+  'footer.legalTranslationNote': {
     en: '',
-    es: 'Los documentos legales están disponibles solo en inglés por ahora.',
+    es: 'Los documentos legales en español son una traducción; si difieren, prevalece el inglés.',
   },
   'footer.company': {
     en: '{trading} is a trading name of {legal}, a limited liability company established in Hungary.',

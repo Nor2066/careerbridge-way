@@ -2,12 +2,21 @@ import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { CONTACT, LAST_UPDATED } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
+import AcceptableUseEs from './AcceptableUseEs';
 
-export const metadata: Metadata = {
-  title: 'Acceptable Use Policy',
-  description:
-    `What you must not do with ${BRAND.name}, what happens if you do, and how to report a security problem.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === 'es') {
+    return {
+      title: 'Política de uso aceptable',
+      description: `Lo que no debes hacer con ${BRAND.name}, qué ocurre si lo haces y cómo comunicar un problema de seguridad.`,
+    };
+  }
+  return {
+    title: 'Acceptable Use Policy',
+    description: `What you must not do with ${BRAND.name}, what happens if you do, and how to report a security problem.`,
+  };
+}
 
 /**
  * Pulled out of section 6 of the terms, where it was a five-line list.
@@ -19,7 +28,13 @@ export const metadata: Metadata = {
  * user to discrimination liability. That does not survive as a bullet in a
  * list of nine.
  */
-export default function AcceptableUsePage() {
+// The English text binds (Terms 13). The Spanish page is a translation of it:
+// change both together, and move LAST_UPDATED.acceptableUse once.
+export default async function AcceptableUsePage() {
+  return (await getLocale()) === 'es' ? <AcceptableUseEs /> : <AcceptableUseEn />;
+}
+
+function AcceptableUseEn() {
   return (
     <LegalPage
       title="Acceptable Use Policy"

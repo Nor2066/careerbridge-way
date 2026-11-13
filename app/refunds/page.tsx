@@ -2,14 +2,29 @@ import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { COMPANY, CONCILIATION_BOARDS, CONTACT, LAST_UPDATED } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
+import RefundsEs from './RefundsEs';
 
-export const metadata: Metadata = {
-  title: 'Refund and Cancellation Policy',
-  description:
-    `Your 14-day cancellation right, when it applies, and how to get a refund from ${BRAND.name}.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === 'es') {
+    return {
+      title: 'Política de reembolsos y desistimiento',
+      description: `Tu derecho de desistimiento de 14 días, cuándo se aplica y cómo obtener un reembolso de ${BRAND.name}.`,
+    };
+  }
+  return {
+    title: 'Refund and Cancellation Policy',
+    description: `Your 14-day cancellation right, when it applies, and how to get a refund from ${BRAND.name}.`,
+  };
+}
 
-export default function RefundsPage() {
+// The English text binds (Terms 13). The Spanish page is a translation of it:
+// change both together, and move LAST_UPDATED.refunds once.
+export default async function RefundsPage() {
+  return (await getLocale()) === 'es' ? <RefundsEs /> : <RefundsEn />;
+}
+
+function RefundsEn() {
   return (
     <LegalPage
       title="Refund and Cancellation Policy"

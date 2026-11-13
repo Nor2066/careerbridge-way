@@ -88,11 +88,11 @@ export default async function Footer() {
                 {t(link.label)}
               </Link>
             ))}
-            {/* The legal documents are drafts under review and exist in English
-                only; a translation of an unreviewed draft would be a second
-                unreviewed document. Said plainly rather than left to surprise. */}
+            {/* The legal pages are in Spanish too since 12 November 2026, as a
+                translation: the English text binds (Terms 13). Said here as
+                well as on each page, so nobody is surprised by it. */}
             {locale !== 'en' && (
-              <p className="max-w-[12rem] text-xs leading-snug text-gray-500">{t('footer.legalEnglishOnly')}</p>
+              <p className="max-w-[12rem] text-xs leading-snug text-gray-500">{t('footer.legalTranslationNote')}</p>
             )}
             <a
               href={`mailto:${CONTACT.support}`}

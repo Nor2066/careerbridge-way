@@ -2,14 +2,29 @@ import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { COMPANY, CONTACT, LAST_UPDATED, MINIMUM_AGE, SUBPROCESSORS, RETENTION, registrationDetails } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
+import PrivacyPolicyEs from './PrivacyPolicyEs';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy',
-  description:
-    `What ${BRAND.name} collects, why, who we share it with, what a partner university can see, how long we keep it, and how to get it deleted.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === 'es') {
+    return {
+      title: 'Política de privacidad',
+      description: `Qué recoge ${BRAND.name}, por qué, con quién lo compartimos, qué puede ver una universidad asociada, cuánto tiempo lo guardamos y cómo hacer que lo borremos.`,
+    };
+  }
+  return {
+    title: 'Privacy Policy',
+    description: `What ${BRAND.name} collects, why, who we share it with, what a partner university can see, how long we keep it, and how to get it deleted.`,
+  };
+}
 
-export default function PrivacyPolicyPage() {
+// The English text binds (Terms 13). The Spanish page is a translation of it:
+// change both together, and move LAST_UPDATED.privacy once.
+export default async function PrivacyPolicyPage() {
+  return (await getLocale()) === 'es' ? <PrivacyPolicyEs /> : <PrivacyPolicyEn />;
+}
+
+function PrivacyPolicyEn() {
   const privacyLink = (
     <a className="text-indigo-300 underline" href={`mailto:${CONTACT.privacy}`}>
       {CONTACT.privacy}
@@ -72,8 +87,17 @@ export default function PrivacyPolicyPage() {
           for the personal data described on this page, and answerable for it. That includes
           students who come to us through a partner university: you have your own account with
           us, and we decide how your data is used, not the university. For anything to do with
-          your data, write to {privacyLink}. We have not appointed a Data Protection Officer,
-          because the GDPR does not require one for what we do.
+          your data, write to {privacyLink}.
+        </p>
+        <p>
+          We have not appointed a Data Protection Officer. The GDPR requires one where a
+          company&rsquo;s core activity is large-scale, regular and systematic monitoring of
+          people, or large-scale processing of sensitive data (Article 37), and some countries
+          add cases of their own: Spain, for example, requires one for online services that
+          build profiles of their users on a large scale. {BRAND.name} builds a profile of each
+          person who uses it, but not on a large scale. We check this again each time a
+          university joins, and we will appoint one, and name them here, before we reach that
+          scale.
         </p>
         <p>
           We offer the service to people in many countries. We are established in Hungary, in

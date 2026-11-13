@@ -5,12 +5,21 @@ import { CONTACT, LAST_UPDATED } from '@/lib/legal';
 import { LOCALE_COOKIE } from '@/lib/i18n/config';
 import { RECOVERY_COOKIE } from '@/lib/recovery-cookie';
 import { BRAND } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
+import CookiePolicyEs from './CookiePolicyEs';
 
-export const metadata: Metadata = {
-  title: 'Cookie Policy',
-  description:
-    `Everything ${BRAND.name} stores on your device, why all of it is strictly necessary or chosen by you, and why there is no cookie banner.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === 'es') {
+    return {
+      title: 'Política de cookies',
+      description: `Todo lo que ${BRAND.name} guarda en tu dispositivo, por qué todo ello es estrictamente necesario o elegido por ti, y por qué no hay aviso de cookies.`,
+    };
+  }
+  return {
+    title: 'Cookie Policy',
+    description: `Everything ${BRAND.name} stores on your device, why all of it is strictly necessary or chosen by you, and why there is no cookie banner.`,
+  };
+}
 
 /**
  * Split out of the privacy policy, where it had been three sentences.
@@ -63,7 +72,14 @@ const COOKIES: Row[] = [
   },
 ];
 
-export default function CookiePolicyPage() {
+// The English text binds (Terms 13). The Spanish page is a translation of it,
+// with its own copy of the table: change both together, and move
+// LAST_UPDATED.cookies once.
+export default async function CookiePolicyPage() {
+  return (await getLocale()) === 'es' ? <CookiePolicyEs /> : <CookiePolicyEn />;
+}
+
+function CookiePolicyEn() {
   return (
     <LegalPage
       title="Cookie Policy"

@@ -51,7 +51,7 @@ describe('the dictionaries', () => {
 
   it('has no empty translations, except deliberate ones', () => {
     // Shown only in non-English languages; English needs no such note.
-    const allowedEmpty = new Set(['footer.legalEnglishOnly:en']);
+    const allowedEmpty = new Set(['footer.legalTranslationNote:en']);
     for (const [key, entry] of Object.entries(MESSAGES)) {
       for (const locale of LOCALES) {
         if (allowedEmpty.has(`${key}:${locale}`)) continue;

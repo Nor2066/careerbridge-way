@@ -2,14 +2,29 @@ import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { COMPANY, CONTACT, HOSTING, LAST_UPDATED, MINIMUM_AGE, registrationDetails } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
+import TermsEs from './TermsEs';
 
-export const metadata: Metadata = {
-  title: 'Terms of Service',
-  description:
-    `The agreement between you and ${BRAND.name}: what we provide, how university access works, what we do not promise, and where you stand if something goes wrong.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === 'es') {
+    return {
+      title: 'Términos del servicio',
+      description: `El acuerdo entre tú y ${BRAND.name}: qué ofrecemos, cómo funciona el acceso a través de una universidad, qué no prometemos y qué ocurre si algo sale mal.`,
+    };
+  }
+  return {
+    title: 'Terms of Service',
+    description: `The agreement between you and ${BRAND.name}: what we provide, how university access works, what we do not promise, and where you stand if something goes wrong.`,
+  };
+}
 
-export default function TermsPage() {
+// The English text binds (section 13). The Spanish page is a translation of
+// it: change both together, and move LAST_UPDATED.terms once.
+export default async function TermsPage() {
+  return (await getLocale()) === 'es' ? <TermsEs /> : <TermsEn />;
+}
+
+function TermsEn() {
   return (
     <LegalPage
       title="Terms of Service"

@@ -295,7 +295,8 @@ export const EMAIL_COPY: Record<Locale, Copy> = {
           '(békéltető testület). Las juntas figuran en nuestra Política de reembolsos y desistimiento.',
         terms: (version, site) =>
           `Condiciones: se aplican nuestros Términos del servicio (versión ${version}) y nuestra Política de ` +
-          `reembolsos y desistimiento, en inglés, en ${site}/terms y ${site}/refunds.`,
+          `reembolsos y desistimiento, en ${site}/terms y ${site}/refunds. El texto original está en inglés y ` +
+          'prevalece si difiere de la traducción al español.',
         termsLink: 'Leer las condiciones',
       },
     },

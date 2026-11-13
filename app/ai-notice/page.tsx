@@ -2,12 +2,21 @@ import type { Metadata } from 'next';
 import LegalPage, { LegalSection } from '@/components/LegalPage';
 import { CONTACT, LAST_UPDATED } from '@/lib/legal';
 import { BRAND } from '@/lib/site';
+import { getLocale } from '@/lib/i18n/server';
+import AiNoticeEs from './AiNoticeEs';
 
-export const metadata: Metadata = {
-  title: 'AI Transparency and Disclaimer Notice',
-  description:
-    `Which parts of ${BRAND.name} are AI and which are not, what AI-generated reports get wrong, and why none of it decides anything about you.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === 'es') {
+    return {
+      title: 'Aviso de transparencia sobre la IA',
+      description: `Qué partes de ${BRAND.name} son IA y cuáles no, en qué se equivocan los informes generados por IA y por qué nada de ello decide nada sobre ti.`,
+    };
+  }
+  return {
+    title: 'AI Transparency and Disclaimer Notice',
+    description: `Which parts of ${BRAND.name} are AI and which are not, what AI-generated reports get wrong, and why none of it decides anything about you.`,
+  };
+}
 
 /**
  * The document with the highest chance of being read, so the failure modes go
@@ -17,7 +26,13 @@ export const metadata: Metadata = {
  * model and half genuinely is not, and "AI-powered" is used widely enough to
  * mean "we did some arithmetic" that saying which is which is worth a page.
  */
-export default function AiNoticePage() {
+// The English text binds (Terms 13). The Spanish page is a translation of it:
+// change both together, and move LAST_UPDATED.aiNotice once.
+export default async function AiNoticePage() {
+  return (await getLocale()) === 'es' ? <AiNoticeEs /> : <AiNoticeEn />;
+}
+
+function AiNoticeEn() {
   return (
     <LegalPage
       title="AI Transparency and Disclaimer Notice"

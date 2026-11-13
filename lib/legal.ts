@@ -110,7 +110,7 @@ export const CONTACT = {
  * whether the terms they agreed to are the terms on the page.
  */
 export const LAST_UPDATED = {
-  privacy: '11 November 2026',
+  privacy: '12 November 2026',
   terms: '10 November 2026',
   refunds: '26 October 2026',
   cookies: '22 October 2026',
